@@ -1,7 +1,6 @@
 ---
 name: codex-review
 description: "Requests an independent code review from OpenAI Codex CLI, critically evaluates its findings, and applies warranted fixes. Activates when: the user says /codex-review, asks for a Codex review, or wants an external AI review of changes."
-user_invocable: true
 ---
 
 # Codex Code Review

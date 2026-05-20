@@ -1,0 +1,23 @@
+name: Validate skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  BOOST_SKIP_AUTOSYNC: 1
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - run: composer install --no-interaction --no-progress
+
+      - run: php .github/validate-skills.php
