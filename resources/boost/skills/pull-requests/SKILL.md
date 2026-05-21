@@ -128,7 +128,52 @@ Follow the project's PR-title convention. Inspect recent merged PRs or any docum
 If the repository has a PR template, **read it fresh** (e.g. `.github/pull_request_template.md`) and fill in each section. Do not hardcode the template — always read the file to get the current version.
 
 If there is no template, write a clear description that covers:
-- **Summary** — 1-3 sentences: what this PR does and why.
+- **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
 - **Testing** — clear steps a reviewer or QA can follow to verify the change.
 - **Security & privacy** — describe any security considerations, or state "No security implications".
 - **Risk assessment** — record the agreed risk level, e.g. `**Risk assessment**: Medium`, with a short explanation of the contributing factors.
+
+## Writing the Description: Why, Not What
+
+A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. Lead with the problem solved and the user-visible behaviour change. The diff already says *what* changed; the description must say *why*, and what it enables.
+
+### Rules for the summary
+
+1. **Open with the user-facing change or outcome**, not the implementation. A reviewer should recognise the feature from the first sentence without reading the diff.
+2. **Name the capability**, not the moving parts.
+3. **State the motivation in one clause** — what was broken, slow, missing, or risky before this change. If you can't state the motivation, you don't yet understand the PR; go back and work it out.
+4. **Keep the summary to 1-3 sentences.** Longer detail belongs in the testing and security sections.
+
+### Banned in the summary
+
+| Don't write | Write instead |
+|---|---|
+| Class, trait, or method names | The feature name and what it does for the user |
+| File paths or directory names | The product surface it touches (a settings page, an API endpoint, the dashboard) |
+| Package names with version arrows (`foo 1.0 → 2.0`) | Why the bump matters — a security fix, a new capability, a compatibility need |
+| Refactor framing ("factors out", "extracts", "consolidates") | The behaviour change the refactor enables; if there is none, say "no behaviour change" |
+| Commit-by-commit recaps ("9 commits: 1. …, 2. …") | A single narrative paragraph |
+
+### Keep the rest of the description signal, not noise
+
+Do **not** pad the description with:
+- **An implementation or commit summary** — reviewers can read `git log`; the description is not a changelog.
+- **A `Files changed:` list** — the Files tab and `gh pr view --json files` already show this.
+- **Reviewer-pass choreography** ("Pass 1 found 3 issues, Pass 2 …") — if a specific finding shaped the design, fold it into the risk or security note as a one-line rationale.
+- **A blow-by-blow of quality gates** — one line is enough ("style, static analysis, and the full test suite: clean").
+
+What *does* belong beyond the summary:
+- **Risk assessment** with the specific factors that drove the rating (one line each).
+- **Edge cases handled** — the notable edge cases the change covers (from the spec's Edge Cases table if a spec was implemented); write "None" when there are none.
+- **Known limitations / follow-ups** the reviewer should be aware of.
+- **Deferred scope** that was intentionally cut.
+- **Deploy-ordering or environment requirements** that gate the merge.
+
+### Quick test before submitting
+
+Re-read the summary and ask:
+1. Would someone who doesn't read code understand what this PR delivers?
+2. Could the summary be reused almost verbatim in release notes?
+3. Does it answer *why now* — not just *what changed*?
+
+If any answer is no, rewrite before creating the PR.
