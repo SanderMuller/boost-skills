@@ -95,7 +95,7 @@ A skill can carry more than one tag, and then applies only where the project has
 
 ## Editing skills
 
-Each skill is a Markdown file at `resources/boost/skills/<name>/SKILL.md` with YAML frontmatter — `name` and `description`, plus optional `metadata` (a skill's `boost-tags` live here), `argument-hint`, and `user_invocable`. Edit them here in this repository, not in a consuming project's synced copy, which `boost-core` overwrites on the next sync. The `skill-authoring` and `ai-guidelines` skills document the frontmatter contract and authoring conventions.
+Each skill is a Markdown file at `resources/boost/skills/<name>/SKILL.md` with YAML frontmatter — `name` and `description`, plus optional `metadata` (a skill's `boost-tags` live here) and `argument-hint`. Edit them here in this repository, not in a consuming project's synced copy, which `boost-core` overwrites on the next sync. The `skill-authoring` and `ai-guidelines` skills document the frontmatter contract and authoring conventions.
 
 ## Changelog
 

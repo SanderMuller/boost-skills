@@ -13,9 +13,23 @@ require __DIR__ . '/../vendor/autoload.php';
 use Stolt\Ai\Skill\Validator;
 
 $skillsDir = __DIR__ . '/../resources/boost/skills';
-$files = glob($skillsDir . '/*/SKILL.md');
 
-if ($files === false || $files === []) {
+// Recursive — mirrors boost-core's SkillLoader, which discovers SKILL.md at any
+// depth. A one-level glob would let a nested skill sync but escape this gate.
+$files = [];
+if (is_dir($skillsDir)) {
+    $entries = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($skillsDir, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($entries as $entry) {
+        if ($entry->getFilename() === 'SKILL.md') {
+            $files[] = $entry->getPathname();
+        }
+    }
+}
+
+if ($files === []) {
     fwrite(STDERR, "No SKILL.md files found under resources/boost/skills/\n");
     exit(1);
 }
@@ -26,7 +40,7 @@ $validator = new Validator();
 $failed = 0;
 
 foreach ($files as $file) {
-    $name = basename(dirname($file));
+    $name = str_replace($skillsDir . '/', '', dirname($file));
     $result = $validator->validateFile($file);
 
     if ($result->isValid()) {
