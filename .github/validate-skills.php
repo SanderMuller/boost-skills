@@ -8,9 +8,9 @@ declare(strict_types=1);
  * exits non-zero if any skill is invalid.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
-
 use Stolt\Ai\Skill\Validator;
+
+require __DIR__ . '/../vendor/autoload.php';
 
 $skillsDir = __DIR__ . '/../resources/boost/skills';
 
