@@ -70,9 +70,15 @@ METRIC execution_median_ms={N.NN}
 METRIC execution_mean_ms={N.NN}
 ```
 
-### Step 3: Analyze Bottlenecks
+### Step 3: Profile the Time Split
 
-Run the benchmark and document bottlenecks in `autoresearch/{slug}-research.md`:
+Before analyzing bottlenecks, **profile where execution time is actually spent**. Instrument the code path into phases (validation, setup, core work, serialization, etc.) and measure each phase's share of total time — use whatever profiling helper or simple `hrtime(true)` checkpoints the project provides.
+
+This prevents wasting iterations optimizing a phase that's only a small fraction of total time. Knowing the time split tells you which phase to target first.
+
+### Step 4: Analyze Bottlenecks
+
+Run the benchmark and analyze both the diagnostics AND the time profile. Document bottlenecks in `autoresearch/{slug}-research.md`:
 
 ```markdown
 # Autoresearch: {Description} Performance Optimization
@@ -93,6 +99,10 @@ Files that may be modified:
 |----------|---------------|
 | {scenario} | ~{N}ms |
 
+## Time Profile
+
+{Which phase takes the most time — validation, setup, core work, serialization, etc.}
+
 ## Known Bottlenecks
 
 1. **{Description}** — {explanation}
@@ -112,9 +122,9 @@ Files that may be modified:
 (Updated with final measurements)
 ```
 
-### Step 4: Record Baseline
+### Step 5: Record Baseline
 
-Create the progress file at `autoresearch/{slug}-progress.md`:
+Run the benchmark and create the progress file at `autoresearch/{slug}-progress.md`:
 
 ```markdown
 # Autoresearch Progress: {slug}
@@ -126,9 +136,9 @@ Create the progress file at `autoresearch/{slug}-progress.md`:
 | 0 | — | {N} | baseline | initial state |
 ```
 
-### Step 5: Confirm and Launch
+### Step 6: Confirm and Launch
 
-Present the research document and baseline to the user. Ask:
+Present the research document, time profile, and baseline to the user. Ask:
 
 1. Are the scope constraints correct?
 2. Are there any files that should NOT be modified?
@@ -163,14 +173,21 @@ Before each iteration:
 2. Read the progress file — check what worked/failed
 3. Check recent git history: `git log --oneline -10`
 
+Do NOT re-run the benchmark in the review phase — only read existing data. The benchmark runs in Phase 5.
+
 ### Phase 2: Ideate
 
 Pick the next optimization. Priority order:
 1. **Fix crashes** from previous iteration
-2. **Exploit successes** — if last change helped, try variants
-3. **Address highest-impact bottleneck**
+2. **Exploit successes** — if last change helped, try variants in the same direction
+3. **Address highest-impact bottleneck** — use the time profile to target the biggest phase first
 4. **Combine near-misses** — two changes that individually didn't help might work together
-5. **Simplify** — remove code while maintaining metric
+5. **Simplify** — remove code while maintaining metric (simpler = better)
+
+**Rules:**
+- Don't repeat a change that was already discarded
+- Don't make multiple unrelated changes at once (can't attribute improvement)
+- Target the phase where the most time is spent — check the time profile, don't assume
 
 ### Phase 3: Modify
 
@@ -183,6 +200,8 @@ git add <changed-files>
 git commit -m "autoresearch: <one-sentence description>"
 ```
 
+Commit BEFORE verification so rollback is clean — if the change is discarded, `git reset --hard HEAD~1` reverts exactly the one commit just made, losing no other work.
+
 ### Phase 5: Verify
 
 Run the benchmark and related tests:
@@ -194,15 +213,27 @@ vendor/bin/pest --filter={related_test} || true
 
 ### Phase 6: Decide
 
+A change is **kept** if it improves the metric without breaking tests:
+
 ```
-IF improved AND tests pass:
+improved  = execution_ms < prev_ms * 0.98   (>2% faster)
+regressed = execution_ms > prev_ms * 1.05   (>5% slower)
+
+IF improved AND NOT regressed AND tests pass:
     STATUS = "keep"
     Save patch: git diff HEAD~1 HEAD > autoresearch/patches/{NNN}-{description}.patch
 
-ELIF NOT improved OR tests fail:
+ELIF NOT improved OR regressed OR tests fail:
     STATUS = "discard"
     git reset --hard HEAD~1
+
+ELIF benchmark crashed:
+    Attempt fix (max 3 tries)
+    IF fixable: re-commit, re-verify
+    ELSE: STATUS = "crash", git reset --hard HEAD~1
 ```
+
+**Simplicity override:** If the improvement is marginal but the change adds significant complexity, consider discarding. If metrics are unchanged but the code is simpler, consider keeping.
 
 ### Phase 7: Log — Update Progress File IMMEDIATELY
 
@@ -223,10 +254,12 @@ Print a status line every 5 iterations:
 ### When Stuck (>5 consecutive discards)
 
 1. Re-read ALL in-scope files from scratch
-2. Re-read the research document
-3. Run a fresh benchmark with full diagnostics
-4. Look for NEW bottlenecks not in the original list
-5. Try the OPPOSITE approach
+2. Re-read the research document's bottleneck list
+3. **Re-run the time profile** — the bottleneck may have shifted after earlier optimizations
+4. Run a fresh benchmark with full diagnostics
+5. Look for NEW bottlenecks not in the original list
+6. Try combining 2-3 previously successful changes differently
+7. Try the OPPOSITE approach (e.g., if eager-loading didn't help, try deferred loading)
 
 ### Completion
 
@@ -242,9 +275,10 @@ Print a status line every 5 iterations:
 
 1. **ONE change per iteration** — atomic changes so you know what helped
 2. **Mechanical verification only** — benchmark numbers, not "looks better"
-3. **Automatic rollback** — failed changes revert instantly
+3. **Automatic rollback** — failed changes revert instantly, no debates
 4. **Tests must pass** — an optimization that breaks tests is not an optimization
 5. **Respect scope** — only modify files listed in the research document
-6. **Git is memory** — commit before verify, revert on failure
+6. **Git is memory** — commit before verify, revert on failure, read history for context
 7. **Don't ask "should I continue?"** — keep iterating until stuck or done
-8. **Log immediately** — update progress after EVERY iteration
+8. **Log immediately** — update the progress file after EVERY iteration, not in bulk
+9. **Profile before optimizing** — know where time is spent before choosing what to optimize

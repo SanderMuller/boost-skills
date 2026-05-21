@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Reviews recent code changes for improvements across functionality, code quality, security, and testing. Activates when: the user asks to review implementation, review changes, review code, audit code, check for improvements, or when user mentions: review, audit, improvements, code quality, code review."
+description: "Structured review of recent code changes across functionality, UX/UI, design, code quality, security, testing — produces a prioritized findings list. Activates when: the user asks to review implementation, review changes, review code, audit code, check for improvements, or when user mentions: review, audit, improvements, code quality, code review."
 argument-hint: [file path, feature name, or description of changes]
 ---
 
@@ -49,11 +49,11 @@ Look for:
 Look for:
 - **Logic errors**: Conditions that don't match intent, off-by-one errors, wrong operator
 - **Missing edge cases**: Null handling, empty collections, zero values, boundary conditions
-- **Duplicate work**: Same computation running multiple times unnecessarily
+- **Stale data**: Values computed once but displayed alongside live-updating data
+- **Duplicate work**: Same query or computation running multiple times unnecessarily
 - **Broken flows**: Actions that silently fail, missing error handling for expected failures
 - **Race conditions**: Concurrent requests causing data corruption (missing locks, non-atomic operations)
-- **Laravel compatibility**: Does the code work across all supported Laravel versions (11, 12, 13)?
-- **PHP compatibility**: Does the code work across all supported PHP versions (8.2, 8.3, 8.4)?
+- **Cross-version compatibility**: Does the code work across every runtime and framework version the project supports?
 
 #### Code Quality & Maintenance
 
@@ -66,13 +66,25 @@ Look for:
 - **Naming**: Do names clearly communicate intent?
 - **Separation of concerns**: Business logic mixed with validation logic, etc.
 
+#### UX, UI & Design
+
+Only when the change touches a user-facing interface. Look for:
+- **Loading states**: Do async actions show feedback while processing?
+- **Error states**: What does the user see when something fails?
+- **Empty states**: What shows when there's no data?
+- **Consistency**: Do new elements match existing patterns (colors, spacing, button styles, icon sets)?
+- **Accessibility**: Missing labels, no keyboard support, insufficient contrast
+- **Mobile/touch**: Hover-dependent interactions that break on touch devices
+- **Visual glitches**: Mismatched icon sizes, layout shifts on state change, inconsistent spacing
+
 #### Testing
 
 Look for:
 - **Missing happy path tests**: Core functionality not tested
-- **Missing failure path tests**: Error cases, invalid input
+- **Missing failure path tests**: Error cases, invalid input, unauthorized access
 - **Missing edge case tests**: Boundary values, empty data, null values
-- **Fragile assertions**: Tests that pass for the wrong reason
+- **Fragile assertions**: Tests that pass for the wrong reason (e.g., an absence assertion matching unrelated text)
+- **Missing security tests**: No tests verifying auth/authorization on actions
 - **Test isolation**: Tests that depend on each other or on specific state
 
 ### Phase 3: Compile Findings
@@ -92,7 +104,7 @@ End with a summary table ranking findings by severity:
 | Severity | Meaning                                                                     |
 |----------|-----------------------------------------------------------------------------|
 | High     | Security vulnerabilities, data corruption risks, broken functionality       |
-| Medium   | Missing tests for important paths, edge cases that could cause issues       |
+| Medium   | Stale data, missing tests for important paths, UX issues that confuse users |
 | Low      | Minor inconsistencies, polish items, nice-to-have improvements              |
 
 ## Output Format

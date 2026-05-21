@@ -47,7 +47,7 @@ All related tests must pass.
 
 ### Tier 2: At Completion (once, at the very end)
 
-Run these checks **only when the feature, bug fix, or spec is fully implemented** — right before creating a PR or marking work as done. These are slow and should not be run mid-development.
+Run these checks **only when the feature, bug fix, or spec is fully implemented (all spec phases are complete)** — right before creating a PR or marking work as done. These are slow and should not be run mid-development.
 
 **1. Pint** (re-run to be sure)
 

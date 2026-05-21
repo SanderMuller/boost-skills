@@ -43,6 +43,8 @@ Determine which Jira project the issue belongs in before creating it:
 
 QA test cases use a **Preconditions → Steps → Expected** shape, written so a non-engineer can execute them. Name UI elements as the user sees them (button labels, page titles), not as code identifiers. If a "test case" can only be run by executing a unit test, reading a log, or inspecting internals, it is not a QA testable — put it in the PR description instead. If the issue has no user-visible behaviour change, say so explicitly in `## QA testables` rather than leaving QA to guess.
 
+**Functional edge cases get their own test case.** Each edge case QA can trigger from the UI — a feature × setting combination, an interacting frontend/backend state, a boundary condition, a permission edge — is its own test-case block, never folded into the happy-path case. The `Expected` line states how the app handles it, so QA learns both that the edge exists and what correct behaviour is. Technical-only edges (retry, timeout, parallel invocation) stay in the PR description per the engineer-only filter above.
+
 ## Required Information — Ask If Missing
 
 Before creating the issue, ensure you have:

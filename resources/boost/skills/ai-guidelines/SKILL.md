@@ -71,6 +71,10 @@ Detailed instructions for the skill...
 - The `name` in frontmatter should match the directory name
 - Write clear `description` with activation triggers
 
+### Documenting External Tools in Skills
+
+When a skill interacts with external services (issue trackers, CI, CLIs, MCP servers), document the exact tool invocation the skill should use. Prefer slim, machine-readable responses over full payloads — e.g. for GitHub, document the exact `gh` command including the `--json <fields>` field list and/or `--jq` filter rather than fetching the entire payload.
+
 ## Regenerating Generated Files
 
 The boost-core Composer plugin auto-syncs `.ai/` → generated files on `composer install/update` when `boost.php` exists at the project root. To force a sync manually (or for repos without `boost.php`):

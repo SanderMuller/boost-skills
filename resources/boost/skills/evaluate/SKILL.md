@@ -1,6 +1,6 @@
 ---
 name: evaluate
-description: "Evaluate the entire implementation and fix any issues that you find. If you find any issues, please fix them yourself. Only ask the user when you need a decision. Activates when: evaluating implementation, self-reviewing code, checking for issues, or when user mentions: evaluate, check implementation, self-review, verify implementation."
+description: "Self-directed eval loop: review own implementation, fix issues found, re-evaluate until clean, then run code review. Fix yourself; only ask the user for decisions. Activates when: evaluating implementation, self-reviewing code, checking for issues, or when user mentions: evaluate, check implementation, self-review, verify implementation."
 argument-hint: "[file path, feature name, or description of what to evaluate]"
 ---
 
@@ -28,16 +28,20 @@ Before running checks, review the current conversation for recent quality check 
 3. No files of that type were added, removed, or changed after the check passed
 
 **What counts as "recently passed":**
-- Pint: `vendor/bin/pint --dirty --format agent` ran with no changes needed
-- PHPStan: `vendor/bin/phpstan analyse --memory-limit=2G` ran with 0 errors
-- Tests: `vendor/bin/pest` ran with 0 failures (full suite or all relevant tests)
+- Code style: ran with no changes needed
+- Static analysis: ran with 0 errors
+- Tests: ran with 0 failures (full suite or all relevant tests)
+- Type checking: ran with 0 errors
+- Linting: a full run ran with 0 errors (a scoped run on a subset of files does not count)
 
-**If checks can be skipped**, state which specific checks you're skipping and why:
-> "Skipping Pint and PHPStan — both passed clean earlier with no PHP changes since; re-running tests to verify behavior."
+**If checks can be skipped**, state which specific checks you're skipping and why. Skipping is decided **per individual check**, not all-or-nothing for an entire skill:
+> "Skipping code style and static analysis — both passed clean earlier with no backend changes since; re-running tests to verify behavior."
 
 **If any doubt**, run the checks. It's better to re-run than to miss a failure.
 
-**Otherwise**, use the `backend-quality` skill.
+**Otherwise**, run checks based on which files were changed:
+- **Backend files changed** — use the `backend-quality` skill
+- **JS/TS files changed** — use the `frontend-quality` skill
 
 Fix all failures before continuing.
 
@@ -65,13 +69,19 @@ For each issue found:
 
 ### Phase 4: Re-evaluate (Loop Until Clean)
 
-After fixing issues, re-run only the checks affected by your fixes. Repeat until a full pass finds no new issues. Only then move to Phase 5.
+After fixing issues, re-run only the checks affected by your fixes (e.g., if you only fixed backend files, skip frontend checks). Repeat until a full pass finds no new issues. Only then move to Phase 5.
 
 ### Phase 5: Code Review
 
-Once the evaluate-fix loop is clean, run the `code-review` skill for a structured review from a different angle (functionality, security, testing). Fix any findings from the code review and re-verify.
+Once the evaluate-fix loop is clean, run the `code-review` skill for a structured review from a different angle (functionality, UX/UI, security, testing). Fix any findings from the code review and re-verify.
 
-### Phase 6: Report
+### Phase 6: Codex Review (Manual Invocation Only)
+
+If the user directly requested this evaluation (e.g., typed `/evaluate`, said "evaluate this", or "review your work"), run the `codex-review` skill for a multi-model second opinion. Critically evaluate and implement any warranted feedback, then re-verify.
+
+**Skip this phase** when the evaluate skill is invoked automatically by another skill or workflow (e.g., as part of the PR flow or implementation pipeline) rather than by the user themselves.
+
+### Phase 7: Report
 
 Summarize what you found and fixed across all passes:
 

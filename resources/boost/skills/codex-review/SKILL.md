@@ -39,12 +39,15 @@ codex exec review --full-auto --base main
 
 ## Step 3: Critically evaluate findings
 
-Codex findings are suggestions, not mandates. For each finding:
+Codex findings are a second opinion, not gospel. You have greater context on the codebase — use it. For each finding:
 
 1. **Is it a real bug?** — Verify by reading the code. Don't trust Codex's assessment blindly.
 2. **Is it already tested?** — Check if existing tests cover the scenario.
 3. **Is it a style preference?** — Skip. Don't change working code for style.
 4. **Is it a false positive?** — Codex may misunderstand framework internals or the project's architecture. Verify against the actual behavior.
+5. **Does it conflict with project conventions?** — Check sibling files. Established project patterns take precedence over Codex preferences.
+
+Don't over-apply: a review that implements 2 real improvements is better than one that applies 10 questionable changes. For each finding, briefly note whether you're implementing or skipping it and why.
 
 ## Step 4: Apply warranted fixes
 
@@ -69,3 +72,16 @@ Summarize to the user:
 ### No Issues
 - [Categories that were clean]
 ```
+
+## Step 6: Commit (if changes were applied)
+
+If you applied any fixes, commit them separately so each review round stays traceable in git history. Only list the **implemented** changes in the commit message — keep dismissed findings and their rationale in the conversation for the user's reference:
+
+```
+Apply codex-review feedback
+
+- <brief description of an applied change>
+- <brief description of another applied change>
+```
+
+If no fixes were applied (all findings were dismissed), do not create a commit — just report the outcome so the user knows.

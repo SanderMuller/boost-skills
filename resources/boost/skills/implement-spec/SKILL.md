@@ -24,13 +24,17 @@ Read spec -> Identify phases -> Implement phase -> Check off tasks -> Log findin
 ## Step 1: Read and Understand the Spec
 
 1. **Read the full spec file** to understand the complete feature scope.
-2. **Locate the implementation section** — look for `## Implementation`.
+2. **Locate the implementation section** — look for any of these headings:
+   - `## Implementation`
+   - `## N. Implementation Approach` (numbered variant in older specs)
+   - `## Implementation Plan`
 3. **Identify phases** — look for `### Phase N:` headings within the implementation section.
-4. **Determine the current phase** — the first phase with unchecked `- [ ]` tasks is the next to implement.
+4. **Note the Edge Cases table** — if the spec has an `## Edge Cases` section, every scenario in it must be covered by tests and handled in the implementation. Treat unhandled rows as missing work.
+5. **Determine the current phase** — the first phase with unchecked `- [ ]` tasks is the next to implement.
 
 ### Specs Without Phases
 
-Some specs don't have explicit phases — they describe a single focused change. In this case, treat the entire spec as a single phase.
+Some specs don't have explicit phases — they describe a single focused change. In this case, treat the entire spec as a single phase. Look for sections like "Proposed Changes", "Fix", or "Files Affected" to determine the work items.
 
 ## Step 2: Implement the Current Phase
 
@@ -40,7 +44,7 @@ For each phase:
 2. **Raise any open questions** from the spec's Open Questions section that affect this phase. Don't make assumptions — ask the user. After the user answers, move it from `## Open Questions` to `## Resolved Questions` with the decision and rationale.
 3. **Implement each task** described in the phase.
 4. **Check off each task** (`- [x]`) in the spec file as you complete it.
-5. **Write tests** for all new functionality — happy paths, failure paths, and edge cases.
+5. **Write tests** for all new functionality — happy paths, failure paths, and edge cases. Every scenario in the spec's `## Edge Cases` table that the current phase touches must have a corresponding test.
 6. **Run Pint** on changed files:
    ```bash
    vendor/bin/pint --dirty --format agent
@@ -77,6 +81,7 @@ After final verification passes, the spec file can be removed as part of PR crea
 - **Check off tasks as you go.** The `- [x]` checkboxes in the spec are the single source of progress. Don't leave them for the end of a phase.
 - **Log findings.** When you make a design decision, deviate from the spec, or discover something unexpected, add a note to the `## Findings` section.
 - **Tests are mandatory.** Every phase must have test coverage before it can be considered complete.
+- **Edge cases are not optional.** If the spec has an `## Edge Cases` table, every scenario must be handled and tested before the spec is done.
 - **Progress must be accurate.** Never check off a task if its tests are failing.
 - **Don't skip verification.** The final verification gate exists to catch cross-phase regressions. Run every step.
 - **Open questions in the spec** should be raised with the user before implementing the affected section. Don't make assumptions.

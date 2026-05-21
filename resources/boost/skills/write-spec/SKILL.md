@@ -46,6 +46,16 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 
 After the overview, use numbered top-level sections (`## 1. Data Model`, `## 2. API Design`, etc.) for the technical design. Adapt sections to fit the feature.
 
+After the technical sections, include `## Edge Cases` — a compact table the Edge Case Sweep (below) fills in. Each row names a scenario the feature must handle and how the app handles it.
+
+```markdown
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| {Setting/flag combination, interacting state, boundary, or permission edge} | {What the app does — name the phase/task and Tests entry that cover it} |
+```
+
 The final sections are always:
 
 ```markdown
@@ -100,6 +110,12 @@ For focused changes that don't need multiple phases.
 
 {What to change and why. Include code snippets for non-obvious decisions.}
 
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| {Scenario, or `None — change has no edge cases`} | {What the app does} |
+
 ## Implementation
 
 - [ ] {Task description} — {brief context}
@@ -145,6 +161,28 @@ For focused changes that don't need multiple phases.
 **Resolved Questions** — Starts as an HTML comment block. Uncomment when the first question is answered. Format: `1. **{Question?}** **Decision:** {Decided.} **Rationale:** {Why.}` — captures *why* to prevent re-litigating decisions.
 
 **Findings** — Always present, even if empty. Implementation notes go here: design decisions, deviations from spec, discovered issues.
+
+## Edge Case Sweep — Required Before Finalising
+
+Once the spec body has shape (technical sections + draft Implementation phases), sweep for edge cases. Edges left implicit ship as production bugs with no test coverage. The sweep is codebase research, not guesswork.
+
+### Step 1 — Research, don't guess
+
+Read the code around the feature and look for:
+
+- **Setting & flag combinations** — list every configuration option and feature flag in scope; for each, ask what the feature does on both sides of the toggle.
+- **Interacting states** — concurrent edits, stale client state vs changed server state, partial saves, optimistic UI vs server rejection.
+- **Boundary & lifecycle** — empty or missing related record, first / last / zero / max counts, soft-deleted or orphaned parents, retry / timeout / parallel invocation, partial failure.
+- **Permission edges** — actor loses access mid-flow, role downgraded, ownership moved.
+
+### Step 2 — Record each edge case
+
+Fill the `## Edge Cases` table (`Scenario | Handling`). Every row must be backed by:
+
+- a `- [ ] Tests —` entry in the relevant phase that covers the scenario, and
+- an implementation note in the technical section when the handling is non-obvious.
+
+Record the handling even when you had to choose it yourself. Reserve `## Open Questions` for edge cases whose handling needs a product or UX decision you cannot make.
 
 ## Writing Guidelines
 
