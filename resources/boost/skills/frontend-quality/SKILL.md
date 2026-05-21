@@ -1,6 +1,6 @@
 ---
 name: frontend-quality
-description: "Frontend quality checks: TypeScript type check + ESLint. Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, frontend checks."
+description: "Frontend quality checks: TypeScript type check + linting. Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, frontend checks."
 metadata:
   boost-tags: "frontend"
 ---
@@ -28,18 +28,18 @@ yarn type-check
 
 Must show 0 errors. Fix any type issues found.
 
-### 2. ESLint
+### 2. Linting
 
-For changed files only (preferred — faster):
+Run the project's lint script — it runs whatever linter the project uses (ESLint, Biome, oxlint, …):
+
+```bash
+yarn lint        # or: npm run lint
+```
+
+If the project uses **ESLint**, you can scope it to the changed files for speed instead of linting everything:
 
 ```bash
 yarn eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
-```
-
-Or for all files (when unsure which files are affected):
-
-```bash
-yarn lint-all
 ```
 
 Must show 0 errors. Fix any linting issues found.
@@ -49,7 +49,7 @@ Must show 0 errors. Fix any linting issues found.
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
 | Type checking | `yarn type-check` | 0 errors |
-| Linting | `yarn eslint --cache --cache-location ".cache/eslint/" <files>` | 0 errors |
+| Linting | `yarn lint` (the project's lint script) | 0 errors |
 
 ## Important
 

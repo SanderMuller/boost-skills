@@ -19,6 +19,8 @@ Activate this skill when:
 
 ## Two Tiers of Checks
 
+**Test runner.** The test commands below use `vendor/bin/pest`. For a PHPUnit project, run `vendor/bin/phpunit` instead — both take a file-path argument and `--filter`. If the project defines a `composer test` script, prefer it for the full suite (it runs whatever the project configured).
+
 ### Tier 1: During Development (after each change)
 
 Run these checks every time you modify PHP files — they are fast:
@@ -66,7 +68,9 @@ Must show 0 errors. Fix any issues found and re-run Pint after fixes.
 **3. Full Test Suite**
 
 ```bash
-vendor/bin/pest
+composer test       # if the project defines a test script
+vendor/bin/pest      # Pest projects
+vendor/bin/phpunit   # PHPUnit projects
 ```
 
 Must show 0 failures. This catches cross-cutting regressions.
