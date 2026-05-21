@@ -14,7 +14,7 @@ These files are **auto-generated** by sandermuller/boost-core (Composer plugin).
 ```
 .ai/                              # SOURCE - Edit files here
 ├── guidelines/                   # Project-wide AI instructions
-│   └── *.blade.php / *.md        # Coding conventions
+│   └── *.md                      # Coding conventions
 └── skills/                       # Skill definitions
     └── {skill-name}/SKILL.md     # One folder per skill
 
@@ -38,10 +38,7 @@ This package uses sandermuller/boost-core (Composer plugin, framework-agnostic):
 
 ## Updating Guidelines
 
-Edit files in `.ai/guidelines/`:
-
-- **Blade files** (`.blade.php`): Use `@verbatim` blocks around code examples
-- **Markdown files** (`.md`): Standard markdown format
+Guideline files in `.ai/guidelines/` are standard Markdown (`.md`). Keep them concise and scoped to conventions that persist across the project.
 
 ## Creating/Updating Skills
 
@@ -101,7 +98,6 @@ This syncs `.ai/` changes to per-agent locations:
 ## Checklist for Changes
 
 - [ ] Edit files in `.ai/guidelines/` or `.ai/skills/` (never edit generated files)
-- [ ] Use `@verbatim` blocks in Blade files for code examples
 - [ ] Include clear activation triggers in skill descriptions
 - [ ] **Run `vendor/bin/boost sync`** (or rely on auto-sync if `boost.php` exists)
 - [ ] **Verify `git status`** shows changes in `.ai/` only — generated files are gitignored

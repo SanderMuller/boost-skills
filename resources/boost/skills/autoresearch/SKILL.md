@@ -58,7 +58,7 @@ Ask the user what to optimize, or accept it as an argument. The target can be:
 
 Create a benchmark script at `autoresearch/{slug}-bench.php` that:
 
-1. **Bootstraps the test environment** using Orchestra Testbench
+1. **Bootstraps the test environment** — the same way the project's own test suite does
 2. **Creates realistic test data** — cover the "fully loaded" scenario
 3. **Runs a warmup iteration** to prime caches
 4. **Benchmarks 5 iterations**, measuring:

@@ -53,7 +53,7 @@ vendor/bin/pest || true
 
 Must show 0 failures.
 
-**Local green ≠ CI green for this step.** Pest runs parallel on one OS/PHP/Laravel combo locally. The CI matrix includes Windows + `prefer-lowest` legs where `pest --parallel` has historically raced filesystem ops (e.g. `PackageManifest::write()` → `rename()`), producing failures invisible on macOS. Do not let a local pass relax step 6 rigor — step 6 is the authoritative test gate across the matrix. See 1.17.1: local green, Windows P8.2 `prefer-lowest` red, tag cut anyway because step 6 was skipped.
+**Local green ≠ CI green for this step.** Pest runs parallel on one OS/PHP combination locally. The CI matrix includes Windows + `prefer-lowest` legs where `pest --parallel` has historically raced non-atomic filesystem ops (e.g. a `rename()`), producing failures invisible on macOS. Do not let a local pass relax step 6 rigor — step 6 is the authoritative test gate across the matrix. A release has shipped broken exactly this way: local green, a Windows `prefer-lowest` CI leg red, tagged anyway because step 6 was skipped.
 
 ### 4. PHPStan
 
@@ -101,7 +101,7 @@ Only the `.ai/` sources need committing. Generated files (`CLAUDE.md`, `.claude/
 
 ### 6. CI green-light gate (after push, before release notes + tag)
 
-Local green ≠ CI green. The matrix job runs against a Testbench-bootstrapped app in a clean env that usually differs from the dev machine — missing `APP_KEY`, no cached auth user, different PHP/Laravel combos. Local passes frequently, CI fails. A green tag on a red CI is a broken release (see 1.13.1: every Livewire test failed in CI with "No application encryption key has been specified" while 2,081 tests passed locally).
+Local green ≠ CI green. The matrix job runs in a clean CI environment that usually differs from the dev machine — missing env vars, no cached state, different runtime/dependency combinations. Local passes frequently, CI fails. A green tag on a red CI is a broken release: a release has shipped where the whole suite failed in CI on an environment-shape problem while every test passed locally.
 
 **Scope is per-commit, not per-run.** This repo has multiple workflows with different triggers — `gh run watch` follows a single run and will silently skip other workflows that also have opinions about the same SHA. Enumerate by commit SHA and wait for every matching run:
 
@@ -136,7 +136,7 @@ Pass criteria: every run for this commit has `conclusion` in `{success, skipped}
 On failure:
 
 1. Pull the failure log via `gh run view <id> --log-failed` (or via API if `--log-failed` is empty: `gh api /repos/<owner>/<repo>/actions/jobs/<job-id>/logs`).
-2. Reproduce locally — often requires the same env shape as CI (blank APP_KEY, clean composer.lock install, specific PHP/Laravel combo).
+2. Reproduce locally — often requires the same env shape as CI (missing env vars, clean composer.lock install, a specific runtime/dependency combination the CI matrix covers).
 3. Fix with a new commit on the same branch.
 4. Push and re-run step 6 against the new HEAD.
 
@@ -150,23 +150,22 @@ On failure:
 
 This is where agents most commonly slip: running the local gauntlet (steps 1-5), then jumping straight to `Write internal/release-notes-<version>.md` without committing, pushing, or watching CI. **Do not do that.** Notes claim CI-matrix facts; CI must have produced those facts first.
 
-**Release notes are public artefacts — do NOT name or reference peers.** The release body is rendered on GitHub, prepended to `CHANGELOG.md` by CI, and indexed by Packagist. Anything written here is visible to every downstream consumer and shows up in search. Internal peer instances (`e0cp6lq3`, `2op9yaul`, etc.), peer-level adoption reports, and claude-peers channels are *process* concerns, not product concerns — consumers don't know or care about them, and leaking the IDs exposes internal architecture.
+**Release notes are public artefacts — do NOT leak internal process noise.** The release body is rendered on GitHub, prepended to `CHANGELOG.md` by CI, and indexed by Packagist. Anything written here is visible to every downstream consumer and shows up in search. Internal session/tooling identifiers, CI-internal chatter, and process choreography are *process* concerns, not product concerns — consumers don't know or care about them, and leaking them exposes internal architecture.
 
 **What not to write:**
 
-- Peer IDs: ~~"sourced from peer `e0cp6lq3`"~~, ~~"a peer session confirmed"~~
-- Instance/channel framing: ~~"peer instance adoption report"~~, ~~"via claude-peers dogfood"~~
-- Claude-Code-internal phrasing in general: ~~"agent-driven"~~, ~~"via the rector companion peer"~~
+- Internal session/tooling identifiers — anything that names how the work was produced rather than what changed.
+- CI-internal chatter and process choreography — run IDs, internal channel names, step-by-step workflow framing.
 
 **What to write instead:**
 
-- Generic adoption framing: "sourced from production dogfood", "real-world adoption feedback", "consumer usage audit"
+- Generic adoption framing: "sourced from production dogfood", "real-world adoption feedback", "consumer usage audit".
 - Named public contributors only: GitHub usernames / real-name contributors who filed issues, PRs, or are otherwise publicly part of the conversation. If you have an external user or named downstream app that consented to being credited, name them. Otherwise, stay generic.
-- The technical reasoning (why the decision was made) without tying it to a specific internal agent session.
+- The technical reasoning (why the decision was made) without tying it to internal process detail.
 
-**Scope of the rule:** applies to every file written under `internal/release-notes-<version>.md`, since that body text flows directly to the public GitHub release + CHANGELOG. Internal planning files (`internal/roadmap.md`, `internal/specs/*.md`) CAN reference peer IDs — those stay out of the package's git history (`internal/` is gitignored) and are legitimate session-to-session continuity aids.
+**Scope of the rule:** applies to every file written under `internal/release-notes-<version>.md`, since that body text flows directly to the public GitHub release + CHANGELOG. Internal planning files (`internal/roadmap.md`, `internal/specs/*.md`) CAN reference internal identifiers — those stay out of the package's git history (`internal/` is gitignored).
 
-**Quick scrub checklist before `Write`ing the notes file:** grep your draft for `peer`, any 8-character alphanumeric sequence that looks like a peer ID (`[a-z0-9]{8}`), and "claude-peers" / "claude-code". If any match, rewrite or delete the phrase before saving.
+**Quick scrub before `Write`ing the notes file:** re-read your draft and strip any internal session/tooling identifier or CI-internal process detail before saving — only product-facing facts belong in the notes.
 
 **Preflight — run these three commands and confirm all three before you create the release-notes file.** If any fail, you are not ready to draft notes; go back to whichever earlier step is incomplete.
 
@@ -200,7 +199,7 @@ The SHA in that line is the exact `git rev-parse HEAD` that step 6 proved green.
 
 **CI handles `CHANGELOG.md` automatically — do not edit it manually.** `.github/workflows/update-changelog.yml` prepends the release body on release publish. See the `release-automation` guideline for details.
 
-### 8. Pre-tag gate + post-tag watch (the step 1.17.1 lacked)
+### 8. Pre-tag gate + post-tag watch (the step a broken release lacked)
 
 Step 7 proves CI green at draft time. Step 8 proves CI is *still* green at tag time, and catches failures that only show up on the tag-ref push.
 
@@ -208,7 +207,7 @@ Step 7 proves CI green at draft time. Step 8 proves CI is *still* green at tag t
 
 ```bash
 SHA=$(git rev-parse HEAD)
-VERSION="<version>"  # e.g. 1.17.2
+VERSION="<version>"  # e.g. 1.2.3
 NOTES="internal/release-notes-${VERSION}.md"
 
 # A. Notes file exists and pins this SHA (anchored regex — tolerant of surrounding blank lines,
@@ -274,7 +273,7 @@ failed=$(gh run list --commit "$TAG_SHA" --json conclusion,headBranch,name \
 
 Wait until terminal. If red:
 1. Investigate (same as step 6 failure drill).
-2. If the failure reveals a real bug (not just flake): fix on `main`, cut a patch release (`1.17.2` after `1.17.1`). Do not rewrite the tag.
+2. If the failure reveals a real bug (not just flake): fix on `main`, cut a follow-up patch release. Do not rewrite the tag.
 3. If `update-changelog` failed: `CHANGELOG.md` won't be prepended — re-run the workflow once the underlying cause is fixed, or prepend the entry manually (rare).
 
 **Rule:** the skill is not "done" until 8b goes green. "Tag cut" is not the finish line; "tag-ref CI green + release-event workflows green" is.
@@ -300,7 +299,7 @@ Wait until terminal. If red:
 - Run every step, in order, even if the change set looks small. Seemingly unrelated refactors have historically introduced regressions across surfaces the local quality gate doesn't exercise.
 - Do not push if any step fails. Fix, then restart the checklist from step 1 — earlier steps may re-break after a later fix.
 - Step 5a and 5b are the most common source of silent drift — the README and shipped skills are read by downstream users, and bloat accumulates fast. Delete stale content before adding new.
-- Step 6 is the non-skippable gate: CI runs against a clean env (no ambient APP_KEY, no cached auth user, fresh composer install) and frequently catches env-shape bugs that local dev never sees. If the push+watch feels slow, that's the point — waiting 2 minutes for CI green is cheaper than tagging a broken release.
+- Step 6 is the non-skippable gate: CI runs against a clean environment (no ambient env vars, no cached state, fresh composer install) and frequently catches env-shape bugs that local dev never sees. If the push+watch feels slow, that's the point — waiting 2 minutes for CI green is cheaper than tagging a broken release.
 - Step 7 (release notes) is gated by step 6 — **the release-notes file must not exist on disk until CI is green on the pushed commit.** If you catch yourself about to `Write` a release-notes file after running local checks, stop: you are about to fabricate facts that the CI matrix has not yet established. Run the step-7 preflight commands first; if any of the three conditions is not satisfied, the draft is premature.
-- Step 8 closes the 1.17.1 gap. 8a re-verifies the live remote tip (`git ls-remote`, not the cached `origin/main`) so a concurrent push can't slip a stale commit through. 8b uses `--commit "$TAG_SHA"` + a jq filter on `headBranch == $TAG` (not `--branch "$TAG"`, whose tag-ref semantics are undocumented and unreliable) so the tag-ref `on: push` re-fires and `on: release` decorators are both caught. Run both every time, even for one-commit patch releases.
-- `pest --parallel` on Windows `prefer-lowest` has a known FS race in `PackageManifest::write()` → `rename()`. Do not assume local parallel-pest green proves CI-matrix green. Step 6 + 8b are the authoritative test gates.
+- Step 8 closes the gap that has shipped broken releases before. 8a re-verifies the live remote tip (`git ls-remote`, not the cached `origin/main`) so a concurrent push can't slip a stale commit through. 8b uses `--commit "$TAG_SHA"` + a jq filter on `headBranch == $TAG` (not `--branch "$TAG"`, whose tag-ref semantics are undocumented and unreliable) so the tag-ref `on: push` re-fires and `on: release` decorators are both caught. Run both every time, even for one-commit patch releases.
+- `pest --parallel` on Windows `prefer-lowest` has a known FS race around non-atomic ops like `rename()`. Do not assume local parallel-pest green proves CI-matrix green. Step 6 + 8b are the authoritative test gates.
