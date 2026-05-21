@@ -2,6 +2,8 @@
 name: autoresearch
 description: "Autonomous performance optimization loop. Iteratively reduces query count and execution time by modifying code, benchmarking, and keeping/reverting changes. Activates when: optimizing performance, reducing overhead, improving execution time, benchmarking, or when user mentions: autoresearch, optimize, performance, benchmark."
 argument-hint: "[description of what to optimize]"
+metadata:
+  boost-tags: "php"
 ---
 
 # Autoresearch — Autonomous Performance Optimization

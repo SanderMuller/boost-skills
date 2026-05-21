@@ -2,7 +2,7 @@
 name: jira-updates
 description: "Updates a Jira issue's description after its PR is created, and posts Blocked-by-Question comments. Invoke after creating a PR for a Jira issue. Triggers: PR just created for Jira issue, jira update, testables, QA checklist, translation strings, blocker comment, blocked by question. NOT for new issues (use jira-create) or rework research (use jira-rework)."
 metadata:
-  boost-tags: "jira github"
+  boost-tags: "jira"
 ---
 
 # Jira Issue Updates
