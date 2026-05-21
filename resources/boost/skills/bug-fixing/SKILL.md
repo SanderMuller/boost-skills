@@ -123,39 +123,6 @@ Description of the fix and why it works.
 Added `test_name` to verify the fix and prevent regression.
 ```
 
-## Test Writing Guidelines
+## Test Conventions
 
-### Test the Specific Scenario
-
-Don't test general functionality - test the exact scenario that was broken:
-
-```php
-// Good - tests the specific bug scenario
-it('expands wildcards when data has missing nested keys')
-
-// Bad - too generic
-it('expands wildcards')
-```
-
-### Name Tests Descriptively
-
-Test names should describe the scenario and expected outcome:
-
-```php
-// Good
-it('compiles rules with nested each() calls')
-it('handles nullable fields with required children')
-it('validates arrays with mixed scalar and object children')
-
-// Bad
-it('works')
-it('handles arrays')
-```
-
-## When Tests Aren't Possible
-
-For bugs that can't be reproduced with tests:
-
-1. **Document why** — explain why automated testing isn't feasible
-2. **Provide manual steps** — detailed reproduction steps
-3. **Add defensive code** — consider adding validation or error handling
+For test conventions — testing the specific scenario, naming tests descriptively, structure, and what to do when tests aren't possible — see the `test-writing` skill.
