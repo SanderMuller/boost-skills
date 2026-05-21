@@ -5,6 +5,36 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 - 2026-05-21
+
+The first stable release of `boost-skills`. It grows the package from 15 to 20 skills, introduces always-on guidelines as a new content type, and genericizes every shipped skill and guideline so nothing carries project- or framework-specific assumptions.
+
+### Added
+
+#### Skills (15 → 20)
+
+- `interview` — structured Q&A to gather a complex feature's requirements before writing its spec; pairs with `write-spec`.
+- `pull-requests` — create and manage your own GitHub PRs via the `gh` CLI: write the description, verify, route by risk.
+- `resolve-conflicts` — resolve git merge conflicts without dropping functionality from either side.
+- `test-writing` — write specific, descriptively named tests that follow Arrange-Act-Assert.
+- `ux-review` — weigh UX/UI options for a new feature, recommend an approach, and document the decision.
+
+#### Guidelines
+
+A new content type — always-on guidelines under `resources/boost/guidelines/`, folded into `CLAUDE.md` / `AGENTS.md` alongside the skills:
+
+- `database-safety` — never run destructive database commands; treat the test database as test-runner-owned.
+- `migrations` — keep migration files self-contained; append columns rather than positioning them mid-table.
+- `verification-before-completion` — run the verification command and read its output before claiming work is done.
+
+### Changed
+
+- **Genericized every skill and guideline** — removed project- and framework-specific assumptions (hardcoded toolchains, version matrices, framework idioms) so the content applies whatever the stack, and renders correctly under both `boost-core` and `laravel/boost`.
+- `backend-quality` and `frontend-quality` made stack-agnostic in their test, lint, and type-check steps.
+- Corrected `boost-tags` across the skill set — the package ships 9 capability-tagged skills and 11 universal ones, across the `php`, `frontend`, `github`, and `jira` tags.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/0.1.0...1.0.0
+
 ## 0.1.0 - 2026-05-20
 
 First release of `boost-skills` — a package of generic AI agent skills in the `SKILL.md` Agent Skills format, for PHP projects and Composer packages. Skills are authored once here and distributed to every configured AI agent (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest) by `boost-core`. Install `boost-skills` alongside a boost family package; see the README for setup.
