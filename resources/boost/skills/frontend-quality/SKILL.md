@@ -16,17 +16,19 @@ Activate this skill when:
 - Finalizing a feature, bug fix, or refactor that touched frontend code
 - The user asks to run frontend checks, ESLint, or TypeScript checks
 - Before creating a PR with JS/TS changes
-- Applying feedback or rework for a PR or Jira issue with JS/TS changes
+- Applying review feedback or rework with JS/TS changes
 
 ## Checks (Run in Order)
 
-### 1. TypeScript Type Checking
+### 1. Type Checking
+
+If the project uses TypeScript, run its type-check script — commonly `yarn type-check` (or `npm run type-check`); the underlying command is `tsc --noEmit`:
 
 ```bash
-yarn type-check
+yarn type-check        # or: npm run type-check
 ```
 
-Must show 0 errors. Fix any type issues found.
+Must show 0 errors. Fix any type issues found. Skip this check for a plain-JavaScript project with no type-checker.
 
 ### 2. Linting
 
@@ -48,12 +50,11 @@ Must show 0 errors. Fix any linting issues found.
 
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
-| Type checking | `yarn type-check` | 0 errors |
+| Type checking | `yarn type-check` (TypeScript projects) | 0 errors |
 | Linting | `yarn lint` (the project's lint script) | 0 errors |
 
 ## Important
 
-- TypeScript checking validates all `.ts`/`.js` files in the include glob — a change in one file can cause type errors in another. `.vue` SFCs are NOT type-checked by this command (no `vue-tsc` in toolchain); SFC type errors surface only at runtime / via the Vue compiler in Mix.
-- `tsgo` is the `@typescript/native-preview` binary (TS 7 beta) and the standard tool for pure-TS/JS type checking. Use `yarn type-check`; fall back to `yarn tsc --noEmit` only if a `tsgo` bug is suspected.
-- ESLint can be scoped to specific files for speed. Pass the changed file paths directly.
-- Never skip a check. Both must pass.
+- Type-checking is project-wide — a change in one file can surface type errors in another, so a clean run matters beyond the files you edited.
+- Know what your project's type-checker covers. Some setups leave certain component file formats (e.g. framework single-file components) out of the static check — those surface errors only at build or runtime.
+- Run every applicable check before the work is considered done — all must pass.
