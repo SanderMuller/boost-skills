@@ -22,10 +22,10 @@ Activate this skill when:
 
 ### 1. Type Checking
 
-If the project uses TypeScript, run its type-check script — commonly `yarn type-check` (or `npm run type-check`); the underlying command is `tsc --noEmit`:
+If the project uses TypeScript, run its type-check script with the project's package manager — it is defined in `package.json` (commonly a `type-check` script; the underlying command is usually `tsc --noEmit`):
 
 ```bash
-yarn type-check        # or: npm run type-check
+npm run type-check        # or: yarn / pnpm / bun — match the project's lockfile
 ```
 
 Must show 0 errors. Fix any type issues found. Skip this check for a plain-JavaScript project with no type-checker.
@@ -35,13 +35,13 @@ Must show 0 errors. Fix any type issues found. Skip this check for a plain-JavaS
 Run the project's lint script — it runs whatever linter the project uses (ESLint, Biome, oxlint, …):
 
 ```bash
-yarn lint        # or: npm run lint
+npm run lint        # or: yarn / pnpm / bun
 ```
 
-If the project uses **ESLint**, you can scope it to the changed files for speed instead of linting everything:
+If the project uses **ESLint**, you can scope it to the changed files for speed instead of linting everything. Run the project-local ESLint via its package manager (`npm exec` / `pnpm exec` / `yarn` / `bunx`):
 
 ```bash
-yarn eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
+eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
 ```
 
 Must show 0 errors. Fix any linting issues found.
@@ -50,8 +50,8 @@ Must show 0 errors. Fix any linting issues found.
 
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
-| Type checking | `yarn type-check` (TypeScript projects) | 0 errors |
-| Linting | `yarn lint` (the project's lint script) | 0 errors |
+| Type checking | `npm run type-check` (TypeScript projects) | 0 errors |
+| Linting | `npm run lint` (the project's lint script) | 0 errors |
 
 ## Important
 

@@ -11,7 +11,7 @@ Before claiming any work is complete or successful, run the verification command
 
 | Claim            | Required verification                                            |
 |------------------|------------------------------------------------------------------|
-| Tests pass       | The project's test command, output showing 0 failures           |
+| Tests pass       | The project's test command, output showing 0 failures            |
 | Code style clean | The project's formatter/style checker, output showing no changes |
 | Linting clean    | The project's linter, output showing 0 errors                    |
 | Types check      | The project's type checker, output showing 0 errors              |
