@@ -5,6 +5,20 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.0 - 2026-05-22
+
+Adds three new guidelines (3 → 6), closing recurring gaps found across the boost-family repos. All three are tagged — they sync only to projects that declare the matching capability.
+
+### Added
+
+- **`javascript`** — JS/TS control-structure style (curly braces always, no single-line conditionals). Tagged `frontend`.
+- **`phpstan-fixing`** — when a PHPStan error maps to a runtime bug, write a failing test before the fix. Tagged `php`.
+- **`single-issue-scope`** — keep each session, branch, and PR focused on exactly one issue. **Opt-in** — tagged `single-issue-scope`; declare that tag in `withTags(...)` to receive it.
+
+All three are tagged via `.boost-tags.yaml` (`boost-core` 0.6.0+ reads it; the manifest is inert on older versions or under `laravel/boost`).
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.2.0...1.3.0
+
 ## 1.2.0 - 2026-05-22
 
 Guidelines can now be capability-tagged, the same way skills are.
