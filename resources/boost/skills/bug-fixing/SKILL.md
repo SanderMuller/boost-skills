@@ -56,17 +56,13 @@ Before writing any code:
 ```php
 it('handles edge case with empty array input', function () {
     // Arrange: Set up the scenario that triggers the bug
-    $rules = RuleSet::from([
-        'items' => FluentRule::array()->required()->each([
-            'name' => FluentRule::string()->required(),
-        ]),
-    ]);
+    $cart = new Cart(items: []);
 
     // Act: Perform the action that fails
-    $result = $rules->toArray();
+    $total = $cart->total();
 
     // Assert: What SHOULD happen (currently fails)
-    expect($result)->toHaveKey('items');
+    expect($total)->toBe(0);
 });
 ```
 

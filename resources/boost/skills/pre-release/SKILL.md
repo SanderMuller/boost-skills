@@ -165,7 +165,13 @@ This is where agents most commonly slip: running the local gauntlet (steps 1-5),
 
 **Scope of the rule:** applies to every file written under `internal/release-notes-<version>.md`, since that body text flows directly to the public GitHub release + CHANGELOG. Internal planning files (`internal/roadmap.md`, `internal/specs/*.md`) CAN reference internal identifiers — those stay out of the package's git history (`internal/` is gitignored).
 
-**Quick scrub before `Write`ing the notes file:** re-read your draft and strip any internal session/tooling identifier or CI-internal process detail before saving — only product-facing facts belong in the notes.
+**Quick scrub before `Write`ing the notes file.** Grep your draft for internal identifiers and process noise that must not reach a public release:
+
+- Short alphanumeric handles that look like internal session, instance, or run IDs — e.g. any bare `[a-z0-9]{8}`-style code.
+- Internal tool, agent, or channel names, and CI run IDs.
+- Step-by-step workflow framing ("pass 1 found…", "via the X run").
+
+Rewrite or delete every match before saving — only product-facing facts belong in the notes.
 
 **Preflight — run these three commands and confirm all three before you create the release-notes file.** If any fail, you are not ready to draft notes; go back to whichever earlier step is incomplete.
 
