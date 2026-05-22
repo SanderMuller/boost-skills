@@ -110,12 +110,10 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
 | `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.   | `database` |
-| `exploration-budget`              | Scale research effort to task complexity; avoid silent exploration spirals.              | —          |
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
-| `parallel-tool-calls`             | Investigate 2+ unrelated problems at once with parallel tool calls.                      | —          |
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
-| `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | —          |
+| `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 
 ## Editing skills and guidelines
