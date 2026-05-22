@@ -107,11 +107,16 @@ Alongside skills, the package ships **guidelines** under `resources/boost/guidel
 
 Guidelines can be tagged, like skills, so one ships only to projects with the matching capability. But a guideline file stays frontmatter-free (for `laravel/boost` compatibility — it has no guideline frontmatter parser), so the tags live in a sidecar `resources/boost/guidelines/.boost-tags.yaml` manifest instead. `boost-core` 0.6.0+ reads it; on older `boost-core` and under `laravel/boost` the manifest is inert and every guideline ships.
 
-| Guideline                        | What it covers                                                                         | Tags       |
-|-----------------------------------|-----------------------------------------------------------------------------------------|------------|
-| `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.  | `database` |
-| `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.   | `database` |
-| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.          | —          |
+| Guideline                        | What it covers                                                                          | Tags       |
+|-----------------------------------|------------------------------------------------------------------------------------------|------------|
+| `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.   | `database` |
+| `exploration-budget`              | Scale research effort to task complexity; avoid silent exploration spirals.              | —          |
+| `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
+| `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
+| `parallel-tool-calls`             | Investigate 2+ unrelated problems at once with parallel tool calls.                      | —          |
+| `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
+| `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | —          |
+| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 
 ## Editing skills and guidelines
 

@@ -8,4 +8,6 @@
 # laravel/boost compatibility — tags cannot live in the file itself. The
 # manifest is inert on boost-core < 0.6.0 and under laravel/boost.
 database-safety.md: "database"
+javascript.md: "frontend"
 migrations.md: "database"
+phpstan-fixing.md: "php"
