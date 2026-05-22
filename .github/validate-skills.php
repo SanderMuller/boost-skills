@@ -101,7 +101,7 @@ foreach ($manifests as $manifest) {
         $errors[] = 'unparseable YAML: ' . $e->getMessage();
     }
 
-    if ($errors === [] && $parsed !== null && ! is_array($parsed)) {
+    if ($errors === [] && $parsed !== null && (! is_array($parsed) || (array_is_list($parsed) && $parsed !== []))) {
         $errors[] = 'must be a YAML map of "filename: tags"';
     }
 
@@ -132,7 +132,9 @@ foreach ($manifests as $manifest) {
     }
 
     if ($errors === []) {
-        echo "PASS  {$rel}\n";
+        echo $parsed === null
+            ? "WARN  {$rel} (empty — no guideline tags defined; delete the file or add entries)\n"
+            : "PASS  {$rel}\n";
 
         continue;
     }
