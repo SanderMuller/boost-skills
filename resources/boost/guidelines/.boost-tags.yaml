@@ -1,0 +1,11 @@
+# Capability tags for the guidelines in this directory, read by boost-core's
+# guideline tag filter (boost-core >= 0.6.0). Each entry maps a guideline
+# filename to a space-delimited tag string; a guideline ships only when its
+# tags are a subset of the consuming project's withTags(...). Guidelines not
+# listed here are untagged and ship everywhere.
+#
+# This sidecar exists because guideline files stay frontmatter-free for
+# laravel/boost compatibility — tags cannot live in the file itself. The
+# manifest is inert on boost-core < 0.6.0 and under laravel/boost.
+database-safety.md: "database"
+migrations.md: "database"

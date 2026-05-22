@@ -103,13 +103,15 @@ A skill can carry more than one tag, and then applies only where the project has
 
 ## Guidelines
 
-Alongside skills, the package ships **guidelines** under `resources/boost/guidelines/` — short Markdown files of project-wide conventions that the sync engine folds into `CLAUDE.md` / `AGENTS.md`. Unlike skills, guidelines are always active (no on-demand activation) and currently always sync (no tag filtering).
+Alongside skills, the package ships **guidelines** under `resources/boost/guidelines/` — short Markdown files of project-wide conventions that the sync engine folds into `CLAUDE.md` / `AGENTS.md`. Unlike skills, guidelines are always active — no on-demand activation.
 
-| Guideline                        | What it covers                                                                         |
-|-----------------------------------|-----------------------------------------------------------------------------------------|
-| `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.  |
-| `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.   |
-| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.          |
+Guidelines can be tagged, like skills, so one ships only to projects with the matching capability. But a guideline file stays frontmatter-free (for `laravel/boost` compatibility — it has no guideline frontmatter parser), so the tags live in a sidecar `resources/boost/guidelines/.boost-tags.yaml` manifest instead. `boost-core` 0.6.0+ reads it; on older `boost-core` and under `laravel/boost` the manifest is inert and every guideline ships.
+
+| Guideline                        | What it covers                                                                         | Tags       |
+|-----------------------------------|-----------------------------------------------------------------------------------------|------------|
+| `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.  | `database` |
+| `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.   | `database` |
+| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.          | —          |
 
 ## Editing skills and guidelines
 
