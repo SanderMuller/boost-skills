@@ -5,6 +5,22 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.0 - 2026-05-22
+
+Adds two skills (20 → 22) and tightens two existing ones.
+
+### Added
+
+- **`humanizer`** — removes signs of AI-generated writing (inflated significance, promotional language, em-dash overuse, rule-of-three, AI-vocabulary words, hedging, sycophancy) so text reads as natural and human. Vendored from the MIT-licensed `blader/humanizer` skill. Untagged — it applies to any project's prose.
+- **`github-issue-updates`** — appends a user-facing description and QA testables to a GitHub issue after a feature ships, and moves the issue on its project board. The GitHub-Issues counterpart of `jira-updates`. Tagged `github-issues` — the first skill to use that capability tag.
+
+### Changed
+
+- **`bug-fixing`** — replaced a validation-library code example with a stack-neutral one (genericization residue a 1.0.0 pass missed).
+- **`pre-release`** — sharpened the release-notes scrub step into a concrete grep checklist for internal identifiers.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.0.0...1.1.0
+
 ## 1.0.0 - 2026-05-21
 
 The first stable release of `boost-skills`. It grows the package from 15 to 20 skills, introduces always-on guidelines as a new content type, and genericizes every shipped skill and guideline so nothing carries project- or framework-specific assumptions.
