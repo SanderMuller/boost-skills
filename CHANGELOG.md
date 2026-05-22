@@ -5,6 +5,21 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.0 - 2026-05-22
+
+Guidelines can now be capability-tagged, the same way skills are.
+
+### Added
+
+- **Guideline tag manifest** — a sidecar `resources/boost/guidelines/.boost-tags.yaml` maps a guideline to capability tags, so a guideline ships only to projects that declare the matching capability via `withTags(...)`. `database-safety` and `migrations` are tagged `database`; `verification-before-completion` stays untagged (universal). A project without a database no longer carries the database guidelines.
+  
+  Guidelines stay frontmatter-free — required for `laravel/boost` compatibility — so the tags live in the sidecar manifest rather than in the file. `boost-core` 0.6.0+ reads it; on older `boost-core` and under `laravel/boost` the manifest is inert and every guideline ships, so this is a forward-safe change.
+  
+- The CI validator now parse-checks every `.boost-tags.yaml` — invalid YAML, a non-map, a key that names no real guideline file, or a malformed tag fails the build. A bad manifest is a release-blocker, never a consumer surprise.
+  
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.1.0...1.2.0
+
 ## 1.1.0 - 2026-05-22
 
 Adds two skills (20 → 22) and tightens two existing ones.
