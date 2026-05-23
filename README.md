@@ -96,6 +96,7 @@ Most skills and guidelines are universal — they sync to every project. Some ca
 
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
+| `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
 | `database`           | project has a database                                      | `boost-skills`      |
 | `frontend`           | frontend toolchain — type-checking, linting                 | `boost-skills`      |
 | `github`             | hosted on GitHub                                            | `boost-skills`      |
