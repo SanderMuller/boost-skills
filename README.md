@@ -6,9 +6,9 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/sandermuller/boost-skills.svg?style=flat-square)](https://packagist.org/packages/sandermuller/boost-skills)
 [![License](https://img.shields.io/packagist/l/sandermuller/boost-skills.svg?style=flat-square)](LICENSE)
 
-`boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some skills are tagged for a specific capability — see [Skill tags](#skill-tags).
+`boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some are tagged for a specific capability — see [Tags](#tags).
 
-The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest) on every `composer install` or `composer update`. You get that engine through a boost family package.
+The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and guidelines and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest) on every `composer install` or `composer update`. You get that engine through a boost family package.
 
 ## The boost family
 
@@ -87,19 +87,21 @@ After that, every `composer install` or `composer update` re-syncs automatically
 | `ux-review`            | Weigh UX/UI options for a new feature, recommend an approach, and document the decision.             | —               |
 | `write-spec`           | Write implementation-ready specification files with progress-trackable phases.                       | —               |
 
-## Skill tags
+## Tags
 
-Most skills are universal — they sync to every project. Several declare `boost-tags` in their `SKILL.md` frontmatter `metadata`, naming a capability the project needs for the skill to be useful:
+Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs.
 
-| Tag             | Meaning                                      |
-|-----------------|----------------------------------------------|
-| `php`           | PHP toolchain — Pint, PHPStan, Rector        |
-| `frontend`      | frontend toolchain — type-checking, linting  |
-| `github`        | hosted on GitHub                             |
-| `github-issues` | issue tracking in GitHub Issues              |
-| `jira`          | issue tracking in Jira                       |
+| Tag                  | Meaning                                                     |
+|----------------------|-------------------------------------------------------------|
+| `php`                | PHP toolchain — Pint, PHPStan, Rector                       |
+| `frontend`           | frontend toolchain — type-checking, linting                 |
+| `github`             | hosted on GitHub                                            |
+| `github-issues`      | issue tracking in GitHub Issues                             |
+| `jira`               | issue tracking in Jira                                      |
+| `database`           | project has a database                                      |
+| `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  |
 
-A skill can carry more than one tag, and then applies only where the project has *all* of them — `jira-rework` is `jira` + `github`. A boost-core version with tag filtering uses these tags to sync a tagged skill only to projects that opt into the matching capabilities, so a project is never offered skills for tools it doesn't use. With earlier boost-core versions the tags are inert and every skill syncs.
+A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
 
 ## Guidelines
 
