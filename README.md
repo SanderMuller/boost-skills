@@ -49,8 +49,11 @@ return BoostConfig::configure()
     ->withAllowedVendors([
         'sandermuller/boost-skills',
         'sandermuller/package-boost-php',
-    ]);
+    ])
+    ->withTags('php', 'github');
 ```
+
+Declare your project's capabilities in `->withTags(...)` — tagged skills and guidelines sync only to projects that opt in. Common starters are `'php'` and `'github'`; see the [Tags](#tags) registry for the full vocabulary. After a sync, `vendor/bin/boost tags` shows which tagged content is currently filtered out vs synced — handy for spotting capabilities you may want to declare.
 
 Then fan the skills out:
 
@@ -89,17 +92,20 @@ After that, every `composer install` or `composer update` re-syncs automatically
 
 ## Tags
 
-Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs.
+Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs. The table below is the family-wide registry of tag values; **Owner** names the boost-family package that ships the content using each tag.
 
-| Tag                  | Meaning                                                     |
-|----------------------|-------------------------------------------------------------|
-| `php`                | PHP toolchain — Pint, PHPStan, Rector                       |
-| `frontend`           | frontend toolchain — type-checking, linting                 |
-| `github`             | hosted on GitHub                                            |
-| `github-issues`      | issue tracking in GitHub Issues                             |
-| `jira`               | issue tracking in Jira                                      |
-| `database`           | project has a database                                      |
-| `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  |
+| Tag                  | Meaning                                                     | Owner               |
+|----------------------|-------------------------------------------------------------|---------------------|
+| `database`           | project has a database                                      | `boost-skills`      |
+| `frontend`           | frontend toolchain — type-checking, linting                 | `boost-skills`      |
+| `github`             | hosted on GitHub                                            | `boost-skills`      |
+| `github-issues`      | issue tracking in GitHub Issues                             | `boost-skills`      |
+| `jira`               | issue tracking in Jira                                      | `boost-skills`      |
+| `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
+| `release-automation` | opt-in — CI release-automation convention                   | `package-boost-php` |
+| `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
+
+**`github` and `github-issues` are independent.** `github` covers any GitHub-hosted repo (used by PR and release skills); `github-issues` is the narrower tag for projects that track issues in GitHub Issues specifically. A repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`. Both are independently declarable in `->withTags(...)`.
 
 A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
 
