@@ -5,6 +5,23 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.0 - 2026-05-25
+
+Adds the first framework-specific skill (22 → 23) and registers two new capability tags. The skill is gated by tags — non-Laravel-Cloud consumers never see it.
+
+### Added
+
+- **`deploying-laravel-cloud`** — deploys and manages Laravel applications on Laravel Cloud via the `cloud` CLI: environments, databases, caches, domains, instances, background processes, billing. Tagged `laravel-cloud hosting` — a project must declare both to receive it. Sourced from production dogfood in a downstream Laravel-Cloud app; upstreamed here for shared maintenance.
+- **`hosting` tag** — declared by a project that deploys to a hosted platform. Forward-compatible parent for platform-specific hosting tags (`laravel-cloud`, future siblings).
+- **`laravel-cloud` tag** — declared by a project that deploys to Laravel Cloud specifically. Pair with `hosting` to receive `deploying-laravel-cloud`.
+
+### Changed
+
+- **README tag registry** — tightened wording, restructured the Tags section, added an Install example, and disambiguated `github` from `github-issues` explicitly (a repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`).
+- **`boost-extension` tag** registered in the family-wide tag registry — owner `package-boost-php`. Documents the cross-family tag vocabulary even when the content lives elsewhere.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.3.0...1.4.0
+
 ## 1.3.0 - 2026-05-22
 
 Adds three new guidelines (3 → 6), closing recurring gaps found across the boost-family repos. All three are tagged — they sync only to projects that declare the matching capability.
