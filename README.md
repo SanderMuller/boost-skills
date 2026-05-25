@@ -1,12 +1,13 @@
 # boost-skills
 
-> Generic AI agent skills for PHP projects and Composer packages. Authored once here, synced to every AI agent by the [boost family](#the-boost-family).
+> AI agent skills for PHP projects and Composer packages. Authored once here, synced to every AI agent by the [boost family](#the-boost-family).
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/sandermuller/boost-skills.svg?style=flat-square)](https://packagist.org/packages/sandermuller/boost-skills)
 [![Total Downloads](https://img.shields.io/packagist/dt/sandermuller/boost-skills.svg?style=flat-square)](https://packagist.org/packages/sandermuller/boost-skills)
 [![License](https://img.shields.io/packagist/l/sandermuller/boost-skills.svg?style=flat-square)](LICENSE)
+[![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg?style=flat-square)](https://github.com/laravel/boost)
 
-`boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some are tagged for a specific capability — see [Tags](#tags).
+`boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, deployment, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some are tagged for a specific capability — see [Tags](#tags).
 
 The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and guidelines and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest). You get that engine through a boost family package.
 
