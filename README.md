@@ -8,7 +8,7 @@
 
 `boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some are tagged for a specific capability — see [Tags](#tags).
 
-The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and guidelines and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest) on every `composer install` or `composer update`. You get that engine through a boost family package.
+The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and guidelines and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest). You get that engine through a boost family package.
 
 ## The boost family
 
@@ -34,10 +34,10 @@ Swap `package-boost-php` for `package-boost-laravel` or `project-boost` to match
 `boost-core`, pulled in by the family package, ships an interactive setup command:
 
 ```bash
-composer boost:install
+vendor/bin/boost install
 ```
 
-`boost:install` generates a `boost.php` in your project root and lets you pick target agents and allowlisted vendors. Skills sync only from allowlisted vendors, so make sure `sandermuller/boost-skills` is selected. The result looks like:
+`boost install` generates a `boost.php` in your project root and lets you pick target agents and allowlisted vendors. Skills sync only from allowlisted vendors, so make sure `sandermuller/boost-skills` is selected. The result looks like:
 
 ```php
 return BoostConfig::configure()
@@ -58,10 +58,10 @@ Declare your project's capabilities in `->withTags(...)` — tagged skills and g
 Then fan the skills out:
 
 ```bash
-composer boost:sync
+vendor/bin/boost sync
 ```
 
-After that, every `composer install` or `composer update` re-syncs automatically. The generated agent directories (`.claude/skills/`, `.github/skills/`, and the rest) stay out of version control; `boost-core` manages that `.gitignore` block.
+Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoSync` callback](https://github.com/sandermuller/boost-core#auto-sync-on-composer-install) into your `composer.json`'s `post-install-cmd` / `post-update-cmd` to re-sync automatically on every `composer install` / `composer update`. The generated agent directories (`.claude/skills/`, `.github/skills/`, and the rest) stay out of version control; `boost-core` manages that `.gitignore` block.
 
 ## Skills
 
@@ -73,6 +73,7 @@ After that, every `composer install` or `composer update` re-syncs automatically
 | `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, then apply the warranted fixes.             | —               |
+| `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
 | `frontend-quality`     | Frontend quality gate: type-checking and linting for the project's frontend toolchain.               | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
@@ -101,7 +102,9 @@ Most skills and guidelines are universal — they sync to every project. Some ca
 | `frontend`           | frontend toolchain — type-checking, linting                 | `boost-skills`      |
 | `github`             | hosted on GitHub                                            | `boost-skills`      |
 | `github-issues`      | issue tracking in GitHub Issues                             | `boost-skills`      |
+| `hosting`            | project deploys to a hosted platform (parent of platform-specific tags) | `boost-skills` |
 | `jira`               | issue tracking in Jira                                      | `boost-skills`      |
+| `laravel-cloud`      | app deploys to Laravel Cloud (pair with `hosting`)          | `boost-skills`      |
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
 | `release-automation` | opt-in — CI release-automation convention                   | `package-boost-php` |
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
