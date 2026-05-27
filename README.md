@@ -29,9 +29,9 @@ If you adopt `sandermuller/boost-skills` (or any Composer-distributed catalog), 
 - [`sandermuller/package-boost-php`](https://github.com/sandermuller/package-boost-php) if you write framework-agnostic Composer packages
 - [`sandermuller/package-boost-laravel`](https://github.com/sandermuller/package-boost-laravel) if you write Laravel packages
 - [`sandermuller/project-boost`](https://github.com/sandermuller/project-boost) if you build a PHP application
-- [`laravel/boost`](https://github.com/laravel/boost) if you build a Laravel application
+- [`sandermuller/project-boost-laravel`](https://github.com/sandermuller/project-boost-laravel) if you build a Laravel application (coexists with `laravel/boost` — adds nine-agent fanout, tag filter, vendor allowlist, remote skills)
 
-The three `sandermuller/*` packages bundle the [`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) sync engine, so you rarely install `boost-core` yourself. `laravel/boost` is Laravel's own engine and reads any Composer-distributed catalog (including this one) just as well; follow its setup for that one. If none of these fit (a non-PHP package, say), install `boost-core` directly.
+The four `sandermuller/*` packages bundle the [`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) sync engine, so you rarely install `boost-core` yourself. [`laravel/boost`](https://github.com/laravel/boost) (Laravel's own engine, MCP server, and docs API) coexists with `project-boost-laravel` in Laravel apps — the family-package layers the nine-agent fanout and filters on top. If you'd rather skip the family controls and use `laravel/boost` standalone, it reads any Composer-distributed catalog (including this one) just as well; follow its setup for that one. If none of these fit (a non-PHP package, say), install `boost-core` directly.
 
 ## Install
 
