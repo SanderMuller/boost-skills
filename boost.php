@@ -39,15 +39,4 @@ return BoostConfig::configure()
         Tag::Php,
         'release-automation',
     )
-    ->withExcludedSkills([
-        // boost-skills 1.6.0 moves readme + release-notes + upgrading here from
-        // package-boost-php. Exclude package-boost-php's now-duplicate copies
-        // during the overlap window until package-boost-php 0.10.0 ships
-        // without them. Boost-core errors on vendor-vs-vendor skill collisions;
-        // this is the explicit-allowlist disambiguation. Drop these once
-        // package-boost-php >= 0.10.0 is required.
-        'sandermuller/package-boost-php:readme',
-        'sandermuller/package-boost-php:release-notes',
-        'sandermuller/package-boost-php:upgrading',
-    ])
     ->withDisabledEmitters([]);
