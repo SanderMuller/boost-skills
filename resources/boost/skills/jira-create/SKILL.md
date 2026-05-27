@@ -3,11 +3,25 @@ name: jira-create
 description: "Creates a new Jira issue with a well-formed, user-facing description. Triggers: create/open/file/log a Jira issue, make a ticket, file a bug, log a task, bug report. May activate for AI-identified follow-up work, but only after the user confirms — never silently. NOT for updating existing issues or Blocked-by-Question (use jira-updates), or rework research (use jira-rework)."
 metadata:
   boost-tags: "jira"
+  schema-required: "^1"
 ---
 
 # Jira Issue Creation
 
-Creates a new Jira issue with a properly formatted description, via the `mcp-atlassian` MCP server.
+Creates a new Jira issue with a properly formatted description, via the project's configured MCP server.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.jira.project_key` | Target project key | Ask user once per session, use the answer |
+| `$.jira.refuse_other_projects` | Whether to refuse mutating issues outside `project_key` | Default `false` (allow cross-project) |
+| `$.jira.description_format_doc` | Path to project-owned Jira description format doc | Default: use the **Generic description format** below |
+| `$.mcp.jira` | MCP server-name segment for Jira tools | Default: `mcp-atlassian` |
+
+The Project Conventions block validates against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots before they surface here.
 
 ## When to Use This Skill
 
@@ -24,17 +38,21 @@ Do **NOT** use this skill for:
 
 ## Target Project
 
-Determine which Jira project the issue belongs in before creating it:
+Resolve the target project in this order:
 
-- If the user names a project or gives an existing issue key (`PROJ-1234` → project `PROJ`), use that project.
-- If the project records a default Jira project or issue conventions in its AI guidelines, read and follow them.
-- If the target project is still unclear, **ask the user**. Do not guess.
+1. If the user names a project or gives an existing issue key (`PROJ-1234` → project `PROJ`), use that project.
+2. Otherwise, use `$.jira.project_key` from Project Conventions.
+3. If `$.jira.project_key` is unset and the user didn't name one, ask: "What Jira project key should new issues land in?" Use the answer for the rest of this session.
+
+**Cross-project refusal:** if `$.jira.refuse_other_projects` is `true` and the resolved project differs from `$.jira.project_key`, refuse: "This project only creates issues in `<project_key>`. To create elsewhere, set `jira.refuse_other_projects: false` in your Project Conventions or use a different project's tooling."
+
+Cross-project linking and mentions remain allowed regardless — the refusal scopes to **mutation** (create/edit) only.
 
 ## Description Format
 
-**If the project defines a Jira description guideline** — a doc describing the required sections, voice, and templates — read it and follow it. It overrides the generic structure below.
+If `$.jira.description_format_doc` is set, read that file and follow its rules (voice, sections, templates). It overrides the generic structure below.
 
-**Otherwise, use this generic structure:**
+Otherwise, use the **Generic description format**:
 
 - **Task / feature** — `## Context` (why the work is needed), `## Goal` (a one-paragraph "done" statement), `## QA testables` (how to verify it).
 - **Bug** — `## Context`, `## Goal`, `## QA testables`, plus `## Reproduction steps` and `## Expected vs actual behavior` when concrete repro information is available.
@@ -89,22 +107,26 @@ When in doubt, leave the issue at its default created status and let the user tr
 
 ### 1. Gather inputs
 
-Confirm the target project, summary, issue type, and whether this is an implementation flow. Ask for clarification if `Context` or `Goal` cannot be written from the conversation so far.
+Confirm the target project (per **Target Project**), summary, issue type, and whether this is an implementation flow. Ask for clarification if `Context` or `Goal` cannot be written from the conversation so far.
 
 ### 2. Compose the description
 
-Follow the project's Jira description guideline if it has one; otherwise the generic structure under **Description Format**.
+Follow `$.jira.description_format_doc` if set; otherwise the **Generic description format**.
 
 ### 3. Create the issue
 
+The MCP server name comes from `$.mcp.jira` (default `mcp-atlassian`). Vendor invokes:
+
 ```
-mcp__mcp-atlassian__jira_create_issue(
+mcp__<$.mcp.jira>__jira_create_issue(
     project_key: "<PROJECT>",
     summary: "<summary>",
     issue_type: "Task" | "Bug" | "<project's type>",
     description: "<composed description>",
 )
 ```
+
+E.g. with `$.mcp.jira: mcp-atlassian`, the actual call is `mcp__mcp-atlassian__jira_create_issue(...)`.
 
 The response contains the new issue key and URL — report both. The `assignee` is set in the next step.
 
@@ -113,7 +135,7 @@ The response contains the new issue key and URL — report both. The `assignee` 
 `jira_create_issue`'s `assignee` field does not accept `currentUser()`, so assign with a follow-up call:
 
 ```
-mcp__mcp-atlassian__jira_update_issue(
+mcp__<$.mcp.jira>__jira_update_issue(
     issue_key: "<ISSUE-KEY>",
     fields: {assignee: "<identifier>"}
 )
@@ -127,9 +149,9 @@ mcp__mcp-atlassian__jira_update_issue(
 
 If the implementation-flow trigger fired, transition the new issue to "In Progress":
 
-1. Call `mcp__mcp-atlassian__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and find the transition whose display name is "In Progress" (or the project's equivalent).
+1. Call `mcp__<$.mcp.jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and find the transition whose display name is "In Progress" (or the project's equivalent).
 2. Use the **returned ID** — never hardcode transition IDs; they vary per project and Jira workflow.
-3. Call `mcp__mcp-atlassian__jira_transition_issue(issue_key: "<ISSUE-KEY>", transition_id: "<returned id>")`.
+3. Call `mcp__<$.mcp.jira>__jira_transition_issue(issue_key: "<ISSUE-KEY>", transition_id: "<returned id>")`.
 
 **If no matching transition is returned** (the workflow restricts the path, or the issue is already In Progress): stop and ask the user how to proceed. Do not pick a different transition.
 
