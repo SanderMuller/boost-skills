@@ -71,7 +71,7 @@ Release-worthy features change user-visible behavior, so `README.md` and the `.a
 
 #### 5a. README
 
-Run the `readme` skill in staleness-audit mode against `git log <last-tag>..HEAD`. The `readme` skill owns the canonical authoring checklist (required sections, voice, anti-patterns, staleness-audit pattern); pre-release just orchestrates the timing — README freshness is audited at every release, not quarterly.
+Consult the `readme` skill's staleness-audit section against `git log <last-tag>..HEAD`. The `readme` skill owns the canonical authoring checklist (required sections, voice, anti-patterns, staleness-audit pattern); pre-release just orchestrates the timing — README freshness is audited at every release, not quarterly.
 
 Pre-release-specific audit targets layered on top of `readme`'s generic pattern:
 
@@ -81,7 +81,7 @@ Pre-release-specific audit targets layered on top of `readme`'s generic pattern:
 
 If unsure whether a change warrants a README update: check whether a user reading the README after the release would see outdated advice. If yes, update.
 
-The `readme` skill ships from `sandermuller/boost-skills` under the `release-automation` tag; if your project doesn't declare that tag, the skill isn't synced and the inline targets above are the audit.
+The `readme` skill is tagged `release-automation`; if your project doesn't declare that tag, the skill isn't synced and the inline targets above are the audit.
 
 #### 5b. boost-core skills + guidelines
 
@@ -154,7 +154,7 @@ On failure:
 
 This is where agents most commonly slip: running the local gauntlet (steps 1-5), then jumping straight to `Write internal/release-notes-<version>.md` without committing, pushing, or watching CI. **Do not do that.** Notes claim CI-matrix facts; CI must have produced those facts first.
 
-**Structure / voice / breaking-change callouts / what-to-omit rules come from the `release-notes` skill.** That skill owns the canonical body shape (Breaking / Added / Fixed / Internal sections, past-tense voice, PR-linking conventions, migration code blocks for breaking changes). Pre-release's role here is timing + scrubbing — *when* notes get drafted (only after step-6 CI green) and *what internal noise to scrub before saving*. The `release-notes` skill ships from `sandermuller/boost-skills` under the `release-automation` tag; if your project doesn't declare that tag, follow the inline guidance below.
+**Structure / voice / breaking-change callouts / what-to-omit rules come from the `release-notes` skill.** That skill owns the canonical body shape (Breaking / Added / Fixed / Internal sections, past-tense voice, PR-linking conventions, migration code blocks for breaking changes). Pre-release's role here is timing + scrubbing — *when* notes get drafted (only after step-6 CI green) and *what internal noise to scrub before saving*. The `release-notes` skill is tagged `release-automation`; if your project doesn't declare that tag, follow the inline guidance below.
 
 **For breaking changes in particular**: the `upgrading` skill carries the canonical UPGRADING.md structure. If this release is breaking (MAJOR or pre-1.0 minor with breaking change), run `upgrading` to append the migration entry — release notes and UPGRADING.md cross-reference each other.
 
