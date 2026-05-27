@@ -5,6 +5,18 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.0 - 2026-05-27
+
+- **`eloquent-models`** — creates and maintains Eloquent models with strict conventions: column/relation constants via `final public const`, comprehensive class docblock with typed `@property` and `@property-read` sections, foreign keys via constants, and the Laravel 11+ `casts()` method form referencing column constants. Includes a per-model checklist. Tagged `laravel` — sources content for any project that declares the `laravel` tag in `withTags(...)`. Sourced from production dogfood across multiple Laravel codebases; example domain genericized to parent/child/grandchild/tag for upstream.
+- **`laravel` tag** — declared by a project using the Laravel framework (Eloquent ORM, service providers, framework integrations). Owner `boost-skills`. First entry in the registry for Laravel-wide capability tagging; pairs forward with future Laravel-framework-specific skills.
+
+### Notes
+
+- The constant syntax used in `eloquent-models` is `final public const NAME = 'value'` (untyped form, PHP 8.0+) — compatible with every PHP version Laravel 10/11/12 supports.
+- The `casts()` method form is Laravel 11+. Laravel 10 consumers should adapt the example to the `protected $casts` property form (silent no-op otherwise).
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.4.0...1.5.0
+
 ## 1.4.0 - 2026-05-25
 
 Adds the first framework-specific skill (22 → 23) and registers two new capability tags. The skill is gated by tags — non-Laravel-Cloud consumers never see it.
