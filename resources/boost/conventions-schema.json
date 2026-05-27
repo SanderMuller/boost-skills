@@ -16,6 +16,7 @@
         "jira": {
             "type": "object",
             "description": "Jira issue tracker configuration for jira-create / jira-rework / jira-updates skills.",
+            "additionalProperties": false,
             "properties": {
                 "project_key": {
                     "type": "string",
@@ -37,6 +38,7 @@
         "github": {
             "type": "object",
             "description": "GitHub repository identity. Used by pull-requests, pr-review-feedback, github-issue-updates skills.",
+            "additionalProperties": false,
             "properties": {
                 "owner": {
                     "type": "string",
@@ -57,6 +59,7 @@
         "branches": {
             "type": "object",
             "description": "Branch naming patterns + per-pattern base branch resolution. Vendor pull-requests skill scans patterns in declared order; first match wins; no match falls back to github.default_base_branch.",
+            "additionalProperties": false,
             "properties": {
                 "patterns": {
                     "type": "array",
@@ -81,6 +84,7 @@
         "pr": {
             "type": "object",
             "description": "Pull-request creation conventions. Used by the pull-requests skill.",
+            "additionalProperties": false,
             "properties": {
                 "title_format": {
                     "type": "string",
@@ -177,6 +181,7 @@
         "testing": {
             "type": "object",
             "description": "Testing framework conventions. Used by bug-fixing, test-writing, backend-quality skills.",
+            "additionalProperties": false,
             "properties": {
                 "backend_framework": {
                     "enum": ["phpunit", "pest"],
@@ -194,6 +199,7 @@
         "codex": {
             "type": "object",
             "description": "Codex CLI configuration. Used by codex-review skill.",
+            "additionalProperties": false,
             "properties": {
                 "cli_binary": {
                     "type": "string",
@@ -209,6 +215,7 @@
         "spec": {
             "type": "object",
             "description": "Spec-file conventions. Used by write-spec, implement-spec, interview skills.",
+            "additionalProperties": false,
             "properties": {
                 "filename_pattern": {
                     "type": "string",
@@ -225,7 +232,7 @@
         },
         "mcp": {
             "type": "object",
-            "description": "Project-specific MCP server-name mappings. Each value is the tool-namespace segment as it appears between the 'mcp__' prefix and the '__<tool>' suffix in the actual MCP tool name — NOT the package's npm/composer name. Example: tool 'mcp__laravel-boost__database-schema' → slot value 'laravel-boost'; tool 'mcp__mcp-atlassian__jira_get_issue' → slot value 'mcp-atlassian'. Vendor skills then resolve 'mcp.<slot>' to call the tool: e.g. with `mcp.jira: mcp-atlassian`, vendor invokes `mcp__mcp-atlassian__jira_get_issue` at runtime.",
+            "description": "Project-specific MCP server-name mappings. Each value is the tool-namespace segment as it appears between the 'mcp__' prefix and the '__<tool>' suffix in the actual MCP tool name — NOT the package's npm/composer name. Example: tool 'mcp__laravel-boost__database-schema' → slot value 'laravel-boost'; tool 'mcp__mcp-atlassian__jira_get_issue' → slot value 'mcp-atlassian'. Vendor skills then resolve 'mcp.<slot>' to call the tool: e.g. with `mcp.jira: mcp-atlassian`, vendor invokes `mcp__mcp-atlassian__jira_get_issue` at runtime. NOTE: unlike sibling groups, mcp.* INTENTIONALLY allows arbitrary property names — the vocabulary of service keys (jira, laravel, atlassian, github, etc.) is consumer-defined; closing this to a fixed set would force the schema to enumerate every MCP namespace boost-skills knows about, which doesn't match how MCP works in practice.",
             "additionalProperties": {
                 "type": "string"
             }
