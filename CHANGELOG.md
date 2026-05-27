@@ -5,6 +5,47 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.0 - 2026-05-27
+
+### Added
+
+- **`readme`** — author and maintain a high-quality README for a Composer package. Covers stub vs comprehensive shapes, voice, anti-patterns, staleness audit. Tagged `release-automation`.
+- **`release-notes`** — draft GitHub release bodies for Composer packages. Covers structure (Breaking / Added / Fixed / Internal), past-tense voice, breaking-change callouts with migration code, and what to omit. Tagged `release-automation`.
+- **`upgrading`** — canonical structure for UPGRADING.md in a Composer package. Covers when to maintain one, voice, anti-patterns. Tagged `release-automation`.
+
+Content unchanged; only the publishing vendor changed. Tag-gated so consumers opt in via `withTags(..., 'release-automation')`. The vendor-side rationale (narrowing `package-boost-php` to package-author CLI + skill-authoring scope) lives in `package-boost-php`'s 0.10.0 release notes.
+
+### Changed
+
+- **`pre-release` skill** refactored to defer to the new sibling skills for canonical authoring rules. README staleness audit (§5a) now references the `readme` skill's audit section; release-notes drafting (§7) references the `release-notes` skill's structure / voice / breaking-change conventions. `pre-release` retains its orchestration role: timing (when notes draft, only after step-6 CI green), scrubbing rules (no internal noise in public release bodies), and the gating logic. The canonical convention content lives in the called-out skills.
+- **`release-automation` tag** scope broadened. Was "CI release-automation convention" (single guideline, owned by `package-boost-php`). Now "release flow content: README authoring, release notes, UPGRADING, CI changelog automation" (3 skills owned by `boost-skills` + 1 guideline owned by `package-boost-php`). Tag registry row updated to reflect shared ownership.
+
+### Migration
+
+**Default upgrade path** — no action required for consumers who haven't declared `release-automation`. These skills are tag-gated; without the tag, sync is unchanged.
+
+**To opt in to the moved skills**:
+
+1. Ensure `sandermuller/boost-skills ^1.6` is in `withAllowedVendors([...])`.
+2. Add `'release-automation'` to `withTags(...)` in `boost.php`.
+3. Re-sync (`vendor/bin/boost sync` or via `composer install` auto-sync).
+
+**Overlap-window workaround** — until `sandermuller/package-boost-php 0.10.0` ships (planned shortly after this release), consumers running both packages allowlisted AND declaring `release-automation` will hit a vendor-vs-vendor skill collision (`readme`, `release-notes`, `upgrading` published by both vendors). `boost-core` errors on the collision rather than picking a copy. Disambiguate by adding to `boost.php`:
+
+```php
+->withExcludedSkills([
+    'sandermuller/package-boost-php:readme',
+    'sandermuller/package-boost-php:release-notes',
+    'sandermuller/package-boost-php:upgrading',
+])
+
+```
+The exclusions force resolution to `boost-skills`'s copies during the overlap. Once `package-boost-php >= 0.10.0` is required (the version that drops these 3 skills), remove the `withExcludedSkills` block.
+
+The collision affects only consumers that allowlist both packages AND declare the `release-automation` tag — primarily the boost-family dogfood projects (`boost-core`, `boost-skills`, the family-author packages). External consumers that don't declare the opt-in tag are unaffected.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.5.0...1.6.0
+
 ## 1.5.0 - 2026-05-27
 
 - **`eloquent-models`** — creates and maintains Eloquent models with strict conventions: column/relation constants via `final public const`, comprehensive class docblock with typed `@property` and `@property-read` sections, foreign keys via constants, and the Laravel 11+ `casts()` method form referencing column constants. Includes a per-model checklist. Tagged `laravel` — sources content for any project that declares the `laravel` tag in `withTags(...)`. Sourced from production dogfood across multiple Laravel codebases; example domain genericized to parent/child/grandchild/tag for upstream.
