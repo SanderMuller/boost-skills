@@ -4,11 +4,28 @@ description: "Creates and manages your own GitHub PRs via the gh CLI — analyze
 argument-hint: "[PR number or target branch]"
 metadata:
   boost-tags: "github"
+  schema-required: "^1"
 ---
 
 # Pull Request Management
 
 CRUD-style management of your own pull requests with the GitHub `gh` CLI: create a PR, write its description, verify it, request review, and route the review based on risk. This skill is for authoring and updating PRs — for applying feedback from a review, use the `pr-review-feedback` skill instead.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.github.owner` | GitHub owner (user or org) for PR creation | Ask user once per session |
+| `$.github.repo` | GitHub repository name | Ask user once per session |
+| `$.github.default_base_branch` | Fallback base branch when no pattern matches | Default `main` per schema |
+| `$.branches.patterns` | Typed array of `{pattern, base}` for branch-name → base-branch resolution | Skip pattern-matching, fall through to `$.github.default_base_branch` (or ask user if absent) |
+| `$.pr.title_format` | PR title template (placeholders: `{issue_key}`, `{short_title}`) | Ask user for the title format once per session |
+| `$.pr.template_path` | Path to PR template (read fresh at creation time) | Default `.github/pull_request_template.md` per schema; if file absent, skip template injection |
+| `$.pr.gates` | Typed array of pre-PR gates (`skill_invoked` / `shell_command` / `mcp_tool`) | Skip the gates step entirely (no enforcement) |
+
+The Project Conventions block validates against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing slots before they surface here.
 
 ## How to Create PRs
 
@@ -16,42 +33,101 @@ CRUD-style management of your own pull requests with the GitHub `gh` CLI: create
 
 Before creating the PR, verify all of the following:
 
-1. **The current branch follows the project's branch-naming convention.** Inspect existing branches and any documented conventions; ask the user if the expected pattern is unclear.
-   - If the branch name does **not** match and the branch has **no upstream** (never pushed): rename it with `git branch -m <new-name>`.
-   - If the branch **already has an upstream or an open PR**: **STOP** and ask the user to rename it manually — never auto-rename a pushed branch.
-2. **The target (base) branch is known** — if it is unclear which branch the PR should merge into, ask the user.
-3. **The PR title will follow the project's title convention** (see [PR Title](#pr-title) below).
-4. **The project's PR template will be read fresh** at creation time (e.g. `.github/pull_request_template.md`) if the repository has one — never hardcode a template.
+1. **The current branch matches a pattern in `$.branches.patterns`** (if declared). For each pattern in declared order, attempt to match the current branch name. First match wins; the matched pattern's `base` field is the target base branch for the PR.
+   - If `$.branches.patterns` is unset or no pattern matches: target base is `$.github.default_base_branch` (or, if also unset, ask the user).
+   - If the current branch is named correctly but the branch has **no upstream** (never pushed): proceed.
+   - If the branch is named correctly and **already has an upstream or an open PR**: proceed (PR update flow, see [How to Work on Existing PRs](#how-to-work-on-existing-prs)).
+   - If the branch name does **not** match any pattern AND has no upstream: rename it with `git branch -m <new-name>`, picking a name that matches the most specific pattern that fits the work being done.
+   - If the branch name does **not** match any pattern AND has an upstream: **STOP** and ask the user to rename it manually — never auto-rename a pushed branch.
+2. **The PR title will follow `$.pr.title_format`** (see [PR Title](#pr-title) below).
+3. **The project's PR template will be read fresh** at creation time from `$.pr.template_path` (default `.github/pull_request_template.md`) if the file exists — never hardcode a template.
 
 ---
 
 Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters to keep responses small — never fetch full PR payloads when only specific fields are needed.
 
 1. Get the current branch name from git.
-2. Analyze the commits with `git log <base>..HEAD --oneline`.
-3. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
-4. **Codex review check** — If the project uses the `codex-review` skill, ensure it was run in this conversation **after the last meaningful code change**. If it was not run, or significant code changes were made since it last ran, stop the PR flow and tell the user to run a Codex review first so they stay in control of any changes before the PR is created. If the project does not use `codex-review`, skip this step.
-5. **Risk assessment** — Before creating the PR, ask the user to evaluate the risk level (see [Risk Assessment](#risk-assessment-before-pr-creation) below).
-6. Create the PR. If the repository has a PR template, read it fresh, fill in each section, and write the body to a temp file. Then run:
+2. Resolve the base branch via `$.branches.patterns` (see Preflight step 1).
+3. Analyze the commits with `git log <base>..HEAD --oneline`.
+4. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
+5. **Run pre-PR gates from `$.pr.gates`** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
+6. **Risk assessment** — Before creating the PR, ask the user to evaluate the risk level (see [Risk Assessment](#risk-assessment-before-pr-creation) below).
+7. Create the PR. If `$.pr.template_path` resolves to an existing file, read it fresh, fill in each section, and write the body to a temp file. Then run:
    ```bash
-   gh pr create --draft --base <base> \
+   gh pr create --draft --base <resolved-base> \
      --title "<title>" \
      --body-file /tmp/pr-body.md
    ```
    The command prints the PR URL on success — capture the PR number from it.
-7. **Post-creation verification** — immediately after the PR is created, fetch only the fields needed in a single call:
+8. **Post-creation verification** — immediately after the PR is created, fetch only the fields needed in a single call:
    ```bash
    gh pr view <pr-number> --json title,body,headRefName,number,url
    ```
    Then assert against the JSON:
-   1. `title` matches the intended title — if wrong, patch with `gh pr edit <pr-number> --title "..."`.
-   2. `body` is non-empty and, when a template was used, contains the section headings present in the template when it was read — if wrong, patch with `gh pr edit <pr-number> --body-file /tmp/pr-body.md`.
+   1. `title` matches the intended title — if wrong, patch with `gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -f title="<correct title>"`.
+   2. `body` is non-empty and, when a template was used, contains the section headings present in the template when it was read — if wrong, patch with `gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -F "body=@/tmp/pr-body.md"`.
    3. `headRefName` matches the intended feature branch.
-   If any assertion fails, fix it inline before continuing.
-8. **Request review** — request a reviewer on the PR (an automated reviewer if the project uses one, and/or human reviewers). Use `gh pr edit <pr-number> --add-reviewer <login>` or the project's configured review mechanism.
-9. **Handle review based on risk level**:
-   - **Low risk**: Mark the PR as ready immediately with `gh pr ready <pr-number>`. Any automated review runs asynchronously.
-   - **Medium/High risk**: A human reviewer must also review. Leave the PR as a draft and tell the user to assign a human reviewer.
+   If any assertion fails, fix it inline before continuing. Use the REST API for body/title patches rather than `gh pr edit` — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation path in some `gh` versions.
+9. **Request review** — request a reviewer on the PR (an automated reviewer if the project uses one, and/or human reviewers). Use `gh pr edit <pr-number> --add-reviewer <login>` or the project's configured review mechanism.
+10. **Handle review based on risk level**:
+    - **Low risk**: Mark the PR as ready immediately with `gh pr ready <pr-number>`. Any automated review runs asynchronously.
+    - **Medium/High risk**: A human reviewer must also review. Leave the PR as a draft and tell the user to assign a human reviewer.
+
+## Pre-PR Gates
+
+`$.pr.gates` is a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Vendor enforces each gate in declared order; first failing gate stops the flow per its `on_missing` field.
+
+### Gate types
+
+#### `type: skill_invoked`
+
+Vendor verifies the named skill was invoked in the current conversation. Used for "must have run codex-review before opening PR" or similar in-conversation policy.
+
+```yaml
+- type: skill_invoked
+  skill: codex-review
+  window: since_last_code_change   # or: in_session
+  on_missing: stop_and_request     # or: warn / skip
+```
+
+- `window: in_session` — skill must have been invoked anywhere in the current conversation.
+- `window: since_last_code_change` — skill must have been invoked AFTER the most recent `Edit`/`Write` tool call to a file NOT inside boost-core's managed agent paths (returned by `vendor/bin/boost paths --managed` — typically `.ai/`, `.claude/`, `.github/skills/`, `.agents/`). Editing skill files or agent-managed paths does not reset the gate.
+
+#### `type: shell_command`
+
+Vendor runs the named shell command and checks the exit code. Used for "must pass `composer test` before opening PR" or similar local-pass-fail policy.
+
+```yaml
+- type: shell_command
+  command: composer test
+  expect_exit_code: 0
+  on_missing: stop_and_request
+```
+
+Vendor invokes the command via the Bash tool, captures exit code. Gate passes if `actual exit code == expect_exit_code`.
+
+#### `type: mcp_tool`
+
+Vendor invokes the named MCP tool with the declared args. Used for policy that doesn't fit the closed enum — e.g. "check Slack #qa-approval for a thumbs-up" via a host-registered MCP tool.
+
+```yaml
+- type: mcp_tool
+  tool: qa-approval-check
+  args: { channel: "#qa-approved", min_approvals: 1 }
+  on_missing: stop_and_request
+```
+
+Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the tool needs a server-name prefix). Gate passes if the MCP tool returns success.
+
+### `on_missing` behavior
+
+- `stop_and_request` (default) — halt PR creation, tell the user what's missing and how to address it (e.g. "Run `/codex-review` first, then re-run this skill").
+- `warn` — print a warning but proceed with PR creation.
+- `skip` — silently skip the failing gate, proceed.
+
+### Missing-slot UX
+
+If `$.pr.gates` is unset, the gates step is skipped silently (no enforcement, no prompt). If a project wants to add gates mid-session, tell them to declare `$.pr.gates` in their CLAUDE.md and re-sync.
 
 ## How to Work on Existing PRs
 
@@ -82,7 +158,7 @@ Before creating a PR, ensure you have:
 | Required                   | Ask if missing                                          |
 |----------------------------|---------------------------------------------------------|
 | Commits/changes to include | "Which commits or branch should I analyze for this PR?" |
-| Target branch              | "Which branch should this PR target?" (if unclear)      |
+| Target branch              | If `$.branches.patterns` resolution doesn't yield one and `$.github.default_base_branch` is unset, ask the user |
 
 If the user hasn't provided:
 - **Security implications** → Ask: "Are there any security or privacy considerations I should mention?"
@@ -117,15 +193,22 @@ Use `AskUserQuestion` with:
 
 ## PR Title
 
-Follow the project's PR-title convention. Inspect recent merged PRs or any documented convention; ask the user if it is unclear.
+Follow `$.pr.title_format` if set. Recognized placeholders:
 
-- If the project tracks work in an issue tracker, include the issue key in the title.
-- Use imperative mood ("Add feature" not "Added feature").
+- `{issue_key}` — full issue key (e.g. `HPB-1234`). Resolved from the branch name's issue segment when the branch matches a Jira-keyed pattern.
+- `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
+
+If a placeholder resolves empty (e.g. no issue key on this branch), the placeholder and any single adjacent dash are omitted. Example: `[HPB-XXXX] Short title` with no issue → `Short title`.
+
+If `$.pr.title_format` is unset, ask the user once per session for the desired title format.
+
+General guidance regardless of format:
+- Use imperative mood.
 - Keep the title concise (aim for under 70 characters).
 
 ## PR Description
 
-If the repository has a PR template, **read it fresh** (e.g. `.github/pull_request_template.md`) and fill in each section. Do not hardcode the template — always read the file to get the current version.
+If `$.pr.template_path` resolves to an existing file, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
 
 If there is no template, write a clear description that covers:
 - **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
