@@ -75,6 +75,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, then apply the warranted fixes.             | —               |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
+| `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
 | `frontend-quality`     | Frontend quality gate: type-checking and linting for the project's frontend toolchain.               | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
@@ -105,6 +106,7 @@ Most skills and guidelines are universal — they sync to every project. Some ca
 | `github-issues`      | issue tracking in GitHub Issues                             | `boost-skills`      |
 | `hosting`            | project deploys to a hosted platform (parent of platform-specific tags) | `boost-skills` |
 | `jira`               | issue tracking in Jira                                      | `boost-skills`      |
+| `laravel`            | project uses the Laravel framework (Eloquent, service providers, etc.) | `boost-skills` |
 | `laravel-cloud`      | app deploys to Laravel Cloud (pair with `hosting`)          | `boost-skills`      |
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
 | `release-automation` | opt-in — CI release-automation convention                   | `package-boost-php` |
