@@ -187,7 +187,7 @@
                     "items": {
                         "type": "string"
                     },
-                    "description": "Test frameworks or categories vendor skills must NOT suggest. Recognized values: 'dusk', 'pest', 'phpunit', 'vitest', 'jest', 'mocha', 'cypress', 'playwright' (frameworks); 'js-test-frameworks', 'browser-test-frameworks' (category aliases)."
+                    "description": "Test frameworks or category aliases vendor skills must NOT suggest. Atomic framework values: 'dusk', 'panther', 'pest', 'phpunit', 'vitest', 'jest', 'mocha', 'cypress', 'playwright'. Category aliases (expand to atomic sets at vendor runtime): 'js-test-frameworks' = [vitest, jest, mocha, cypress, playwright]; 'browser-test-frameworks' = [cypress, playwright]; 'php-browser-tests' = [dusk, panther]. Adding a new alias is a minor schema bump; removing or redefining an alias is a major bump."
                 }
             }
         },
@@ -212,7 +212,7 @@
             "properties": {
                 "filename_pattern": {
                     "type": "string",
-                    "description": "Template for spec filenames. Recognized placeholders: {issue_key} (full Jira key like 'HPB-1234'), {slug} (kebab-case slug from issue title), {date} (ISO date)."
+                    "description": "Template for spec filenames. Recognized placeholders: {issue_key} = full Jira key (e.g. 'HPB-1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
                 },
                 "research_docs": {
                     "type": "array",
@@ -225,7 +225,7 @@
         },
         "mcp": {
             "type": "object",
-            "description": "Project-specific MCP server-name mappings. Vendor skills reference 'mcp.jira' / 'mcp.laravel' / etc. generically; host maps to the actual server name as it appears in the MCP tool namespace (e.g. 'mcp__<mcp.jira>__jira_get_issue').",
+            "description": "Project-specific MCP server-name mappings. Each value is the tool-namespace segment as it appears between the 'mcp__' prefix and the '__<tool>' suffix in the actual MCP tool name — NOT the package's npm/composer name. Example: tool 'mcp__laravel-boost__database-schema' → slot value 'laravel-boost'; tool 'mcp__mcp-atlassian__jira_get_issue' → slot value 'mcp-atlassian'. Vendor skills then resolve 'mcp.<slot>' to call the tool: e.g. with `mcp.jira: mcp-atlassian`, vendor invokes `mcp__mcp-atlassian__jira_get_issue` at runtime.",
             "additionalProperties": {
                 "type": "string"
             }
