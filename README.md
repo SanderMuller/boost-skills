@@ -1,30 +1,41 @@
 # boost-skills
 
-> AI agent skills for PHP projects and Composer packages. Authored once here, synced to every AI agent by the [boost family](#the-boost-family).
+> Sander Muller's personal Composer-distributed catalog of AI agent skills for PHP projects and Composer packages. Adopt it if your preferences align with Sander's, or use it as a template for your own.
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/sandermuller/boost-skills.svg?style=flat-square)](https://packagist.org/packages/sandermuller/boost-skills)
 [![Total Downloads](https://img.shields.io/packagist/dt/sandermuller/boost-skills.svg?style=flat-square)](https://packagist.org/packages/sandermuller/boost-skills)
 [![License](https://img.shields.io/packagist/l/sandermuller/boost-skills.svg?style=flat-square)](LICENSE)
 [![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg?style=flat-square)](https://github.com/laravel/boost)
 
-`boost-skills` is a skill-bearing package. It ships AI agent skills under `resources/boost/skills/` — code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, deployment, and more — plus always-on [guidelines](#guidelines) under `resources/boost/guidelines/`. Most apply to any project; some are tagged for a specific capability — see [Tags](#tags).
+`sandermuller/boost-skills` is one example of a Composer-distributed AI-skill catalog. It ships a curated mix of generic workflow skills (code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, deployment, and more), tag-gated framework-specific extras, and always-on [guidelines](#guidelines) — see the full [Skills](#skills) and [Guidelines](#guidelines) inventories below.
 
-The package carries no runtime code; it's pure Markdown. A sync engine reads these skills and guidelines and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest). You get that engine through a boost family package.
+The package carries no runtime code; it's pure Markdown. A sync engine ([`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) or [`laravel/boost`](https://github.com/laravel/boost)) reads these skills and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest).
+
+## Where do skills come from?
+
+Anywhere you want. Skill sources stack — mix and match freely:
+
+- **Your own `.ai/skills/` folder**, hand-authored next to the rest of the project. Same convention `laravel/boost` and `boost-core` both pick up automatically.
+- **A Composer-installed catalog package**. Any package that ships `resources/boost/skills/` works. Sander publishes his personal catalog at [`sandermuller/boost-skills`](https://github.com/sandermuller/boost-skills) (this repo) — adopt it if your preferences align with Sander's, or use it as a template for your own private/public catalog.
+- **External, non-Composer sources** via `boost-core`'s `withRemoteSkills()`. Pull GitHub-published `.skill` bundles or single-skill repos straight from a URL.
+- **`laravel/boost`'s bundled Laravel skills** — Laravel-specific skills shipped by Laravel via `laravel/boost` (Laravel apps only).
+
+The vendor allowlist (`withAllowedVendors()`) gates which Composer-distributed catalogs may publish into your project; the tag filter (`withTags()`) gates which skills make it through. Both apply uniformly regardless of where a skill came from.
 
 ## The boost family
 
-`boost-skills` ships the skills but does not sync them. Pair it with the package that matches your role:
+If you adopt `sandermuller/boost-skills` (or any Composer-distributed catalog), pair it with the sync engine that matches your role:
 
 - [`sandermuller/package-boost-php`](https://github.com/sandermuller/package-boost-php) if you write framework-agnostic Composer packages
 - [`sandermuller/package-boost-laravel`](https://github.com/sandermuller/package-boost-laravel) if you write Laravel packages
 - [`sandermuller/project-boost`](https://github.com/sandermuller/project-boost) if you build a PHP application
 - [`laravel/boost`](https://github.com/laravel/boost) if you build a Laravel application
 
-The three `sandermuller/*` packages bundle the [`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) sync engine, so you rarely install `boost-core` yourself. `laravel/boost` is Laravel's own engine and reads `boost-skills` just as well; follow its setup for that one. If none of these fit (a non-PHP package, say), install `boost-core` directly.
+The three `sandermuller/*` packages bundle the [`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) sync engine, so you rarely install `boost-core` yourself. `laravel/boost` is Laravel's own engine and reads any Composer-distributed catalog (including this one) just as well; follow its setup for that one. If none of these fit (a non-PHP package, say), install `boost-core` directly.
 
 ## Install
 
-Install `boost-skills` together with the family package for your role. For a framework-agnostic package author, that is `package-boost-php`:
+If you adopt `sandermuller/boost-skills` as your catalog, install it together with the family package for your engine role. For a framework-agnostic package author, that is `package-boost-php`:
 
 ```bash
 composer require --dev sandermuller/boost-skills sandermuller/package-boost-php
@@ -98,7 +109,9 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 
 ## Tags
 
-Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs. The table below is the family-wide registry of tag values; **Owner** names the boost-family package that ships the content using each tag.
+Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs.
+
+The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`, `metadata.boost-tags` in skill frontmatter, the `.boost-tags.yaml` sidecar manifest for guidelines) is family-canonical — defined by `boost-core` and applies to any Composer-distributed catalog. The tag **vocabulary** below is one catalog's choice — Sander's mix of capabilities surfaced by skills and guidelines `boost-skills` ships. Other catalogs may organize differently. **Owner** names which boost-family package ships the content using each tag.
 
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
