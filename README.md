@@ -88,8 +88,11 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github`  |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
+| `readme`               | Author and maintain a high-quality README for a Composer package — stub vs comprehensive shape, voice, staleness audit. | `release-automation` |
+| `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |
+| `upgrading`            | Canonical structure for UPGRADING.md in a Composer package — when to maintain one, what to put in it. | `release-automation` |
 | `ux-review`            | Weigh UX/UI options for a new feature, recommend an approach, and document the decision.             | —               |
 | `write-spec`           | Write implementation-ready specification files with progress-trackable phases.                       | —               |
 
@@ -109,7 +112,7 @@ Most skills and guidelines are universal — they sync to every project. Some ca
 | `laravel`            | project uses the Laravel framework (Eloquent, service providers, etc.) | `boost-skills` |
 | `laravel-cloud`      | app deploys to Laravel Cloud (pair with `hosting`)          | `boost-skills`      |
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
-| `release-automation` | opt-in — CI release-automation convention                   | `package-boost-php` |
+| `release-automation` | opt-in — release flow content: README authoring, release notes, UPGRADING, CI changelog automation | `boost-skills`, `package-boost-php` |
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
 
 **`github` and `github-issues` are independent.** `github` covers any GitHub-hosted repo (used by PR and release skills); `github-issues` is the narrower tag for projects that track issues in GitHub Issues specifically. A repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`. Both are independently declarable in `->withTags(...)`.
