@@ -1,0 +1,235 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://sandermuller.github.io/boost-skills/conventions-schema/v1.json",
+    "title": "boost-skills conventions (v1)",
+    "description": "Slot vocabulary referenced by sandermuller/boost-skills vendor skills. Consumers fill this in their CLAUDE.md Project Conventions block. See https://github.com/sandermuller/boost-skills#project-conventions-schema for the published vocabulary.",
+    "metadata": {
+        "schema-required": "^1"
+    },
+    "type": "object",
+    "required": ["schema-version"],
+    "properties": {
+        "schema-version": {
+            "const": 1,
+            "description": "Schema-version discriminator. v1 of the boost-skills conventions vocabulary."
+        },
+        "jira": {
+            "type": "object",
+            "description": "Jira issue tracker configuration for jira-create / jira-rework / jira-updates skills.",
+            "properties": {
+                "project_key": {
+                    "type": "string",
+                    "pattern": "^[A-Z][A-Z0-9_]+$",
+                    "description": "Single Jira project key for issue creation, updates, and rework lookups (e.g. 'HPB')."
+                },
+                "refuse_other_projects": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, vendor skills refuse to create or edit (mutate) issues outside of jira.project_key. Cross-project linking and mentions remain allowed."
+                },
+                "description_format_doc": {
+                    "type": "string",
+                    "description": "Path to project-owned doc containing Jira description voice rules, CREATE/UPDATE templates, append-merge algorithm. Validated for file-existence by 'boost doctor --check-conventions'."
+                }
+            },
+            "required": ["project_key"]
+        },
+        "github": {
+            "type": "object",
+            "description": "GitHub repository identity. Used by pull-requests, pr-review-feedback, github-issue-updates skills.",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub owner (user or org) the repo lives under."
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name (without owner prefix)."
+                },
+                "default_base_branch": {
+                    "type": "string",
+                    "default": "main",
+                    "description": "Fallback base branch for PR creation when no branch pattern matches. See branches.patterns for per-pattern base resolution."
+                }
+            },
+            "required": ["owner", "repo"]
+        },
+        "branches": {
+            "type": "object",
+            "description": "Branch naming patterns + per-pattern base branch resolution. Vendor pull-requests skill scans patterns in declared order; first match wins; no match falls back to github.default_base_branch.",
+            "properties": {
+                "patterns": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["pattern", "base"],
+                        "additionalProperties": false,
+                        "properties": {
+                            "pattern": {
+                                "type": "string",
+                                "description": "Branch-name template (e.g. 'feature/HPB-XXXX', 'hotfix/HPB-XXXX-{slug}'). Recognized placeholders are vendor-defined."
+                            },
+                            "base": {
+                                "type": "string",
+                                "description": "Base branch this pattern's PRs target (e.g. 'develop', 'master')."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "pr": {
+            "type": "object",
+            "description": "Pull-request creation conventions. Used by the pull-requests skill.",
+            "properties": {
+                "title_format": {
+                    "type": "string",
+                    "description": "Template for PR titles. Recognized placeholders: {issue_key} (full Jira key like 'HPB-1234'), {short_title}."
+                },
+                "template_path": {
+                    "type": "string",
+                    "default": ".github/pull_request_template.md",
+                    "description": "Path to the PR template read fresh at PR-creation time. Validated for file-existence by 'boost doctor --check-conventions'. Absent file = vendor skips template injection."
+                },
+                "gates": {
+                    "type": "array",
+                    "description": "Pre-PR gates enforced by the pull-requests skill. v1 vocabulary: skill_invoked, shell_command, mcp_tool. Unknown types are rejected by JSONSchema validation.",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "required": ["type", "skill"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "type": {
+                                        "const": "skill_invoked",
+                                        "description": "Vendor verifies the named skill was invoked in current conversation before allowing PR creation."
+                                    },
+                                    "skill": {
+                                        "type": "string",
+                                        "description": "Skill name to check for prior invocation (e.g. 'codex-review')."
+                                    },
+                                    "window": {
+                                        "enum": ["in_session", "since_last_code_change"],
+                                        "default": "in_session",
+                                        "description": "Time window to check for invocation. 'in_session' = anywhere in current conversation. 'since_last_code_change' = since the most recent Edit/Write tool call to a file NOT in boost-core managed agent paths (.ai/, .claude/, .github/skills/, .agents/, or other paths in the boost-core managed .gitignore block)."
+                                    },
+                                    "on_missing": {
+                                        "enum": ["stop_and_request", "warn", "skip"],
+                                        "default": "stop_and_request",
+                                        "description": "Vendor behavior when gate fails. 'stop_and_request' = halt + ask user to run skill. 'warn' = print warning + proceed. 'skip' = silent skip."
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type", "command"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "type": {
+                                        "const": "shell_command",
+                                        "description": "Vendor runs the shell command and checks exit code before allowing PR creation."
+                                    },
+                                    "command": {
+                                        "type": "string",
+                                        "description": "Shell command to invoke (e.g. 'composer test')."
+                                    },
+                                    "expect_exit_code": {
+                                        "type": "integer",
+                                        "default": 0,
+                                        "description": "Expected exit code for gate pass. Non-match fails the gate."
+                                    },
+                                    "on_missing": {
+                                        "enum": ["stop_and_request", "warn", "skip"],
+                                        "default": "stop_and_request"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type", "tool"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "type": {
+                                        "const": "mcp_tool",
+                                        "description": "Vendor invokes the named MCP tool; gate passes when tool returns success. Open escape hatch for project-specific policy not covered by skill_invoked / shell_command."
+                                    },
+                                    "tool": {
+                                        "type": "string",
+                                        "description": "MCP tool name in the tool namespace (e.g. 'qa-approval-check')."
+                                    },
+                                    "args": {
+                                        "type": "object",
+                                        "description": "Arguments passed to the MCP tool invocation.",
+                                        "default": {}
+                                    },
+                                    "on_missing": {
+                                        "enum": ["stop_and_request", "warn", "skip"],
+                                        "default": "stop_and_request"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "testing": {
+            "type": "object",
+            "description": "Testing framework conventions. Used by bug-fixing, test-writing, backend-quality skills.",
+            "properties": {
+                "backend_framework": {
+                    "enum": ["phpunit", "pest"],
+                    "description": "Backend test runner the project uses. Vendor skills invoke the matching runner and follow its conventions."
+                },
+                "forbid": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Test frameworks or categories vendor skills must NOT suggest. Recognized values: 'dusk', 'pest', 'phpunit', 'vitest', 'jest', 'mocha', 'cypress', 'playwright' (frameworks); 'js-test-frameworks', 'browser-test-frameworks' (category aliases)."
+                }
+            }
+        },
+        "codex": {
+            "type": "object",
+            "description": "Codex CLI configuration. Used by codex-review skill.",
+            "properties": {
+                "cli_binary": {
+                    "type": "string",
+                    "default": "codex",
+                    "description": "Path or name of the Codex CLI binary to invoke. Default 'codex' for bare CLI install; alternatives include 'codex-plugin-cc' for plugin variants."
+                },
+                "setup_doc": {
+                    "type": "string",
+                    "description": "Path to project-owned doc describing Codex CLI install + auth flow. Validated for file-existence by 'boost doctor --check-conventions'."
+                }
+            }
+        },
+        "spec": {
+            "type": "object",
+            "description": "Spec-file conventions. Used by write-spec, implement-spec, interview skills.",
+            "properties": {
+                "filename_pattern": {
+                    "type": "string",
+                    "description": "Template for spec filenames. Recognized placeholders: {issue_key} (full Jira key like 'HPB-1234'), {slug} (kebab-case slug from issue title), {date} (ISO date)."
+                },
+                "research_docs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Paths to project-owned reference docs vendor skills consult during research phase (architecture docs, relationship maps, glossaries). Each path validated for file-existence by 'boost doctor --check-conventions'."
+                }
+            }
+        },
+        "mcp": {
+            "type": "object",
+            "description": "Project-specific MCP server-name mappings. Vendor skills reference 'mcp.jira' / 'mcp.laravel' / etc. generically; host maps to the actual server name as it appears in the MCP tool namespace (e.g. 'mcp__<mcp.jira>__jira_get_issue').",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+    },
+    "additionalProperties": false
+}
