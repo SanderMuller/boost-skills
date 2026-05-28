@@ -5,6 +5,78 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.0 - 2026-05-28
+
+### Requires
+
+- `sandermuller/boost-core ^0.9.3` — ships the `->withConventions([...])` builder method, the render-from-boost.php path, the `boost convert-conventions` migration command, the fail-closed both-sources-non-empty reconcile contract, AND the render-fail-then-write data-loss patch from `0.9.3`. The `^0.9.3` floor (rather than `^0.9.0`) is defensive: a validation failure between the schema-read and the CLAUDE.md-write on `boost sync` could blank out the rendered block under the `0.9.0` / `0.9.1` / `0.9.2` engines. `^0.9.3` ensures every consumer adopting `1.8.0` gets the patch by default. Polish-tier improvements in subsequent `0.9.x` releases (`0.9.4` diagnostic-visibility UX) ride along via the range constraint without forcing the floor higher.
+
+### Changed since `1.8.0-rc1`
+
+- **Floor-bump** — `README.md` "Requires" line + `UPGRADING.md` "Required" section + `UPGRADING.md` adoption commit shape all carry `^0.9.3` with the data-loss-patch rationale prose. No skill-body changes; no schema vocabulary changes; no vendor-skill behavior changes.
+
+### Carried forward from `1.8.0-rc1`
+
+The bulk of the `1.8.0` content shipped under `1.8.0-rc1`. The following all stay landed; see [`1.8.0-rc1`'s release notes](https://github.com/SanderMuller/boost-skills/releases/tag/1.8.0-rc1) for the full per-item detail.
+
+- **Skill prose update across 9 slot-aware skills** — opening "Project Conventions slots" tables and missing-slot UX prose describe the edit surface as "`boost.php` via `->withConventions([...])`". Skills updated: `jira-create`, `jira-rework`, `jira-updates`, `pull-requests`, `codex-review`, `bug-fixing`, `write-spec`, `interview`, `backend-quality`.
+- **`pull-requests` skill body** — last explicit "declare `$.pr.gates` in their CLAUDE.md" reference rewritten to point at `boost.php`'s `->withConventions([...])` array.
+- **`ai-guidelines` skill table** — AGENTS.md producer list reflects `boost-core 0.9.0`'s `CopilotTarget` joining the AGENTS.md shared-pool: "Codex / Copilot / Cursor / Amp / Junie / Kiro / OpenCode / etc.".
+- **README "Project Conventions schema" section** — `->withConventions([...])` PHP-array example in `boost.php` replaces the marker-bounded YAML-in-CLAUDE.md example. Tooling table includes `boost convert-conventions`. `Migrating from 1.7.x` subsection.
+- **`UPGRADING.md`** — canonical migration recipe for 1.7.x → 1.8.0 consumers.
+- **`codex-review` skill absorbs the `codex-plugin-cc` invocation playbook** — vendor skill self-contained for plugin mode: plugin install, Codex CLI install, companion script path resolution, four invocation patterns, polling loop with stale-result trap, result retrieval, auth failure mode, `pr.gates on_missing` interaction. Skill body 220 lines (was 155 pre-rc1).
+- **`$.codex.setup_doc` slot description narrowed** — now: "Optional path to a project-owned doc with project-specific codex overrides only [...]. Most consumers leave this slot unset." Backward compatible.
+- **Codex invocation patterns reference `$.github.default_base_branch`** — base resolution is slot-driven, not hardcoded.
+- **`ai-guidelines` generated-files table** — `.github/copilot-instructions.md` row dropped in `1.7.2`; carried through `1.8.0-rc1` + `1.8.0`.
+
+### Schema design notes
+
+No schema vocabulary changes from `1.7.x` or `1.8.0-rc1`. `conventions-schema.json` v1 remains the contract. `$.codex.setup_doc` description narrowed in `1.8.0-rc1` per absorption (no breaking change).
+
+### Validation
+
+- 27/27 skills + 1/1 guideline manifest valid.
+- `opis/json-schema ^2.4` schema validation contract unchanged from `1.7.0` (operates on parsed values, format-agnostic for PHP-array vs YAML source).
+
+### Adoption path
+
+```bash
+# 1. Update constraints
+composer require --dev --with-all-dependencies \
+  "sandermuller/boost-skills:^1.8" \
+  "sandermuller/boost-core:^0.9.3"
+
+# 2. Migrate conventions edit surface (1.7.x consumers only)
+vendor/bin/boost convert-conventions
+
+# 3. Re-sync + verify
+vendor/bin/boost sync
+vendor/bin/boost validate
+
+```
+See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
+
+### Acknowledgments
+
+`1.8.0` shipped under the proving-consumer pattern that's stabilized across the family: a single high-friction consumer (`hihaho`) running the full migration end-to-end through `rc1`, surfacing zero vendor-side regressions and validating the codex-review absorption against real production usage. Engine-side parallel cadence held: `boost-core 0.9.0 → 0.9.4` delivered five patches in close succession with no schema-side adaptation required.
+
+### Migration from `1.7.x`
+
+See [`UPGRADING.md`](UPGRADING.md) for the full migration recipe. One-command path: `vendor/bin/boost convert-conventions` after the constraint bump.
+
+### Migration from `1.8.0-rc1`
+
+Atomic-commit shape, ~30 seconds of work:
+
+```bash
+composer require --dev --with-all-dependencies \
+  "sandermuller/boost-skills:^1.8"
+
+```
+Then in `composer.json`: `minimum-stability` from `RC` → `stable` (or drop the field if you previously bumped only for this catalog). Run `composer update` to lockfile-flip. `boost-core` floor moves to `^0.9.3` transitively.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.7.2...1.8.0
+
 ## 1.7.2 - 2026-05-28
 
 <!-- verified-sha: 05bd62ae8141e35ea602954b6cd405f80bf027a1 -->
@@ -152,6 +224,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
