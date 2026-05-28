@@ -6,7 +6,7 @@
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.9` (or via a family package — `sandermuller/package-boost-php` / `sandermuller/package-boost-laravel` / `sandermuller/project-boost-laravel` releases that float their `boost-core` constraint to `^0.9`).
+Bump `sandermuller/boost-core` to `^0.9.3` (or via a family package — `sandermuller/package-boost-php` / `sandermuller/package-boost-laravel` / `sandermuller/project-boost-laravel` releases that float their `boost-core` constraint to `^0.9.3`). The `0.9.3` floor is defensive: `boost-core 0.9.3` patches a render-fail-then-write data-loss path on `boost sync` where a validation failure between schema-read and CLAUDE.md-write could blank out the rendered block. Pinning to `^0.9.3` (rather than `^0.9.0`) ensures every consumer adopting `1.8.0` gets the patch.
 
 ### Migrate existing conventions
 
@@ -101,7 +101,7 @@ Most consumers will land the migration as a single atomic commit:
 # 1. Update constraints
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8" \
-  "sandermuller/boost-core:^0.9"
+  "sandermuller/boost-core:^0.9.3"
 
 # 2. Migrate conventions edit surface
 vendor/bin/boost convert-conventions
