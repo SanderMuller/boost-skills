@@ -4,11 +4,24 @@ description: "Researches a Jira issue sent back for rework: reads the issue, com
 argument-hint: "<issue-key> e.g. PROJ-1234 [optional context]"
 metadata:
   boost-tags: "jira github"
+  schema-required: "^1"
 ---
 
 # Jira Rework Research
 
 Research a Jira issue that has been sent back for rework — understand the feedback, investigate the codebase, and propose options for fixing it.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.mcp.jira` | MCP server-name segment for Jira tool calls | Default `mcp-atlassian` |
+| `$.jira.project_key` | Validates the issue key prefix matches the project's expected key (if `refuse_other_projects` set) | Skip the prefix check |
+| `$.jira.refuse_other_projects` | Refuse rework research on issues outside `$.jira.project_key` | Default `false` (allow cross-project) |
+
+Vendor invokes `mcp__<$.mcp.jira>__jira_*` at runtime.
 
 ## When to Use This Skill
 
@@ -28,7 +41,7 @@ Do NOT use for:
 
 1. **Fetch the Jira issue:**
    ```
-   mcp__mcp-atlassian__jira_get_issue(issue_key: "<ISSUE-KEY>")
+   mcp__<$.mcp.jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
    ```
    Extract the summary and description (the original requirement), the current status and assignee, and any linked issues or parent epic.
 
@@ -111,7 +124,7 @@ For a straightforward fix with one obvious solution, a single recommendation is 
 5. **Commit and push.**
 6. If the original PR was merged, **open a new PR** referencing the Jira issue.
 7. **Update Jira** if the fix changes user-facing behaviour (use the `jira-updates` skill).
-8. **Transition the issue** to the appropriate review status — discover the transition via `mcp__mcp-atlassian__jira_get_transitions`; never hardcode transition IDs.
+8. **Transition the issue** to the appropriate review status — discover the transition via `mcp__<$.mcp.jira>__jira_get_transitions`; never hardcode transition IDs.
 
 ## Guidelines
 

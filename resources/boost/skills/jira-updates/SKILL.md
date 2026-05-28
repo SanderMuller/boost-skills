@@ -3,11 +3,25 @@ name: jira-updates
 description: "Updates a Jira issue's description after its PR is created, and posts Blocked-by-Question comments. Invoke after creating a PR for a Jira issue. Triggers: PR just created for Jira issue, jira update, testables, QA checklist, translation strings, blocker comment, blocked by question. NOT for new issues (use jira-create) or rework research (use jira-rework)."
 metadata:
   boost-tags: "jira"
+  schema-required: "^1"
 ---
 
 # Jira Issue Updates
 
-Appends post-implementation content to an existing Jira issue after its PR is created, or posts a Blocked-by-Question comment during implementation. Uses the `mcp-atlassian` MCP server.
+Appends post-implementation content to an existing Jira issue after its PR is created, or posts a Blocked-by-Question comment during implementation.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.mcp.jira` | MCP server-name segment for Jira tool calls | Default `mcp-atlassian` |
+| `$.jira.project_key` | Validates the issue key prefix matches the project's expected key | Skip the prefix check |
+| `$.jira.refuse_other_projects` | Refuse updates on issues outside `$.jira.project_key` | Default `false` (allow cross-project updates) |
+| `$.jira.description_format_doc` | Project-owned Jira description format rules (voice, sections, append-merge algorithm) | Use the generic append rules in this skill |
+
+Vendor invokes `mcp__<$.mcp.jira>__jira_*` at runtime.
 
 ## When to Use This Skill
 
@@ -22,7 +36,7 @@ Do **NOT** use this skill for:
 
 ## Statuses and Transitions
 
-Jira statuses, transition names, and transition IDs vary per project and workflow — **never hardcode them.** Before firing any transition, call `mcp__mcp-atlassian__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and pick a transition from the returned list, matched by display name. If the expected transition is not offered, do not substitute another — skip it and report.
+Jira statuses, transition names, and transition IDs vary per project and workflow — **never hardcode them.** Before firing any transition, call `mcp__<$.mcp.jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and pick a transition from the returned list, matched by display name. If the expected transition is not offered, do not substitute another — skip it and report.
 
 ## Description Format
 
@@ -58,7 +72,7 @@ For the Blocked-by-Question sub-workflow, also confirm the one-line blocker ques
 ### 1. Fetch the issue
 
 ```
-mcp__mcp-atlassian__jira_get_issue(issue_key: "<ISSUE-KEY>")
+mcp__<$.mcp.jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
 ```
 
 Capture the current description — it may already contain content from `jira-create` or a prior update.
@@ -90,7 +104,7 @@ Document:
 ### 5. Push the update
 
 ```
-mcp__mcp-atlassian__jira_update_issue(
+mcp__<$.mcp.jira>__jira_update_issue(
     issue_key: "<ISSUE-KEY>",
     fields: {description: "<merged description>"}
 )
@@ -119,7 +133,7 @@ Fires when implementation needs a stakeholder decision before it can continue. T
 State the blocker clearly, mention the relevant decision-maker, and include any options already considered.
 
 ```
-mcp__mcp-atlassian__jira_add_comment(
+mcp__<$.mcp.jira>__jira_add_comment(
     issue_key: "<ISSUE-KEY>",
     comment: "<blocker question + context>"
 )
