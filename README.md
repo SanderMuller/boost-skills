@@ -136,30 +136,33 @@ A skill or guideline can carry more than one tag, and then applies only where th
 
 ## Project Conventions schema
 
-Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex invocation mode, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers fill values in a `## Project Conventions` block in `CLAUDE.md`; vendor skills read slots by JSONPath at agent runtime.
+Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex invocation mode, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers declare values in `boost.php` via `->withConventions([...])`; `boost sync` renders them into the `## Project Conventions` block in `CLAUDE.md` as an audit trail; vendor skills read slots by JSONPath at agent runtime.
 
-**Requires** `sandermuller/boost-core ^0.8.2` — the engine ships the schema discovery, `boost validate` / `boost slots` / `boost paths` commands, doctor extension, and the marker-bounded writer that auto-scaffolds the `## Project Conventions` block on first sync. (`0.8.2` specifically includes the guideline marker-bounded write that preserves the conventions block across syncs; earlier `0.8.0` / `0.8.1` had a round-trip bug.)
+**Requires** `sandermuller/boost-core ^0.9` — the engine ships the schema discovery, `boost validate` / `boost slots` / `boost paths` commands, doctor extension, the `->withConventions([...])` builder method on `BoostConfig`, and the marker-bounded writer that renders the `## Project Conventions` block on `boost sync`.
 
 Skill bodies reference slots in JSONPath form (`$.jira.project_key`); the `boost slots` command output uses equivalent dotted form (`jira.project_key`). Both forms name the same slot.
 
-The block lives in `CLAUDE.md`, marker-bounded so `boost-core` can write the scaffold without disturbing operator-edited content:
+Declare conventions in `boost.php`:
 
-```markdown
-## Project Conventions
-
-<!-- Managed by boost-core. Edit the YAML between the markers; do not remove or move the markers. -->
-<!-- boost-core:conventions:start -->
-\`\`\`yaml
-schema-version: 1
-jira:
-  project_key: HPB
-github:
-  owner: my-org
-  repo: my-app
-# … other slot groups consumer needs …
-\`\`\`
-<!-- boost-core:conventions:end -->
+```php
+return BoostConfig::configure()
+    ->withAgents([Agent::CLAUDE_CODE, Agent::COPILOT, Agent::CODEX])
+    ->withAllowedVendors(['sandermuller/boost-skills', /* ... */])
+    ->withTags(Tag::Php, Tag::Github, Tag::Laravel)
+    ->withConventions([
+        'schema-version' => 1,
+        'jira' => [
+            'project_key' => 'HPB',
+        ],
+        'github' => [
+            'owner' => 'my-org',
+            'repo' => 'my-app',
+        ],
+        // … other slot groups consumer needs …
+    ]);
 ```
+
+`boost sync` renders the array into a marker-bounded YAML block under `## Project Conventions` in `CLAUDE.md` (agent-read surface). `boost.php` is the single source of truth; edit there, run `boost sync`, the rendered block updates automatically.
 
 ### Slot taxonomy
 
@@ -189,9 +192,10 @@ All 8 groups are root-optional — only `schema-version: 1` is root-required. A 
 
 | Command | What it does |
 |---|---|
-| `vendor/bin/boost validate` | Validates the `## Project Conventions` block against allowlisted vendors' schemas. Surfaces missing-required, unknown-slot, schema-version mismatches as `SyncResult::diagnostics`. |
+| `vendor/bin/boost validate` | Validates the `->withConventions([...])` declaration in `boost.php` against allowlisted vendors' schemas. Surfaces missing-required, unknown-slot, schema-version mismatches as `SyncResult::diagnostics`. |
 | `vendor/bin/boost slots [--vendor=X] [--missing] [--filled] [--json]` | Lists declared slots across allowlisted vendors; flags filter to missing / filled subsets. |
 | `vendor/bin/boost doctor --check-conventions` | Adds conventions-validation to the existing doctor report. |
+| `vendor/bin/boost convert-conventions` | One-time migration: extracts a `1.7.x`-era hand-edited YAML block from `CLAUDE.md` and writes it into `boost.php`'s `->withConventions([...])` array. See [Migrating from 1.7.x](#migrating-from-17x). |
 | `vendor/bin/boost paths --managed` | Lists agent-managed paths (for vendor skills resolving `since_last_code_change` window semantics in `pr.gates`). |
 
 ### Schema-versioning
@@ -200,7 +204,21 @@ Vendor skills declare `metadata.schema-required` in their frontmatter — a Comp
 
 ### Vendor schema vs catalog vocabulary
 
-The mechanism (JSONSchema validation, `## Project Conventions` block convention, `boost-core` engine surface) is family-canonical — defined by `boost-core` and applies to any vendor catalog. The slot vocabulary above is THIS catalog's choice; other Composer-distributed catalogs can ship their own schemas at `resources/boost/conventions-schema.json` and contribute to the host's combined slot vocabulary (subject to the engine's collision-handling rules: first-allowlisted wins on same-type, throws on type-mismatch).
+The mechanism (JSONSchema validation, `->withConventions([...])` builder method, `boost-core` engine surface) is family-canonical — defined by `boost-core` and applies to any vendor catalog. The slot vocabulary above is THIS catalog's choice; other Composer-distributed catalogs can ship their own schemas at `resources/boost/conventions-schema.json` and contribute to the host's combined slot vocabulary (subject to the engine's collision-handling rules: first-allowlisted wins on same-type, throws on type-mismatch).
+
+### Migrating from 1.7.x
+
+If you adopted `boost-skills 1.7.0` / `1.7.1` / `1.7.2`, your `## Project Conventions` block lived as a hand-edited YAML region inside `CLAUDE.md` (the `boost-core 0.8.x` shape). Under `boost-core 0.9.0`+, `boost.php` becomes the single source of truth; the YAML block in `CLAUDE.md` is regenerated from `boost.php` at every sync.
+
+One-command migration:
+
+```bash
+vendor/bin/boost convert-conventions
+```
+
+This reads the existing YAML block from `CLAUDE.md`, decodes it, and writes the values into `boost.php`'s `->withConventions([...])` array (or appends the method to the existing builder chain if absent). After conversion, `boost sync` rerenders the block from the new source. CLAUDE.md remains tracked in git; no `git rm --cached` step is needed (the `0.8.3` tracking decision carries through 0.9.0).
+
+If `boost.php` already declares `->withConventions([...])` and the CLAUDE.md block also has non-empty content that differs, `convert-conventions` fails closed and asks the operator to reconcile manually — never silently destroys either source. After reconciliation, re-run.
 
 ## Guidelines
 
