@@ -5,6 +5,78 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0 - 2026-05-28
+
+<!-- verified-sha: 74170dfa86f25331955cb359220c040dddd9429b -->
+### 1.7.0
+
+Adds the conventions-schema slot-fill mechanism: vendor skills reference project-specific values (Jira project key, repo conventions, branch patterns, test framework, MCP server names, policy declarations) by JSONPath; consumers fill values in a `## Project Conventions` block in `CLAUDE.md` instead of shadowing entire skills. Nine catalog skills rewrite to consume the schema, from two in the `1.7.0-rc1` / `rc2` cycle to nine in stable.
+
+#### Requires
+
+- `sandermuller/boost-core ^0.8.2` — the conventions-schema engine surface. 0.8.2 ships the marker-bounded guideline-write fix that closes the round-trip-safety gap in 0.8.0/0.8.1. Without 0.8.2, the `Project Conventions` block in `CLAUDE.md` would be wiped on every sync by the upstream `AgentTarget` guideline-write step (acknowledged + fixed engine-side after `rc2` dogfood surfaced the failure mode).
+
+#### Added
+
+- **`resources/boost/conventions-schema.json`** (v1) — JSONSchema (draft 2020-12) defining the slot vocabulary. 8 slot groups (`jira`, `github`, `branches`, `pr`, `testing`, `codex`, `spec`, `mcp`), ~15 slots. Strict `additionalProperties: false` per named group (mcp stays open by design for project-defined MCP service keys). See the [Project Conventions schema](https://github.com/sandermuller/boost-skills#project-conventions-schema) section of the README for the prose contract.
+- **`pr.gates` typed-policy mechanism** — array of typed-object gates with closed-enum `skill_invoked` / `shell_command` / `mcp_tool` discriminator. Vendor `pull-requests` dispatches on the `type` field; `mcp_tool` is the open escape hatch for project-specific policy (host registers a custom MCP tool, declares it as a gate) without vendor changes. Strict-rejects unknown types via JSONSchema `oneOf` + `additionalProperties: false`.
+
+#### Changed
+
+Nine skills now read project-specific values from the `## Project Conventions` YAML block in `CLAUDE.md` instead of embedding them in the skill body or asking the user every session. Each declares `metadata.schema-required: ^1` to signal the schema-version contract.
+
+| Skill | Slot consumption |
+|---|---|
+| `jira-create` | `$.jira.project_key`, `$.jira.refuse_other_projects`, `$.jira.description_format_doc`, `$.mcp.jira` |
+| `jira-rework` | `$.mcp.jira`, `$.jira.project_key`, `$.jira.refuse_other_projects` |
+| `jira-updates` | `$.mcp.jira`, `$.jira.project_key`, `$.jira.refuse_other_projects`, `$.jira.description_format_doc` |
+| `pull-requests` | `$.github.*`, `$.branches.patterns` (typed-object iteration with first-match-wins base resolution), `$.pr.title_format` (placeholder substitution), `$.pr.template_path`, `$.pr.gates` (typed-policy dispatch) |
+| `codex-review` | `$.codex.invocation_mode` (plugin / bare_cli), `$.codex.setup_doc` |
+| `bug-fixing` | `$.testing.backend_framework`, `$.testing.forbid` |
+| `write-spec` | `$.spec.filename_pattern` (with `{issue_key}` / `{slug}` / `{date}` placeholder substitution + empty-placeholder-omit rule), `$.spec.research_docs`, `$.jira.project_key` (for `{issue_key}` resolution) |
+| `interview` | `$.spec.research_docs`, `$.jira.project_key` |
+| `backend-quality` | `$.testing.backend_framework` |
+
+`pull-requests` additionally switches body/title patch commands from `gh pr edit --body-file` to `gh api -X PATCH` REST path — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation in some `gh` versions surfaced during pre-release dogfood.
+
+#### Schema design notes
+
+- **Two-pattern slot taxonomy** — value slots (scalars / arrays / paths, vendor reads directly) vs policy slots (typed-object arrays, vendor dispatches on `type` discriminator). Each pattern has its own missing-slot UX: value-slot missing → ask user once per session; policy-slot missing → skip the policy entirely (no enforcement).
+- **All 8 groups root-optional** — only `schema-version` is root-required. Capability-gated groups (`jira`, `github`, `branches`, `pr`, `testing`, `codex`, `spec`) don't force prompts on consumers who don't use the corresponding tag.
+- **`additionalProperties: false` at root + per named group** — typos at root level (`jria.project_key`) and nested (`jira.projcet_key`) both fail validation. `mcp.*` intentionally stays open (the vocabulary of service keys is consumer-defined).
+- **Per-pattern `base` in `branches.patterns`** — handles real-world hotfix/release branch workflows where `hotfix/*` targets `master` while `feature/*` targets `develop`. Sourced from production dogfood.
+- **`codex.invocation_mode` enum default `plugin`** — most consumers benefit from the `codex-plugin-cc` companion script (background queueing, project-aware diff scoping, focus-argument handling, stable file-based result retrieval, `/codex:setup` auth bootstrapping). `bare_cli` stays as an opt-in fallback for environments without per-user `.claude/plugins/` cache (service-account CI runners, headless agents).
+- **Strict-closed-enum `pr.gates` types in v1** — `skill_invoked` / `shell_command` / `mcp_tool`. Novel policy that doesn't fit closed-enum uses the `mcp_tool` escape hatch.
+
+#### Tooling (via `boost-core ^0.8`)
+
+- `vendor/bin/boost validate` — validates the `## Project Conventions` block against allowlisted vendors' schemas.
+- `vendor/bin/boost slots [--vendor=X] [--missing] [--filled] [--json]` — lists slots across allowlisted vendors with filled / unfilled state.
+- `vendor/bin/boost doctor --check-conventions` — adds conventions validation to the existing doctor report.
+- `vendor/bin/boost paths --managed` — lists agent-managed paths (used by `pr.gates[].window: since_last_code_change` semantics).
+
+#### Adoption path
+
+1. Bump constraint: `sandermuller/boost-skills: ^1.7` and `sandermuller/boost-core: ^0.8.2` (or via family package — `sandermuller/package-boost-php ^0.10` / `sandermuller/package-boost-laravel ^0.11+` once those release with `^0.8.2` floors).
+2. Run `composer update`. Auto-sync scaffolds the `## Project Conventions` block in `CLAUDE.md` on first sync.
+3. Fill the YAML block with project values. Run `vendor/bin/boost validate` to surface missing/unknown slots; `vendor/bin/boost slots --missing` for fill-status by slot.
+4. Drop any local shadows of the 9 rewritten skills if the vendor versions cover the project's needs.
+
+#### Validation
+
+- `opis/json-schema ^2.4` (engine validator): 17 test cases pass (full draft, minimal-required, strict-rejection of unknown gate types, `additionalProperties: false` at root + nested, schema-version `const: 1`, `jira.project_key` pattern, `branches.patterns` typed-object requirements, `testing.backend_framework` enum, `codex.invocation_mode` enum, `mcp.*` open vocabulary).
+- 5 end-to-end engine scenarios + 1 new round-trip scenario pass against `boost-core ^0.8.2`: schema discovery + composition, scaffold flow, `boost slots --json` shape, `boost paths --managed`, schema-version seed, AND round-trip preservation of filled YAML across multiple syncs (the failure mode `rc1`/`rc2` dogfood surfaced + 0.8.2 fixed).
+
+#### Migration from `1.7.0-rc2`
+
+Consumers pinned to `^1.7@RC` or `1.7.0-rc2` resolve to stable `1.7.0` automatically once tagged (Composer's stability-suffix semantics: stable wins over RC). No constraint edit needed.
+
+Consumers should also bump `sandermuller/boost-core` to `^0.8.2` if their constraint floor is lower — `1.7.0` requires the engine round-trip fix.
+
+The `1.7.0-rc1` tag at `bf3c606` remains as a historical artefact — it was mis-targeted from `main` HEAD instead of the prep branch and never contained the schema work; `1.7.0-rc2` at `ca118a8` was the corrected RC.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.6.0...1.7.0
+
 ## 1.6.0 - 2026-05-27
 
 ### Added
@@ -38,6 +110,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 ```
 The exclusions force resolution to `boost-skills`'s copies during the overlap. Once `package-boost-php >= 0.10.0` is required (the version that drops these 3 skills), remove the `withExcludedSkills` block.
