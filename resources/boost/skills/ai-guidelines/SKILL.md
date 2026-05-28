@@ -89,8 +89,7 @@ This syncs `.ai/` changes to per-agent locations:
 | `GEMINI.md`                       | Main context file for Gemini       |
 | `.claude/skills/`                 | Skills loaded by Claude Code       |
 | `.cursor/skills/`                 | Skills loaded by Cursor            |
-| `.github/copilot-instructions.md` | Instructions for GitHub Copilot    |
-| `.github/skills/`                 | Skills for GitHub Copilot          |
+| `.github/skills/`                 | Skills for GitHub Copilot (Copilot reads root `AGENTS.md` for guideline context per the GitHub 2025-08 changelog) |
 | `.amp/skills/`, `.gemini/skills/`, `.junie/skills/`, `.kiro/skills/`, `.opencode/skills/`, `.agents/skills/` | Per-agent skill dirs |
 
 **Generated files are auto-gitignored** via boost-core's managed `.gitignore` block — they never get committed. Only the `.ai/` sources are tracked.
