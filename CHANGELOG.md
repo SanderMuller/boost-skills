@@ -5,6 +5,26 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.2 - 2026-05-28
+
+<!-- verified-sha: 05bd62ae8141e35ea602954b6cd405f80bf027a1 -->
+### 1.7.2
+
+Aligns the catalog with `sandermuller/boost-core 0.9.0`'s drop of the `.github/copilot-instructions.md` guideline-file emission. After 0.9.0 ships, the `CopilotTarget` no longer writes that file — Copilot now reads root `AGENTS.md` for guideline context per the GitHub Changelog 2025-08-28 + 2026 cloud-agent / CLI / JetBrains rollouts. Boost-core already emits `AGENTS.md` via `CodexTarget`, so the separate copilot-instructions write was duplicate.
+
+Doc-only patch. No schema changes, no skill content rewrites, no functional behavior changes.
+
+#### Changed
+
+- **`ai-guidelines` skill** — removed the `.github/copilot-instructions.md` row from the Generated File/Directory reference table. The remaining `.github/skills/` entry stays (Copilot still consumes skills from that path; only the guideline-instructions emission drops).
+
+#### Notes
+
+- Ships immediately to align with `boost-core 0.9.0`'s release window — consumers adopting `boost-core ^0.9` on `boost-skills 1.7.x` see a correct catalog table during the 0.9.0 → 1.8.0 window without waiting for the larger 1.8.0 conventions-source-flip release.
+- If your project previously had `.github/copilot-instructions.md` in your project gitignore, the boost-core write to that path is now dropped — the gitignore entry becomes a dead line and can be removed during your 0.9.0 adoption.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.7.1...1.7.2
+
 ## 1.7.1 - 2026-05-28
 
 <!-- verified-sha: 1585e172fd1528e3cd430f341b7dcd3039ff19b4 -->
@@ -132,6 +152,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
