@@ -2,11 +2,33 @@
 name: write-spec
 description: "Writes implementation-ready specification files with progress-trackable phases. Activates when: writing a spec, creating a spec file, documenting a feature plan, or when user mentions: write spec, create spec, spec format, spec template."
 argument-hint: [feature name or description]
+metadata:
+  schema-required: "^1"
 ---
 
 # Write Spec
 
 Writes structured specification files designed for phased implementation with built-in progress tracking. Specs produced by this skill are directly compatible with the `implement-spec` skill.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.spec.filename_pattern` | Template for the spec file path (placeholders below) | Default `specs/{slug}.md` |
+| `$.spec.research_docs` | Project-owned reference docs to consult during the research phase (architecture, glossaries, relationship maps) | No automatic consultation — skill stays generic |
+| `$.jira.project_key` | Resolves `{issue_key}` placeholder when the spec is Jira-backed (`HPB-1234`-style) | `{issue_key}` and any adjacent dash are omitted from the filename |
+
+### Filename placeholder substitution
+
+`$.spec.filename_pattern` accepts these placeholders:
+
+- `{issue_key}` — full Jira key (e.g. `HPB-1234`). Resolved from the user's input or from a branch that matches a Jira-keyed pattern in `$.branches.patterns`. If no issue is involved (or `$.jira.project_key` is absent), the placeholder resolves empty.
+- `{slug}` — URL-safe kebab-case from the feature name. Lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary.
+- `{date}` — ISO date (`YYYY-MM-DD`).
+
+**Empty-placeholder rule**: if a placeholder resolves empty, the placeholder AND any single adjacent dash are omitted. Example: `specs/{issue_key}-{slug}.md` with no issue + feature name "Set up dark mode" → `specs/set-up-dark-mode.md` (not `specs/-set-up-dark-mode.md`).
 
 ## When to Use This Skill
 
@@ -16,15 +38,21 @@ Writes structured specification files designed for phased implementation with bu
 
 ## Spec File Location
 
-Write specs to `specs/{feature-name}.md` (kebab-case). Subdirectories for related specs are fine:
+Resolve the spec file path via `$.spec.filename_pattern` (default `specs/{slug}.md`). Apply the placeholder-substitution rules above to produce the final path.
+
+Subdirectories for related specs are fine — if `$.spec.filename_pattern` doesn't model the subdir convention, place spec files manually under the resolved parent dir:
 
 ```
 specs/
-├── wildcard-performance-optimization.md
-├── polymorphic-field-support.md
+├── HPB-1234-wildcard-performance-optimization.md
+├── HPB-1267-polymorphic-field-support.md
 └── cleanup/
     └── deprecated-method-removal.md
 ```
+
+## Research phase — project context
+
+Before drafting the spec, consult `$.spec.research_docs` if declared. Each path points at a project-owned doc covering architecture, domain glossary, relationship maps, or similar reference material. Read these before the technical sections so terminology + structural references match the project's canon. If a slot value points at a missing file, surface it (`boost doctor --check-conventions` would have caught this at sync time).
 
 ## Spec Format
 

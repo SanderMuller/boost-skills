@@ -2,11 +2,24 @@
 name: interview
 description: "Structured Q&A flow that gathers requirements for a complex feature through focused questions with predefined options. Pairs with write-spec: interview gathers the requirements, then write-spec turns them into the spec file. Activates when: gathering requirements, planning a feature, clarifying ambiguous work, or when user mentions: interview, requirements gathering, feature planning, gather requirements, ask me about."
 argument-hint: "[feature or task description]"
+metadata:
+  schema-required: "^1"
 ---
 
 # Interview
 
 A structured interview process that gathers requirements for a complex feature through focused questions with predefined options where possible. This skill owns the questioning; it does **not** write the spec file. Once requirements are gathered, hand off to the `write-spec` skill, which owns the spec file format.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.spec.research_docs` | Project-owned reference docs to consult upfront so terminology and architectural references match project canon | No automatic consultation — gather context from conversation only |
+| `$.jira.project_key` | Detects whether the interview should ask for / verify an issue key during gathering | Skip the Jira-key question; `write-spec` will treat any resulting spec as not-issue-backed |
+
+Interview hands off to `write-spec` after gathering. Both skills declare `schema-required: ^1` so they ship together when consumers declare the schema-version constraint.
 
 ## When to Use This Skill
 
