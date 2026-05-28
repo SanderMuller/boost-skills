@@ -85,7 +85,7 @@ This syncs `.ai/` changes to per-agent locations:
 | Generated File/Directory          | Purpose                            |
 |-----------------------------------|------------------------------------|
 | `CLAUDE.md`                       | Main context file for Claude Code  |
-| `AGENTS.md`                       | Shared context for Codex/Amp/etc.  |
+| `AGENTS.md`                       | Shared context for Codex / Copilot / Cursor / Amp / Junie / Kiro / OpenCode / etc. |
 | `GEMINI.md`                       | Main context file for Gemini       |
 | `.claude/skills/`                 | Skills loaded by Claude Code       |
 | `.cursor/skills/`                 | Skills loaded by Cursor            |

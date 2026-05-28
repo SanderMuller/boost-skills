@@ -13,7 +13,7 @@ Research a Jira issue that has been sent back for rework — understand the feed
 
 ## Project Conventions slots
 
-This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
 
 | Slot | Used for | If missing |
 |---|---|---|

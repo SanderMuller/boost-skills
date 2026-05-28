@@ -11,14 +11,14 @@ Run an independent code review using OpenAI Codex, then critically evaluate and 
 
 ## Project Conventions slots
 
-This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
 
 | Slot | Used for | If missing |
 |---|---|---|
 | `$.codex.invocation_mode` | Selects invocation path: `plugin` (companion script) or `bare_cli` (`codex` directly) | Default `plugin` per schema |
 | `$.codex.setup_doc` | Path to project-owned doc with install + auth + project-specific invocation patterns | Reference the upstream install paths inline (plugin marketplace add, or `npm install -g @openai/codex`) |
 
-The Project Conventions block validates against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing-required slots before they surface here.
+Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
 
 ## Step 1: Determine what to review
 
