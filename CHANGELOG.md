@@ -5,6 +5,28 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.1 - 2026-05-28
+
+<!-- verified-sha: 1585e172fd1528e3cd430f341b7dcd3039ff19b4 -->
+### 1.7.1
+
+Documentation polish: clarifies that `boost-core`'s `Tag` enum vocabulary is broader than the tag-registry table in this README. Surfaced by real-world adoption (a Laravel-app consumer declared `Tag::Filament` / `Tag::Livewire` in `withTags(...)` as forward-compatible slots and hit "possible typo" diagnostics from `boost tags` despite the declarations being correct + intentional).
+
+No schema changes, no skill content changes, no functional behavior changes. Doc-only release.
+
+#### Changed
+
+- **README Tags section** — added a paragraph after the existing mechanism-vs-vocabulary split clarifying that `boost-core` ships a broader `Tag` enum (`Tag::Filament`, `Tag::Livewire`, `Tag::Volt`, `Tag::Inertia`, `Tag::Flux`, `Tag::Pest`, `Tag::Tailwind`, others) with cases not bound to any current `boost-skills` skill. Declaring these in `withTags(...)` is harmless + forward-compatible — `boost-core` 0.7.5+ preserves declared-but-undiscovered tags across `boost install` picker re-runs.
+
+The tag-registry table below the new paragraph stays unchanged — it documents tags `boost-skills` itself currently ships content under, not the family-wide enum vocabulary.
+
+#### Notes
+
+- The "possible typo" diagnostic wording in `boost-core`'s `boost tags` command is queued for separate engine-side polish; this README clarification removes the consumer-side ambiguity in the docs without waiting on engine release.
+- Adoption flow for new consumers is unchanged. Existing consumers don't need to update anything.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.7.0...1.7.1
+
 ## 1.7.0 - 2026-05-28
 
 <!-- verified-sha: 74170dfa86f25331955cb359220c040dddd9429b -->
@@ -110,6 +132,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 ```
