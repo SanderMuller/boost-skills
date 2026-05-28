@@ -113,6 +113,8 @@ Most skills and guidelines are universal — they sync to every project. Some ca
 
 The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`, `metadata.boost-tags` in skill frontmatter, the `.boost-tags.yaml` sidecar manifest for guidelines) is family-canonical — defined by `boost-core` and applies to any Composer-distributed catalog. The tag **vocabulary** below is one catalog's choice — Sander's mix of capabilities surfaced by skills and guidelines `boost-skills` ships. Other catalogs may organize differently. **Owner** names which boost-family package ships the content using each tag.
 
+`boost-core` ships a broader `Tag` enum (`SanderMuller\BoostCore\Enums\Tag`) with cases not bound to any skill in this catalog — `Tag::Filament`, `Tag::Livewire`, `Tag::Volt`, `Tag::Inertia`, `Tag::Flux`, `Tag::Pest`, `Tag::Tailwind`, and others. These are forward-compatible slots in the family vocabulary. Declaring them in your `withTags(...)` is harmless today (no shipped skill targets them yet) and survives `boost install` picker re-runs per `boost-core`'s declared-but-undiscovered preservation rule. The table below covers only the tags `boost-skills` itself currently ships content under; see `Tag::*` in `boost-core` for the full enum vocabulary.
+
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
 | `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
