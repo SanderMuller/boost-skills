@@ -208,7 +208,7 @@
                 },
                 "setup_doc": {
                     "type": "string",
-                    "description": "Path to a project-owned doc covering codex install, auth, and any project-specific invocation patterns. Validated for file-existence by `boost doctor --check-conventions`."
+                    "description": "Optional path to a project-owned doc with project-specific codex overrides only (custom auth flow, project-specific focus areas, exclusions). The universal plugin and bare-CLI invocation playbooks are folded into the codex-review skill body — most consumers leave this slot unset. Validated for file-existence by `boost doctor --check-conventions` when declared."
                 }
             }
         },

@@ -15,8 +15,9 @@ This skill reads the following slots from your project's **Project Conventions**
 
 | Slot | Used for | If missing |
 |---|---|---|
-| `$.codex.invocation_mode` | Selects invocation path: `plugin` (companion script) or `bare_cli` (`codex` directly) | Default `plugin` per schema |
-| `$.codex.setup_doc` | Path to project-owned doc with install + auth + project-specific invocation patterns | Reference the upstream install paths inline (plugin marketplace add, or `npm install -g @openai/codex`) |
+| `$.codex.invocation_mode` | Selects invocation path: `plugin` (companion script) or `bare_cli` (bare `codex` CLI) | Default `plugin` per schema |
+| `$.codex.setup_doc` | Optional path to project-specific Codex overrides (custom auth flow, project-specific focus areas, exclusions) | Vendor skill's built-in plugin / bare-CLI playbooks are sufficient — most consumers leave this unset |
+| `$.github.default_base_branch` | Resolves `--base <branch>` for plugin-mode feature-branch reviews | Default `main` per schema |
 
 Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
 
@@ -29,49 +30,117 @@ git diff --stat HEAD
 git diff --stat --staged
 ```
 
-If there are uncommitted changes, review those (`--uncommitted`). If the working tree is clean, review the latest commit (`--commit HEAD`).
+If there are uncommitted changes, review those. If the working tree is clean, review the latest commit. The exact invocation depends on the invocation mode below.
 
 ## Step 2: Run Codex review
 
-The invocation path depends on `$.codex.invocation_mode`. Plugin is the default + canonical path; bare CLI is the opt-in fallback for environments where the plugin can't be installed.
+Vendor invocation branches on `$.codex.invocation_mode`. Plugin is the canonical path (default per schema); bare CLI is the opt-in fallback for environments where the plugin can't be installed.
 
 ### Plugin path (`invocation_mode: plugin`, default)
 
-The `openai/codex-plugin-cc` plugin ships a companion script (`codex-companion.mjs`) that wraps the underlying `@openai/codex` CLI with background queueing, project-aware diff scoping, focus-argument handling, and stable file-based result retrieval. Install both pieces per `$.codex.setup_doc` (if declared) or upstream-canonical:
+The `openai/codex-plugin-cc` plugin ships a companion script (`codex-companion.mjs`) that wraps `@openai/codex` with background queueing, project-aware diff scoping, focus-argument handling, and stable file-based result retrieval. Two pieces must both be installed:
 
-- Plugin: `/plugin marketplace add openai/codex-plugin-cc` (Claude Code marketplace install) + one-time `/codex:setup` auth walkthrough.
-- Underlying CLI: `npm install -g @openai/codex`.
+| Piece | What it is | Install path |
+|---|---|---|
+| `codex-plugin-cc` plugin | Claude Code plugin that exposes `/codex:*` slash commands and ships the companion script | Marketplace install (steps below) |
+| `@openai/codex` global CLI | The underlying OpenAI Codex CLI | `npm install -g @openai/codex` |
 
-Companion script path is resolved by the plugin; consult `$.codex.setup_doc` for the project-specific invocation patterns + paths.
+The skill never invokes `codex` directly — it calls the companion script (`codex-companion.mjs`) shipped by the plugin. The companion script wraps `codex` with the aforementioned ergonomics.
 
-Common invocations through the companion script (substitute `<companion>` with the resolved path from `$.codex.setup_doc`):
+#### Plugin install
 
-```bash
-# Review uncommitted changes (background mode)
-<companion> review --uncommitted --background
+If `/codex:review` is not available in this session:
 
-# Review the latest commit
-<companion> review --commit HEAD --background
-
-# Review against a base branch
-<companion> review --base main --background
-
-# Adversarial / focused review
-<companion> adversarial-review <focus-string> --background
+```
+/plugin marketplace add openai/codex-plugin-cc
+/plugin install codex@openai-codex
+/reload-plugins
+/codex:setup
 ```
 
-After kicking off a background review, poll for completion + retrieve the result:
+`/codex:setup` is the plugin's own one-time bootstrap; it confirms the companion script is reachable and walks through authentication.
+
+#### Codex CLI install
+
+If the companion script reports `Codex CLI is not installed`:
 
 ```bash
-<companion> status            # poll loop until terminal (typically 2-5 min)
-<companion> result            # reads from a stable file, no stdout truncation
+npm install -g @openai/codex
 ```
 
-The polling loop typically completes in 2-5 minutes for non-trivial diffs. The companion script handles auth refresh + result-file rotation transparently.
+Requires a ChatGPT subscription (Free tier is sufficient) **or** an OpenAI API key. If the CLI is installed but not authenticated, the user can run `codex login` in their own terminal (suggest via `!codex login` from this session if you want the output captured here).
+
+#### Companion script path
+
+Resolve the latest installed copy at invocation time — version path varies as the plugin updates:
+
+```bash
+COMPANION=$(ls ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
+```
+
+If the resolution returns nothing, the plugin is not installed — fall back to the **Plugin install** section above.
+
+#### Invocation patterns
+
+Pick one of four shapes depending on review scope and whether the user supplied a focus argument:
+
+| Scope | Focus argument | Command |
+|---|---|---|
+| Feature branch vs `$.github.default_base_branch` | None | `node "$COMPANION" review --base <base> --background` |
+| Feature branch vs `$.github.default_base_branch` | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --base <base> --background "$FOCUS"` |
+| Uncommitted working tree only | None | `node "$COMPANION" review --scope working-tree --background` |
+| Uncommitted working tree only | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --scope working-tree --background "$FOCUS"` |
+
+Substitute `<base>` with `$.github.default_base_branch` (or whatever base resolves from `$.branches.patterns` if the current branch matches a pattern).
+
+**Always quote** `FOCUS` as a shell variable — never interpolate user input directly into the command line.
+
+Use `adversarial-review` whenever a focus argument is present; the bare `review` subcommand has no focus parameter.
+
+#### Polling
+
+The companion runs Codex in the background. Poll until the job leaves the `running` / `queued` state:
+
+```bash
+CODEX_TIMED_OUT=true
+for i in $(seq 1 15); do
+  sleep 20
+  STATUS=$(node "$COMPANION" status 2>&1)
+  if ! echo "$STATUS" | grep -qE "\| running \||\| queued \|"; then
+    CODEX_TIMED_OUT=false
+    break
+  fi
+  echo "Still running... ($i/15)"
+done
+```
+
+15 iterations × 20 seconds = 5-minute ceiling. If the loop exits with `CODEX_TIMED_OUT=true`, the review has not completed.
+
+**Critical:** if `CODEX_TIMED_OUT=true`, do **NOT** call `result` afterwards. The `result` subcommand returns the most recent *finished* job, which can be a stale unrelated review — applying that as if it were the current job will mix unrelated feedback into the conversation. Tell the user the review is still running and stop.
+
+#### Retrieving results
+
+Only when `CODEX_TIMED_OUT=false`:
+
+```bash
+node "$COMPANION" result 2>&1 || true
+```
+
+If the output mentions a file path (long reviews truncate in stdout), load the full content via the `Read` tool — don't try to scroll the truncated output.
+
+#### Auth failure mode
+
+If `codex` is installed but the companion script reports an auth failure, leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
+
+The `pr.gates` slot's `on_missing: stop_and_request` policy applies here too: when `codex-review` is declared as a `pr.gates` entry with `type: skill_invoked`, the vendor `pull-requests` skill should leave the gate's checklist item unchecked and note the auth failure rather than blocking PR creation entirely.
+
+#### Project-specific overrides
+
+If `$.codex.setup_doc` is declared, load that file — it documents project-specific overrides (custom auth flow, project-specific focus areas, exclusions) that layer on top of the playbook above. Most consumers leave the slot unset; the playbook above is self-contained for plugin mode.
 
 ### Bare-CLI path (`invocation_mode: bare_cli`, opt-in fallback)
 
-For environments where the plugin can't be installed (service-account CI runners with no per-user `.claude/plugins/` cache, headless agents, locked-down environments), invoke `codex` directly. Install: `npm install -g @openai/codex`; auth: `codex login` (interactive).
+For environments where the plugin can't be installed (service-account CI runners with no per-user `.claude/plugins/` cache, headless agents, locked-down environments), invoke `codex` directly. Install: `npm install -g @openai/codex`; auth: `codex login` (interactive, in the user's own terminal).
 
 The scope flags (`--uncommitted` / `--commit` / `--base`) cannot be combined with a custom prompt — Codex runs its built-in review and picks up project context from `AGENTS.md`.
 
@@ -87,7 +156,7 @@ codex exec review --full-auto --commit HEAD
 
 **For changes against a base branch:**
 ```bash
-codex exec review --full-auto --base main
+codex exec review --full-auto --base <$.github.default_base_branch>
 ```
 
 Synchronous — review ties up the agent session for the full review window (typically 2-5 min). Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
