@@ -132,6 +132,72 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 
 A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
 
+## Project Conventions schema
+
+Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex invocation mode, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers fill values in a `## Project Conventions` block in `CLAUDE.md`; vendor skills read slots by JSONPath at agent runtime.
+
+**Requires** `sandermuller/boost-core ^0.8` — the engine ships the schema discovery, `boost validate` / `boost slots` / `boost paths` commands, doctor extension, and the marker-bounded writer that auto-scaffolds the `## Project Conventions` block on first sync.
+
+The block lives in `CLAUDE.md`, marker-bounded so `boost-core` can write the scaffold without disturbing operator-edited content:
+
+```markdown
+## Project Conventions
+
+<!-- Managed by boost-core. Edit the YAML between the markers; do not remove or move the markers. -->
+<!-- boost-core:conventions:start -->
+\`\`\`yaml
+schema-version: 1
+jira:
+  project_key: HPB
+github:
+  owner: my-org
+  repo: my-app
+# … other slot groups consumer needs …
+\`\`\`
+<!-- boost-core:conventions:end -->
+```
+
+### Slot taxonomy
+
+Two patterns:
+
+- **Value slots** — scalar / array / path values. Vendor skill reads and uses directly. Example: `jira.project_key` is a string; vendor `jira-create` substitutes it into mutation calls.
+- **Policy slots** — typed-object arrays with a `type:` discriminator. Vendor dispatches on the discriminator. Example: `pr.gates` is a list of typed gates (`skill_invoked` / `shell_command` / `mcp_tool`); vendor `pull-requests` enforces each in declared order.
+
+Missing-slot behavior is per-slot: value slots prompt the user once per session; policy slots are skipped silently (no enforcement) when absent.
+
+### Slot groups (v1)
+
+| Group | Purpose | Used by skills |
+|---|---|---|
+| `jira` | Jira issue tracker — project key, refuse-other-projects policy, description-format doc | `jira-create`, `jira-rework`, `jira-updates` |
+| `github` | GitHub repo identity — owner, repo, default base branch | `pull-requests`, `pr-review-feedback`, `github-issue-updates` |
+| `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
+| `pr` | PR conventions — title format, template path, pre-PR gates | `pull-requests` |
+| `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
+| `codex` | Codex invocation — `plugin` (default) / `bare_cli`, setup doc | `codex-review` |
+| `spec` | Spec-file conventions — filename pattern, research docs | `write-spec`, `implement-spec`, `interview` |
+| `mcp` | Project-specific MCP server-name mappings (open vocabulary) | `jira-*`, `pull-requests` (when MCP-mediated) |
+
+All 8 groups are root-optional — only `schema-version: 1` is root-required. A consumer without (say) a Jira tracker simply doesn't declare the `jira` group; no scaffold noise, no forced placeholder. Inside each declared group, leaves with `required` semantics must be present (e.g. `jira.project_key` is required if `jira` is declared at all). The full machine-readable contract lives in [`resources/boost/conventions-schema.json`](resources/boost/conventions-schema.json).
+
+### Tooling
+
+| Command | What it does |
+|---|---|
+| `vendor/bin/boost validate` | Validates the `## Project Conventions` block against allowlisted vendors' schemas. Surfaces missing-required, unknown-slot, schema-version mismatches as `SyncResult::diagnostics`. |
+| `vendor/bin/boost slots [--vendor=X] [--missing] [--filled] [--json]` | Lists declared slots across allowlisted vendors; flags filter to missing / filled subsets. |
+| `vendor/bin/boost doctor --check-conventions` | Adds conventions-validation to the existing doctor report. |
+| `vendor/bin/boost paths --managed` | Lists agent-managed paths (for vendor skills resolving `since_last_code_change` window semantics in `pr.gates`). |
+
+### Schema-versioning
+
+Vendor skills declare `metadata.schema-required` in their frontmatter — a Composer-style semver range naming which `schema-version` they consume. boost-skills' v1 vocabulary is `schema-version: 1`; current slot-aware skills (`jira-create`, `pull-requests`) declare `schema-required: ^1`. A future v2 schema is published via a vendor minor bump; consumers update their host `schema-version` declaration when their full vendor lineup supports it. Skills with mismatched `schema-required` skip-write with a warning; no broken syncs.
+
+### Vendor schema vs catalog vocabulary
+
+The mechanism (JSONSchema validation, `## Project Conventions` block convention, `boost-core` engine surface) is family-canonical — defined by `boost-core` and applies to any vendor catalog. The slot vocabulary above is THIS catalog's choice; other Composer-distributed catalogs can ship their own schemas at `resources/boost/conventions-schema.json` and contribute to the host's combined slot vocabulary (subject to the engine's collision-handling rules: first-allowlisted wins on same-type, throws on type-mismatch).
+
 ## Guidelines
 
 Alongside skills, the package ships **guidelines** under `resources/boost/guidelines/` — short Markdown files of project-wide conventions that the sync engine folds into `CLAUDE.md` / `AGENTS.md`. Unlike skills, guidelines are always active — no on-demand activation.
