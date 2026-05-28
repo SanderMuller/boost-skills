@@ -12,7 +12,7 @@ Creates a new Jira issue with a properly formatted description, via the project'
 
 ## Project Conventions slots
 
-This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
 
 | Slot | Used for | If missing |
 |---|---|---|
@@ -21,7 +21,7 @@ This skill reads the following slots from the `## Project Conventions` block in 
 | `$.jira.description_format_doc` | Path to project-owned Jira description format doc | Default: use the **Generic description format** below |
 | `$.mcp.jira` | MCP server-name segment for Jira tools | Default: `mcp-atlassian` |
 
-The Project Conventions block validates against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots before they surface here.
+Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
 
 ## When to Use This Skill
 

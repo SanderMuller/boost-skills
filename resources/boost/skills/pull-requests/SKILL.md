@@ -13,7 +13,7 @@ CRUD-style management of your own pull requests with the GitHub `gh` CLI: create
 
 ## Project Conventions slots
 
-This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
 
 | Slot | Used for | If missing |
 |---|---|---|
@@ -25,7 +25,7 @@ This skill reads the following slots from the `## Project Conventions` block in 
 | `$.pr.template_path` | Path to PR template (read fresh at creation time) | Default `.github/pull_request_template.md` per schema; if file absent, skip template injection |
 | `$.pr.gates` | Typed array of pre-PR gates (`skill_invoked` / `shell_command` / `mcp_tool`) | Skip the gates step entirely (no enforcement) |
 
-The Project Conventions block validates against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing slots before they surface here.
+Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
 
 ## How to Create PRs
 
@@ -127,7 +127,7 @@ Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the to
 
 ### Missing-slot UX
 
-If `$.pr.gates` is unset, the gates step is skipped silently (no enforcement, no prompt). If a project wants to add gates mid-session, tell them to declare `$.pr.gates` in their CLAUDE.md and re-sync.
+If `$.pr.gates` is unset, the gates step is skipped silently (no enforcement, no prompt). If a project wants to add gates mid-session, tell them to declare `$.pr.gates` in their `boost.php`'s `->withConventions([...])` array and re-sync.
 
 ## How to Work on Existing PRs
 
