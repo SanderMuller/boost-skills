@@ -136,7 +136,9 @@ A skill or guideline can carry more than one tag, and then applies only where th
 
 Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex invocation mode, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers fill values in a `## Project Conventions` block in `CLAUDE.md`; vendor skills read slots by JSONPath at agent runtime.
 
-**Requires** `sandermuller/boost-core ^0.8` — the engine ships the schema discovery, `boost validate` / `boost slots` / `boost paths` commands, doctor extension, and the marker-bounded writer that auto-scaffolds the `## Project Conventions` block on first sync.
+**Requires** `sandermuller/boost-core ^0.8.2` — the engine ships the schema discovery, `boost validate` / `boost slots` / `boost paths` commands, doctor extension, and the marker-bounded writer that auto-scaffolds the `## Project Conventions` block on first sync. (`0.8.2` specifically includes the guideline marker-bounded write that preserves the conventions block across syncs; earlier `0.8.0` / `0.8.1` had a round-trip bug.)
+
+Skill bodies reference slots in JSONPath form (`$.jira.project_key`); the `boost slots` command output uses equivalent dotted form (`jira.project_key`). Both forms name the same slot.
 
 The block lives in `CLAUDE.md`, marker-bounded so `boost-core` can write the scaffold without disturbing operator-edited content:
 
