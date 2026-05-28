@@ -2,11 +2,24 @@
 name: bug-fixing
 description: "Test-driven bug fixing workflow. Activates when: fixing bugs, debugging issues, resolving defects, investigating errors, or when user mentions: bug, fix, broken, not working, error, issue, defect, regression."
 argument-hint: [bug description or issue reference]
+metadata:
+  schema-required: "^1"
 ---
 
 # Test-Driven Bug Fixing
 
 A disciplined approach to fixing bugs: **reproduce first, fix second**. Write a failing test that captures the bug, then fix the code to make it pass.
+
+## Project Conventions slots
+
+This skill reads the following slots from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.testing.backend_framework` | Selects test runner (`phpunit` / `pest`) for verify steps | Detect from project layout (`composer.json` scripts, `vendor/bin/*` presence) or ask user |
+| `$.testing.forbid` | List of frameworks / category aliases NOT to suggest | No restriction; vendor uses its judgement |
+
+If the user asks for a test in a framework listed in `$.testing.forbid` (or covered by a category alias — see schema description), refuse and redirect to `$.testing.backend_framework`.
 
 ## Core Principle
 
@@ -68,11 +81,17 @@ it('handles edge case with empty array input', function () {
 
 ### Phase 3: Verify Test Fails
 
-Run the test to confirm it fails:
+Run the test to confirm it fails. Use the project's configured runner per `$.testing.backend_framework`:
 
 ```bash
+# pest
 vendor/bin/pest --filter=handles_edge_case_with_empty_array_input
+
+# phpunit
+vendor/bin/phpunit --filter handles_edge_case_with_empty_array_input
 ```
+
+If `$.testing.backend_framework` is unset, detect from the project layout (`composer.json` scripts, presence of `vendor/bin/pest` vs `vendor/bin/phpunit`).
 
 **If the test passes**: The bug may not be what we thought. Revisit Phase 1.
 

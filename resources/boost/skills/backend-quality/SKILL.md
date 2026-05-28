@@ -3,11 +3,20 @@ name: backend-quality
 description: "Runs backend code quality checks in two tiers: Pint + related tests (every change), PHPStan + full suite (completion only). Activate after making changes to PHP files, or when user mentions: phpstan, pint, code quality, static analysis, code style, run checks."
 metadata:
   boost-tags: "php"
+  schema-required: "^1"
 ---
 
 # Backend Code Quality
 
 Run backend quality checks after making changes to PHP files. Which checks to run depends on where you are in the workflow — see the two tiers below.
+
+## Project Conventions slots
+
+This skill reads the following slot from the `## Project Conventions` block in `CLAUDE.md`:
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.testing.backend_framework` | Selects test runner (`phpunit` / `pest`) for the Tier 1 + Tier 2 test commands | Detect from project layout (`composer.json` scripts, `vendor/bin/*` presence) |
 
 ## When to Use This Skill
 
@@ -19,7 +28,7 @@ Activate this skill when:
 
 ## Two Tiers of Checks
 
-**Test runner.** The test commands below use `vendor/bin/pest`. For a PHPUnit project, run `vendor/bin/phpunit` instead — both take a file-path argument and `--filter`. If the project defines a `composer test` script, prefer it for the full suite (it runs whatever the project configured).
+**Test runner.** The test commands below use `vendor/bin/pest`. For a PHPUnit project (per `$.testing.backend_framework`), run `vendor/bin/phpunit` instead — both take a file-path argument and `--filter`. If the project defines a `composer test` script, prefer it for the full suite (it runs whatever the project configured).
 
 ### Tier 1: During Development (after each change)
 
