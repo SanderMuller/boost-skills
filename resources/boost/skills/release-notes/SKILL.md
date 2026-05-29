@@ -43,7 +43,9 @@ Top-level sections at `## `; no umbrella heading. Omit any section with no entri
 
 **No leading version heading** (`# 1.2.3`). The GitHub release page already shows the version as its title; repeating it in the body is duplicate.
 
-**No opening intro paragraph.** Start with the first `## ` section directly. The body shouldn't lead with "This release ships X, Y, Z..." or "Polish-tier patch bundling..." — the sections themselves describe what changed.
+**No marketing-tone, audit-narration, or framework-fold-in intro paragraphs.** Don't lead with "This release ships X, Y, Z..." (summarizes; the section list already covers it), "Polish-tier patch bundling..." (internal classification), "Validates the asymmetric-cadence frame..." (internal pattern-tracking), or audit-narration of how the work was produced.
+
+A short opening paragraph (or a `## Why this matters` / `## Background` section) IS OK when the release closes a non-obvious bug class, changes user-visible behavior in a way the section-list can't fully explain, or names the upgrade-decision context (e.g. "Operators on Laravel projects who wired X experienced silent Y"). The test: does the paragraph give a reader information they need to decide whether/how to upgrade, beyond what the section list already conveys? If yes, keep it terse and informational. If no, drop it.
 
 **Bullets by default, paragraphs only when justified.** A bullet should be one line. If a change needs context that doesn't fit, the bullet can include a second sentence; a full paragraph is justified only when a behavior or migration genuinely needs prose explanation. Long prose embedded in bullets reads as audit-narration, not release notes.
 
@@ -83,13 +85,12 @@ If adoption is the same as the prior version (just `composer update`), omit the 
 
 ## Anti-patterns
 
+Conceptual quality issues — see "What to omit" below for the specific structural things to leave out.
+
 - "Various improvements" — useless. Be specific.
 - Marketing tone ("massive new feature!") — let users decide what's massive.
 - Burying breaking changes in "Internal".
 - Duplicating commit messages verbatim — synthesize, don't transcribe.
-- Audit-narration paragraphs ("The bug surfaced during adoption dogfood on the 0.9.3 verification cycle: a proving consumer ran the bare-CLI repro path..."). Belongs in commit messages or internal notes, not release notes.
-- Leading version heading (`# 1.2.3`) duplicating the release title.
-- Opening intro paragraph framing the release before the section list.
 
 ## What to omit
 
@@ -98,7 +99,7 @@ Aggressively. Release notes are for developers checking what changed; everything
 **Always omit:**
 
 - **Leading `# <version>` heading** — release title covers it.
-- **Opening intro paragraph** before the first `## ` section.
+- **Marketing-tone / audit-narration / framework-fold-in opening paragraphs** before the first `## ` section. A short value-add intro explaining a non-obvious bug class or upgrade-decision context is fine — see "No marketing-tone..." in Structure above.
 - **`## Requires` / `## Dependencies` saying "unchanged from prior".** If nothing changed, don't write the section.
 - **`## Validation` / quality-gate counts** ("27/27 skills + 1/1 guideline manifest valid", "PHPStan baseline drift: none"). CI green is implied; consumers don't read release notes for QA evidence.
 - **`## Acknowledgments` / pattern-tracking sections** ("Ships absorption-pattern data point #2", "Validates the asymmetric-cadence frame"). Internal observation — belongs in strategy docs or internal notes.
@@ -126,20 +127,22 @@ HTML comments are stripped by GitHub on render — the line is invisible in the 
 
 ## Example — good shape
 
+Section order follows the Structure list (Breaking → Added → Changed → Fixed → Internal). Sections without entries are omitted.
+
 ```markdown
 <!-- verified-sha: 4387b6845b45def9c6ad80e638990f81b74bfb19 -->
 
-## Fixed
+## Added
 
-- `SyncCommand` now renders diagnostics before the error short-circuit. Previously, top-level errors hid the safety-gate reassurance alongside them.
+- `CONTRIBUTING.md` patterns section codifying the wording-revert-as-regression-test pattern and the meta-rule for when to codify patterns (wait for 2-3 occurrences across distinct contexts).
 
 ## Changed
 
 - Diagnostics section header renamed `Project Conventions` → `Diagnostics`. Covers conventions, stale-removal info, Copilot strip info, and render-fail warnings (previously only conventions).
 
-## Added
+## Fixed
 
-- `CONTRIBUTING.md` patterns section codifying the wording-revert-as-regression-test pattern and the meta-rule for when to codify patterns (wait for 2-3 occurrences across distinct contexts).
+- `SyncCommand` now renders diagnostics before the error short-circuit. Previously, top-level errors hid the safety-gate reassurance alongside them.
 
 **Full Changelog**: https://github.com/SanderMuller/boost-core/compare/0.9.3...0.9.4
 ```
