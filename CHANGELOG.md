@@ -5,6 +5,33 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.2 - 2026-05-29
+
+<!-- verified-sha: a83b3548a397e32944d9f8963bf215ba09c0e4c0 -->
+Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symmetry fix that landed in `0.10.0`. Laravel projects wiring the bare-CLI hook (`BoostAutoSync::run` in `composer.json` scripts) previously lost bundled `pest-testing` / `livewire-development` / `filament-development` / Inertia / Flux / Volt / Tailwind / Wayfinder / `laravel-best-practices` skills to Cursor / Copilot / Codex — the gap was masked locally by laravel/boost's MCP server for Claude Code only.
+
+### Changed
+
+- **`boost-core` floor `^0.9.3` → `^0.10`** (README + UPGRADING). Load-bearing per `0.10.0`'s entry-point-mismatch banner + the three-case `boost tags` diagnostic split. Earlier `0.9.3` data-loss patch + `0.9.4` diagnostic visibility ride along transitively.
+- **UPGRADING.md section renamed** "From 1.7.x to 1.8.0" → "From 1.7.x to 1.9.x (current)". Walkthrough lede, composer-require example, and commit-message exemplar updated to current-floor coherence. Earlier `1.8.0` mis-tag is called out inline — pin `^1.8.1` or `^1.9.0+`, never bare `^1.8`.
+- **`release-notes` skill body** (consumer-facing for agents drafting release bodies):
+  - Flat top-level section structure (`## Added` / `## Changed` / `## Fixed` / `## Internal`; no `## What's changed` umbrella).
+  - "No marketing-tone / audit-narration / framework-fold-in intro paragraphs" rule replaces the old absolute "no opening paragraph" rule; short value-add intros explaining a non-obvious bug class or upgrade-decision context are explicitly allowed.
+  - Expanded What-to-omit list: leading version heading, `## Validation` / quality-gate counts, `## Acknowledgments` / pattern-tracking, dogfooding narrative, process choreography, peer-handle credits, "unchanged from prior" segments.
+  - Worked good-shape example with section order matching the prescribed structure.
+  
+
+### Adoption
+
+```bash
+composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
+```
+Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.1...1.9.2
+
 ## 1.9.1 - 2026-05-29
 
 ### Changed
@@ -35,6 +62,7 @@ composer require --dev --with-all-dependencies \
 vendor/bin/boost sync
 vendor/bin/boost validate
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -43,6 +71,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 ```
 No migration step from `1.9.0`. Drop-in replacement.
@@ -68,6 +97,7 @@ No migration step from `1.9.0`. Drop-in replacement.
       -F internal/release-notes-<VERSION>.md
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -85,6 +115,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 ```
@@ -137,6 +168,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -204,6 +236,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -222,6 +255,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -378,6 +412,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
