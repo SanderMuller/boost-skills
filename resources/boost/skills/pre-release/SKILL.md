@@ -19,7 +19,9 @@ Activate when:
 
 Do NOT use mid-development — this is a completion-level skill.
 
-**The user cuts the tag, not you.** The user runs `git tag` and creates the GitHub release themselves — tagging is irreversible-ish and a release-visibility decision that the user owns. Do NOT suggest, demonstrate, or execute tag/release-create commands. State that the release is ready to tag and leave the tag creation to the user. The skill's job ends only once step 8b (post-tag watch) has confirmed the tag-ref and release-event workflows are green — "tag cut" is not the finish line.
+**The user cuts the tag, not you.** Tagging is irreversible-ish and a release-visibility decision the user owns. Do NOT execute `git tag` / `gh release create` / `git push --tags` yourself. The skill's job ends only once step 8b (post-tag watch) has confirmed the tag-ref and release-event workflows are green — "tag cut" is not the finish line.
+
+**However, the agent MUST present the explicit `gh release create` command shape in the handoff — not prose target-naming.** Prose like "target is X" leaves room for default-resolution-path traps: `gh release create <TAG>` without `--target` defaults to whichever branch the user is on, which doesn't always match the verified-sha branch. That's documented `gh` behavior, not a bug — and it has shipped broken releases when the tag-cut workflow spans multiple branches (rc-prep + main, feature + main, etc.). See "Canonical handoff command shape" below for the required format. The discipline is removing the default-resolution path, not asking the user to be careful with prose.
 
 ## Workflow
 
@@ -197,7 +199,7 @@ gh run list --commit "$SHA" --json name,status,conclusion
 
 Only when (1) status is empty, (2) echoes `pushed`, and (3) every run is `completed` + `{success, skipped}` may you `Write` to `internal/release-notes-<version>.md`.
 
-Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" and stop.
+Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below) and stop.
 
 **Pin the verified SHA in the notes file.** The very first line of the notes file must be an HTML comment recording the green SHA. GitHub strips HTML comments when rendering the release body, so this is invisible to readers but greppable by step 8:
 
@@ -212,6 +214,30 @@ Draft into `internal/release-notes-<version>.md`. The user reads the draft, crea
 The SHA in that line is the exact `git rev-parse HEAD` that step 6 proved green. Step 8's pre-tag gate fails closed if the SHA in the notes file does not match the current HEAD (i.e. someone landed more commits between notes draft and tag).
 
 **CI handles `CHANGELOG.md` automatically — do not edit it manually.** `.github/workflows/update-changelog.yml` prepends the release body on release publish. See the `release-automation` guideline for details.
+
+#### Canonical handoff command shape
+
+When reporting "ready to tag" to the user, **always include the explicit `gh release create` command** the user should run, not prose target-naming. Prose like "target is X" leaves room for default-resolution-path traps: `gh release create <TAG>` without `--target` defaults to whichever branch the user happens to be on, which doesn't always match the verified-sha branch.
+
+The required handoff format:
+
+```bash
+gh release create <TAG> \
+    --target <BRANCH> \
+    --title "v<VERSION>" \
+    -F internal/release-notes-<VERSION>.md
+```
+
+Where:
+
+- `<TAG>` is the bare version (`1.8.1`, not `v1.8.1`) — Composer and Packagist read the tag.
+- `--target <BRANCH>` is **always explicit**, even when it's `main`. The flag removes the default-resolution path. The branch named here MUST match the branch that contains the verified-sha commit in the notes file.
+- `--title "v<VERSION>"` uses the `v`-prefixed cosmetic title (`v1.8.1`).
+- `-F` reads the release body from the verified-sha-pinned notes file.
+
+A release has shipped broken specifically because the handoff used prose target-naming: agent said "target is the prep branch" in plain text; user ran `gh release create <TAG>` without `--target` and `gh` defaulted to `main`; the resulting tag pointed at content that did not match the notes' verified-sha. Recovery cost was a follow-up patch release explaining the mis-tag. The discipline this format encodes is: **remove default-resolution paths by surfacing the explicit-arg-shape, instead of relying on prose accuracy and user attention.**
+
+The same discipline generalizes to any agent→user handoff involving CLI commands with default-resolution: `git push` (default remote), `composer require` with version constraint (default stability resolution), `npm` / `yarn` / `pnpm` (default registry), and so on. The principle: any command with a default that could resolve differently in agent context vs user context must be shown with the relevant flag explicit.
 
 ### 8. Pre-tag gate + post-tag watch (the step a broken release lacked)
 
