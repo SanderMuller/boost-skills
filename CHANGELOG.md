@@ -5,6 +5,43 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0 - 2026-05-29
+
+### Changed
+
+- **`pre-release` skill — "user cuts the tag" rule split into two clauses.** Agent must NOT execute `git tag` / `gh release create` / `git push --tags` (preserved). Agent MUST present the explicit `gh release create` command shape in the handoff (new requirement). Prose target-naming is the default-resolution trap; explicit-arg-shape removes it.
+  
+- **`pre-release` skill — new "Canonical handoff command shape" subsection** between step 7 and step 8. Specifies the required handoff format:
+  
+  ```bash
+  gh release create <TAG> \
+      --target <BRANCH> \
+      --title "v<VERSION>" \
+      -F internal/release-notes-<VERSION>.md
+  
+  ```
+  The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
+  
+- **`pre-release` skill — "ready to tag" reporting** now references the canonical handoff format instead of stopping at prose-level "ready" framing.
+  
+
+### Generalized principle
+
+The discipline generalizes beyond `gh release create`: any agent→user handoff involving a CLI command with default-resolution paths must surface the relevant flag explicit, not rely on prose accuracy. Examples covered by the same principle: `git push` (default remote), `composer require` with version constraint (default stability resolution), `npm` / `yarn` / `pnpm` (default registry resolution). The skill subsection documents the broader pattern.
+
+### Adoption path
+
+```bash
+composer require --dev --with-all-dependencies \
+  "sandermuller/boost-skills:^1.9"
+vendor/bin/boost sync
+vendor/bin/boost validate
+
+```
+No migration step from `1.8.1`. Drop-in replacement; the new discipline applies to agents invoking the `pre-release` skill from this version forward.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.8.1...1.9.0
+
 ## 1.8.1 - 2026-05-28
 
 **`1.8.1` supersedes `1.8.0`.** The `1.8.0` tag was cut at `main` HEAD (the post-`1.7.2` CHANGELOG-update commit) instead of the prep branch HEAD that carried the `1.8.0` catalog work — so the `1.8.0` tarball ships `1.7.2` content under a `1.8.0` version label. `1.8.1` is `1.8.0`'s intended content, tagged at the correct SHA. **Consumers should pin to `^1.8.1` rather than `^1.8` to skip the broken `1.8.0`.**
@@ -50,6 +87,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 ```
 The `^1.8.1` floor (rather than `^1.8`) skips the broken `1.8.0` tag. See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.x` migration recipe.
@@ -113,6 +151,7 @@ vendor/bin/boost sync
 vendor/bin/boost validate
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -131,6 +170,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 ```
@@ -285,6 +325,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
