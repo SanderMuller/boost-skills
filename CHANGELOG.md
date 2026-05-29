@@ -5,6 +5,54 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.1 - 2026-05-29
+
+### Changed
+
+- **`autoresearch` skill — Laravel deep-dive subsection absorbed.** Vendor body grew from 286 → 488 lines with a new "Laravel projects — deep-dive variations" section layered on top of the generic flow. Activated for Laravel route/job/Eloquent code paths; skipped for pure-PHP, raw PDO, or CPU-bound targets per an activation-rubric table at the top of the section. The deep-dive covers:
+  
+  - Two metrics (`query_count` + `execution_median_ms`) instead of one — query count is often the dominant signal for database-heavy work.
+  - Transactional benchmark template using the application kernel + Eloquent + factories + `DB::beginTransaction()` / `rollBack()` + `cache()->flush()` / `Once::flush()` between iterations.
+  - Optional `sandermuller/stopwatch` profiling helper with explicit fallback to manual `hrtime(true)` checkpoints.
+  - Two bottleneck taxonomies — query-count (eager loading, relation reuse, bulk inserts, audit suppression, touch suppression, deferred execution, duplicate elimination) and execution-time (validation overhead, double processing, object creation, event overhead, transaction batching, serialization).
+  - Two-metric decision logic: `improved = queries < prev_queries OR execution_ms < prev_ms * 0.98`.
+  - Laravel-specific constraints (`migrate:fresh` ban, factories not raw SQL, transaction rollback, `Once::flush()` between iterations, no test modification, preserve API contracts, never weaken security).
+  
+  Two strong-directive inline pointers in the generic body (Step 2 baseline + Phase 6 decide) route Laravel readers into the deep-dive with explicit consequence framing — "Skipping the deep-dive and drafting a generic benchmark for a Laravel target will leave you optimizing the wrong metric." Generic flow stays intact for non-Laravel consumers; pure-PHP / raw-PDO / different-ORM consumers can skip the deep-dive entirely per the activation rubric.
+  
+  Consumers maintaining a local `autoresearch` shadow with Laravel-specific content can drop the shadow on `1.9.1` adoption.
+  
+- **`ai-guidelines` skill — Laravel-substitute note.** Single inline note after the first `vendor/bin/boost sync` reference: Laravel projects with `sandermuller/project-boost-laravel` installed should substitute `php artisan project-boost:sync` for `vendor/bin/boost sync` throughout the skill. The bare `vendor/bin/boost sync` currently errors on `Container::path()` in Laravel projects until a wrapper-side or engine-side fix lands; the note closes the consumer-side friction without polluting the canonical skill with wrapper-specific commands at every reference.
+  
+- **`README.md` — Requires-line polish + floor-pin discipline cross-link.** Reference to "boost-skills 1.8.0" updated to "boost-skills 1.8.1+" (the `1.8.0` tag was mis-tagged and ships `1.7.2` content). Added a brief sentence on the load-bearing-only floor-pin discipline: polish-tier improvements in subsequent `0.9.x` releases (e.g. `0.9.4` diagnostic-visibility UX) ride along via the range constraint without forcing the floor higher.
+  
+
+### Adoption path
+
+```bash
+composer require --dev --with-all-dependencies \
+  "sandermuller/boost-skills:^1.9.1"
+vendor/bin/boost sync
+vendor/bin/boost validate
+
+```
+Or in Laravel projects with `project-boost-laravel`:
+
+```bash
+composer require --dev --with-all-dependencies \
+  "sandermuller/boost-skills:^1.9.1"
+php artisan project-boost:sync
+vendor/bin/boost validate
+
+```
+No migration step from `1.9.0`. Drop-in replacement.
+
+### Acknowledgments
+
+`1.9.1` ships absorption-pattern data point #2 (codex-review absorption in `1.8.0-rc1` was #1; `autoresearch` absorption is #2). The shape — universal-content-moves-into-catalog, with the absorbed content scoped via an activation-rubric — continues to earn its place. Real-world adoption signal: a proving consumer maintained a local shadow with substantive content that generalized cleanly to other consumers in the same framework class; absorbing it into the catalog drops the shadow and broadens the value.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.0...1.9.1
+
 ## 1.9.0 - 2026-05-29
 
 ### Changed
@@ -18,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       --target <BRANCH> \
       --title "v<VERSION>" \
       -F internal/release-notes-<VERSION>.md
+  
   
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
@@ -36,6 +85,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 ```
 No migration step from `1.8.1`. Drop-in replacement; the new discipline applies to agents invoking the `pre-release` skill from this version forward.
@@ -87,6 +137,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 ```
@@ -152,6 +203,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -170,6 +222,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -325,6 +378,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
