@@ -5,6 +5,32 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.4 - 2026-05-29
+
+<!-- verified-sha: 429039c4b99fae4b9e1672bb0a50675da83935d4 -->
+Closes a tag-bucketing inconsistency where the `pre-release` skill was the odd-one-out in the release-tooling cluster (`pre-release` tagged `php github` while siblings `readme` / `release-notes` / `upgrading` are all tagged `release-automation`). Surfaced by a downstream consumer who reasonably declared `withTags(Php, Github)` for an application repo and ended up needing to explicitly exclude `pre-release` since the app doesn't do release work.
+
+### Changed
+
+- **`pre-release` skill re-tagged: `php github` → `php github release-automation`.** Subset-AND match — all three tags required for the skill to sync. Preserves PHP+GitHub scoping (the skill references Rector/Pint/Pest/PHPStan + `gh release create`) while adding the opt-in gate to align with sibling release-tooling skills.
+
+### Behavior change for current consumers
+
+- **Package authors with `release-automation` declared** (standard family pattern, gets you readme/release-notes/upgrading siblings): no change — `pre-release` still syncs.
+- **PHP+GitHub package authors WITHOUT `release-automation` declared**: lose `pre-release`. Likely correct — if not doing release work, the skill doesn't apply.
+- **PHP+GitHub app authors with just `Php` + `Github`** (the surfaced case): correctly stop receiving `pre-release`. If you previously had an explicit `withExcludedSkills(['pre-release'])` to silence it, you can drop that line.
+
+If you want `pre-release` back, add `release-automation` to your `withTags(...)`.
+
+### Adoption
+
+```bash
+composer require --dev "sandermuller/boost-skills:^1.9.4"
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+```
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.3...1.9.4
+
 ## 1.9.3 - 2026-05-29
 
 <!-- verified-sha: de550633851f5cc0576c9b54ed9c28ea9a68a954 -->
@@ -39,6 +65,7 @@ Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symm
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
 
 
 ```
@@ -78,6 +105,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -86,6 +114,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -115,6 +144,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -132,6 +162,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -186,6 +217,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -257,6 +289,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -275,6 +308,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -433,6 +467,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
