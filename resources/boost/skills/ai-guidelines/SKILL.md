@@ -9,6 +9,8 @@ description: "MUST USE when creating, updating, or managing AI skills and guidel
 
 These files are **auto-generated** by sandermuller/boost-core (Composer plugin). Any direct edits will be overwritten on the next `composer install/update` (the plugin syncs on POST_AUTOLOAD_DUMP when `boost.php` exists at the project root) or when you run `vendor/bin/boost sync` manually.
 
+> **Laravel projects with `sandermuller/project-boost-laravel` installed:** substitute `php artisan project-boost:sync` for `vendor/bin/boost sync` everywhere in this skill. The Laravel wrapper bootstraps the application container before invoking boost-core's `SyncEngine`; the bare `vendor/bin/boost sync` currently errors on `Container::path()` in Laravel projects.
+
 ## Project Structure
 
 ```
