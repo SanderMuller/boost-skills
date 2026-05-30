@@ -91,7 +91,7 @@ Pick one of four shapes depending on review scope and whether the user supplied 
 | Uncommitted working tree only | None | `node "$COMPANION" review --scope working-tree --background` |
 | Uncommitted working tree only | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --scope working-tree --background "$FOCUS"` |
 
-Substitute `<base>` with `$.github.default_base_branch` (or whatever base resolves from `$.branches.patterns` if the current branch matches a pattern).
+Substitute `<base>` with the resolved base branch: scan `$.branches.patterns` in declared order, first pattern matching the current branch name wins, and its `base` field is the base. If `$.branches.patterns` is unset or no pattern matches, fall back to `$.github.default_base_branch` (default `main`). Same resolution the `pull-requests` skill uses.
 
 **Always quote** `FOCUS` as a shell variable — never interpolate user input directly into the command line.
 
@@ -128,16 +128,6 @@ node "$COMPANION" result 2>&1 || true
 
 If the output mentions a file path (long reviews truncate in stdout), load the full content via the `Read` tool — don't try to scroll the truncated output.
 
-#### Auth failure mode
-
-If `codex` is installed but the companion script reports an auth failure, leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
-
-The `pr.gates` slot's `on_missing: stop_and_request` policy applies here too: when `codex-review` is declared as a `pr.gates` entry with `type: skill_invoked`, the vendor `pull-requests` skill should leave the gate's checklist item unchecked and note the auth failure rather than blocking PR creation entirely.
-
-#### Project-specific overrides
-
-If `$.codex.setup_doc` is declared, load that file — it documents project-specific overrides (custom auth flow, project-specific focus areas, exclusions) that layer on top of the playbook above. Most consumers leave the slot unset; the playbook above is self-contained for plugin mode.
-
 ### Bare-CLI path (`invocation_mode: bare_cli`, opt-in fallback)
 
 For environments where the plugin can't be installed (service-account CI runners with no per-user `.claude/plugins/` cache, headless agents, locked-down environments), invoke `codex` directly. Install: `npm install -g @openai/codex`; auth: `codex login` (interactive, in the user's own terminal).
@@ -159,7 +149,13 @@ codex exec review --full-auto --commit HEAD
 codex exec review --full-auto --base <$.github.default_base_branch>
 ```
 
-Synchronous — review ties up the agent session for the full review window (typically 2-5 min). Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
+Synchronous — review ties up the agent session for the full review window (typically 2-5 min). No background queueing or polling loop (those are plugin-only features). Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
+
+### Cross-cutting concerns (apply identically under both invocation modes)
+
+- **Auth failure** — if `codex` is installed but reports an auth failure (whether surfaced by the plugin's companion script or by bare-CLI directly), leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
+- **`$.codex.setup_doc`** — if declared, load that file for project-specific overrides (custom auth flow, project-specific focus areas, exclusions) regardless of invocation mode. Most consumers leave the slot unset; the path-specific playbooks above are self-contained.
+- **`pr.gates skill_invoked: codex-review` interaction** — if the codex review can't run (auth failure, plugin missing under `invocation_mode: plugin`, codex CLI missing under `invocation_mode: bare_cli`), the `pr.gates` `on_missing: stop_and_request` policy means the vendor `pull-requests` skill should leave the gate's checklist item unchecked + note the unrun-reason rather than blocking PR creation entirely.
 
 ## Step 3: Critically evaluate findings
 

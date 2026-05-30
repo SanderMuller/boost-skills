@@ -75,7 +75,7 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
 ## Pre-PR Gates
 
-`$.pr.gates` is a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Vendor enforces each gate in declared order; first failing gate stops the flow per its `on_missing` field.
+`$.pr.gates` is a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Vendor enforces each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`.
 
 ### Gate types
 
@@ -86,8 +86,8 @@ Vendor verifies the named skill was invoked in the current conversation. Used fo
 ```yaml
 - type: skill_invoked
   skill: codex-review
-  window: since_last_code_change   # or: in_session
-  on_missing: stop_and_request     # or: warn / skip
+  window: since_last_code_change   # or: in_session (default)
+  on_missing: stop_and_request     # default; or: warn / skip
 ```
 
 - `window: in_session` — skill must have been invoked anywhere in the current conversation.
@@ -100,11 +100,11 @@ Vendor runs the named shell command and checks the exit code. Used for "must pas
 ```yaml
 - type: shell_command
   command: composer test
-  expect_exit_code: 0
-  on_missing: stop_and_request
+  expect_exit_code: 0              # default
+  on_missing: stop_and_request     # default; or: warn / skip
 ```
 
-Vendor invokes the command via the Bash tool, captures exit code. Gate passes if `actual exit code == expect_exit_code`.
+Vendor invokes the command via the Bash tool, captures exit code. Gate passes when `actual exit code == expect_exit_code`. Gate fails when: exit code differs (including command-not-found, which exits 127); the command crashes or times out; or the Bash tool returns an error invoking the command.
 
 #### `type: mcp_tool`
 
@@ -114,10 +114,10 @@ Vendor invokes the named MCP tool with the declared args. Used for policy that d
 - type: mcp_tool
   tool: qa-approval-check
   args: { channel: "#qa-approved", min_approvals: 1 }
-  on_missing: stop_and_request
+  on_missing: stop_and_request     # default; or: warn / skip
 ```
 
-Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the tool needs a server-name prefix). Gate passes if the MCP tool returns success.
+Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the tool needs a server-name prefix). Gate passes when the MCP tool returns a success-shape response (no exception, no error field). Gate fails when: the tool throws an exception; the tool returns a structured error response; the tool is not available in the consumer's MCP namespace; or the args fail the tool's own validation.
 
 ### `on_missing` behavior
 

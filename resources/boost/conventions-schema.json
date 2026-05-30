@@ -58,7 +58,7 @@
         },
         "branches": {
             "type": "object",
-            "description": "Branch naming patterns + per-pattern base branch resolution. Vendor pull-requests skill scans patterns in declared order; first match wins; no match falls back to github.default_base_branch.",
+            "description": "Branch naming patterns + per-pattern base branch resolution. Primary use: vendor pull-requests (and codex-review) skills scan patterns in declared order; first match wins; the matched pattern's base is the PR/review base; no match falls back to github.default_base_branch. Secondary use: the pattern field doubles as a branch-name template for detection — e.g. write-spec matches the current branch against a Jira-keyed pattern to extract {issue_key}.",
             "additionalProperties": false,
             "properties": {
                 "patterns": {
@@ -219,7 +219,8 @@
             "properties": {
                 "filename_pattern": {
                     "type": "string",
-                    "description": "Template for spec filenames. Recognized placeholders: {issue_key} = full Jira key (e.g. 'HPB-1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
+                    "default": "specs/{slug}.md",
+                    "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = full Jira key (e.g. 'HPB-1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
                 },
                 "research_docs": {
                     "type": "array",

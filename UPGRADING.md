@@ -2,11 +2,11 @@
 
 ## From 1.7.x to 1.9.x (current)
 
-The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. `boost-core 0.10.0` adds two further engine-side improvements (cross-agent capability-loss fix + diagnostic-split) that boost-skills' current floor pins to load-bearingly.
+The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. `boost-core 0.10.0` + `0.11.0` add further engine-side improvements (cross-agent capability-loss fix + diagnostic-split + wrapper-injection-aware drift comparison) that boost-skills' current floor pins to.
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.10` (or via a family package that floats its `boost-core` constraint to `^0.10`). The `0.10` floor is load-bearing: `boost-core 0.10.0` closes a silent cross-agent capability-loss class affecting Laravel projects that wired the bare-CLI hook, and adds `boost doctor` entry-point-mismatch detection + a three-case `boost tags` diagnostic split. The earlier `0.9.3` data-loss patch + `0.9.4` diagnostic-visibility improvements are carried in transitively.
+Bump `sandermuller/boost-core` to `^0.11` (or via a family package that floats its `boost-core` constraint to `^0.11`). The `0.11` floor is load-bearing: `boost-core 0.11.0` adds the `BoostWrapperContract` so bare-CLI `boost sync` no longer false-positive-flags wrapper-injected files for deletion (correctness half of the wrong-entry-point bug class). `0.10.0`'s cross-agent capability-loss fix + `boost doctor` entry-point-mismatch detection + three-case `boost tags` diagnostic split, plus the `0.9.3` data-loss patch + `0.9.4` diagnostic-visibility improvements, are carried in transitively.
 
 ### Migrate existing conventions
 
@@ -101,7 +101,7 @@ Most consumers will land the migration as a single atomic commit:
 # 1. Update constraints
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9" \
-  "sandermuller/boost-core:^0.10"
+  "sandermuller/boost-core:^0.11"
 
 # 2. Migrate conventions edit surface
 vendor/bin/boost convert-conventions
@@ -118,5 +118,5 @@ vendor/bin/boost validate
 
 # 6. Commit
 git add boost.php composer.json composer.lock CLAUDE.md .gitignore
-git commit -m "Adopt boost-skills 1.9.x + boost-core 0.10 + migrate Project Conventions"
+git commit -m "Adopt boost-skills 1.9.x + boost-core 0.11 + migrate Project Conventions"
 ```

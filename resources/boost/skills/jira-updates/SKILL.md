@@ -46,7 +46,7 @@ If the project defines a Jira description guideline (sections, voice, append/mer
 
 ## Available Tools
 
-The `mcp-atlassian` MCP server:
+The Jira MCP server (resolved via `$.mcp.jira`, default `mcp-atlassian`) provides these tools — invoke as `mcp__<$.mcp.jira>__<tool>`:
 
 | Tool | Use for |
 |---|---|

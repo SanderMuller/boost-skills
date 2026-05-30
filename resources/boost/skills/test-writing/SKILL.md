@@ -1,11 +1,24 @@
 ---
 name: test-writing
 description: "Test-writing conventions for clear, targeted tests. Activates when: writing a new test, creating a test file, adding test coverage, naming tests, or when user mentions: test, testing, test case, coverage, assertion, unit test, feature test."
+metadata:
+  schema-required: "^1"
 ---
 
 # Test Writing Guidelines
 
 Conventions for writing tests that are specific, descriptive, and well-structured. The principles are language-agnostic; the examples use PHP/Pest, but the same rules apply to any test framework.
+
+## Project Conventions slots
+
+This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+
+| Slot | Used for | If missing |
+|---|---|---|
+| `$.testing.backend_framework` | Selects the runner (`phpunit` / `pest`) to write tests for — match its syntax + idiom | Detect from project layout (`composer.json` scripts, `vendor/bin/pest` vs `vendor/bin/phpunit`) or follow sibling test files |
+| `$.testing.forbid` | List of frameworks / category aliases NOT to write tests in | No restriction; follow project conventions |
+
+Write tests in the runner named by `$.testing.backend_framework`. Never write a test in a framework listed in `$.testing.forbid` (or covered by a category alias — see the schema description for alias expansions); if asked to, redirect to `$.testing.backend_framework`.
 
 ## Test the Specific Scenario
 
