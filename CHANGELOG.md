@@ -5,6 +5,34 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.5 - 2026-05-30
+
+<!-- verified-sha: 07a17e546df12bc29c4559c5a5261aed42b4e423 -->
+A dispatch-prose audit across all six under-dogfooded conventions-schema slot groups (`pr.gates`, `codex.invocation_mode`, `testing.forbid`, `spec.filename_pattern`, `mcp.*`, `branches.patterns`) — the slots no real consumer exercises yet, where a vendor-skill prose bug would surface only when someone first adopts them. Caught six real prose/schema gaps that schema validation can't (validation checks input shape, not vendor dispatch prose). Plus a `boost-core ^0.11` floor-bump.
+
+### Changed
+
+- **`pull-requests` (`pr.gates`)** — gate-ordering flow-control clarified (only `stop_and_request` halts; `warn` / `skip` continue to the next gate); `shell_command` failure modes enumerated (exit-127 / crash / timeout / Bash-tool error); `mcp_tool` success + failure shapes defined; default-value annotations added to the YAML examples.
+- **`codex-review` (`codex.invocation_mode`)** — auth-failure / `$.codex.setup_doc` / `pr.gates` interaction concerns moved from plugin-nested subsections into a shared "Cross-cutting concerns" section so both invocation modes get parity. Base-branch resolution prose restated inline (first-match-wins) so the skill is self-sufficient without `pull-requests` loaded.
+- **`test-writing` (`testing.forbid`)** — now slot-aware: reads `$.testing.backend_framework` (write tests for that runner) + `$.testing.forbid` (never write in forbidden frameworks). Adds `metadata.schema-required: ^1` + a Project Conventions slots table.
+- **`jira-updates` (`mcp.*`)** — "Available Tools" header no longer hardcodes the `mcp-atlassian` server name; resolves via `$.mcp.jira` so custom MCP server-name segments work.
+- **`conventions-schema.json`** — `spec.filename_pattern` gains its missing `"default": "specs/{slug}.md"` (sibling slots all carry schema defaults; `write-spec` asserted this default the schema didn't back). `branches.patterns` description broadened to name all consumers (base resolution by `pull-requests` + `codex-review`; the `pattern` field's reuse by `write-spec` for `{issue_key}` detection).
+
+### Requires
+
+- **`sandermuller/boost-core ^0.11`** (was `^0.10`). `0.11.0` adds the `BoostWrapperContract` so bare-CLI `boost sync` no longer false-positive-flags wrapper-injected files for deletion — the correctness half of the wrong-entry-point bug class (`0.10.0` closed the discoverability half with the `boost doctor` entry-point banner). `0.10.x` + `0.9.x` improvements ride in transitively.
+
+### Adoption
+
+```bash
+composer require --dev "sandermuller/boost-skills:^1.9.5" "sandermuller/boost-core:^0.11"
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+```
+No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.4...1.9.5
+
 ## 1.9.4 - 2026-05-29
 
 <!-- verified-sha: 429039c4b99fae4b9e1672bb0a50675da83935d4 -->
@@ -27,6 +55,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 ```
 **Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.3...1.9.4
@@ -68,6 +97,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -106,6 +136,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -114,6 +145,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -145,6 +177,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -162,6 +195,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -217,6 +251,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -290,6 +325,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -308,6 +344,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -467,6 +504,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
