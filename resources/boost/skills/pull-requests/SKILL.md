@@ -75,7 +75,7 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 This project's configured pre-PR gates:
 
 ```boost:conv
-<!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates; skip the gates step entirely"-->
+<!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates"-->
 ```
 
 The gates are a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Enforce each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`. The gate-type reference below explains each `type`.
