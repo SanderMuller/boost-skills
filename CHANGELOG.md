@@ -5,6 +5,33 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.7 - 2026-05-31
+
+<!-- verified-sha: 29b5d544c3514a6d69d9f78dd3da3356c91b8ff6 -->
+### Changed
+
+- **`test-writing` + `bug-fixing` — `testing.forbid` category-alias expansions rendered inline.** Both skills previously deferred to "see the schema description for alias expansions", but the schema description isn't loaded into the agent's context — so an agent had to know from general knowledge that `js-test-frameworks` includes `cypress`. Now the full expansion is inline in both skills:
+  
+  | Alias | Expands to |
+  |---|---|
+  | `js-test-frameworks` | vitest, jest, mocha, cypress, playwright |
+  | `browser-test-frameworks` | cypress, playwright |
+  | `php-browser-tests` | dusk, panther |
+  
+  A `forbid: ['js-test-frameworks']` now visibly refuses a Cypress test without the agent needing outside knowledge. Surfaced by runtime-dispatch verification against a proving consumer — an agent resolved the alias membership via general knowledge, which a stricter agent could have missed.
+  
+
+### Adoption
+
+```bash
+composer require --dev "sandermuller/boost-skills:^1.9.7"
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+```
+No schema or convention changes — the alias map is unchanged (this renders the existing schema map into agent context).
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.6...1.9.7
+
 ## 1.9.6 - 2026-05-30
 
 <!-- verified-sha: 8278606eaf76c6095ec401a5e1ce03978c258867 -->
@@ -38,6 +65,7 @@ composer require --dev "sandermuller/boost-skills:^1.9.5" "sandermuller/boost-co
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -65,6 +93,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -110,6 +139,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -150,6 +180,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -158,6 +189,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -193,6 +225,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -210,6 +243,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -267,6 +301,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -344,6 +379,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -362,6 +398,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -523,6 +560,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
