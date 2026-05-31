@@ -2,11 +2,11 @@
 
 ## From 1.7.x to 1.9.x (current)
 
-The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. `boost-core 0.10.0` + `0.11.0` add further engine-side improvements (cross-agent capability-loss fix + diagnostic-split + wrapper-injection-aware drift comparison) that boost-skills' current floor pins to.
+The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. Engine versions past `0.9.0` add further improvements (cross-agent capability-loss fix in `0.10.0`, wrapper-injection-aware drift in `0.11.0`, markerless guidance files in `0.12.0`) that the current floor tracks.
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.11` (or via a family package that floats its `boost-core` constraint to `^0.11`). The `0.11` floor is load-bearing: `boost-core 0.11.0` adds the `BoostWrapperContract` so bare-CLI `boost sync` no longer false-positive-flags wrapper-injected files for deletion (correctness half of the wrong-entry-point bug class). `0.10.0`'s cross-agent capability-loss fix + `boost doctor` entry-point-mismatch detection + three-case `boost tags` diagnostic split, plus the `0.9.3` data-loss patch + `0.9.4` diagnostic-visibility improvements, are carried in transitively.
+Bump `sandermuller/boost-core` to `^0.13` (normally pulled by the family package you adopt — `package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel` — which pins the engine; the current family line resolves `^0.13`). The catalog's slot vocabulary works on any `boost-core 0.9.0+`; `^0.13` tracks the current family line. Notable engine versions: `0.9.3` (data-loss patch), `0.10.0` (cross-agent capability-loss fix), `0.11.0` (wrapper-injection-aware drift), `0.12.0` (markerless guidance files — `CLAUDE.md` / `AGENTS.md` wholesale boost-owned, operator content moves to `.ai/guidelines/`).
 
 ### Migrate existing conventions
 
@@ -101,7 +101,7 @@ Most consumers will land the migration as a single atomic commit:
 # 1. Update constraints
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9" \
-  "sandermuller/boost-core:^0.11"
+  "sandermuller/boost-core:^0.13"
 
 # 2. Migrate conventions edit surface
 vendor/bin/boost convert-conventions
