@@ -10,18 +10,15 @@ metadata:
 
 Appends post-implementation content to an existing Jira issue after its PR is created, or posts a Blocked-by-Question comment during implementation.
 
-## Project Conventions slots
+**Jira MCP tool calls** in this skill use your project's MCP server mapping:
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+```boost:conv
+<!--boost:conv path="mcp" mode="yaml" fallback="jira: mcp-atlassian"-->
+```
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.mcp.jira` | MCP server-name segment for Jira tool calls | Default `mcp-atlassian` |
-| `$.jira.project_key` | Validates the issue key prefix matches the project's expected key | Skip the prefix check |
-| `$.jira.refuse_other_projects` | Refuse updates on issues outside `$.jira.project_key` | Default `false` (allow cross-project updates) |
-| `$.jira.description_format_doc` | Project-owned Jira description format rules (voice, sections, append-merge algorithm) | Use the generic append rules in this skill |
+Use the `jira` value above as the MCP server-namespace segment `<jira>`. If the rendered map has no `jira:` key (the project declared other MCP servers but not jira), default `<jira>` to `mcp-atlassian`. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with `jira: mcp-atlassian`, call `mcp__mcp-atlassian__jira_get_issue`. The tool references below write `mcp__<jira>__…` or a bare `jira_*` name for brevity; the actual call is always `mcp__<jira>__jira_*`.
 
-Vendor invokes `mcp__<$.mcp.jira>__jira_*` at runtime.
+**Project scope:** the configured project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — skip the prefix check)"-->; cross-project refusal is <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When refusal is `true` and the issue key's prefix differs from the configured key, refuse the update and tell the user.
 
 ## When to Use This Skill
 
@@ -36,17 +33,17 @@ Do **NOT** use this skill for:
 
 ## Statuses and Transitions
 
-Jira statuses, transition names, and transition IDs vary per project and workflow — **never hardcode them.** Before firing any transition, call `mcp__<$.mcp.jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and pick a transition from the returned list, matched by display name. If the expected transition is not offered, do not substitute another — skip it and report.
+Jira statuses, transition names, and transition IDs vary per project and workflow — **never hardcode them.** Before firing any transition, call `mcp__<jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and pick a transition from the returned list, matched by display name. If the expected transition is not offered, do not substitute another — skip it and report.
 
 ## Description Format
 
-If the project defines a Jira description guideline (sections, voice, append/merge rules), read and follow it. Otherwise use the conventions below.
+Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline" fallback="none — use the conventions below"-->. If a path is shown, read that file and follow its rules (sections, voice, append/merge); it overrides the conventions below.
 
 **Voice — non-technical, user-facing.** The description is read by QA, PO, designers, translators, and support. Translate every code change into what a user, admin, QA, or translator sees. Code identifiers (class names, file paths, package names) do not belong in Jira.
 
 ## Available Tools
 
-The Jira MCP server (resolved via `$.mcp.jira`, default `mcp-atlassian`) provides these tools — invoke as `mcp__<$.mcp.jira>__<tool>`:
+The Jira MCP server (the namespace segment defined at the top of this skill) provides these tools — invoke each as `mcp__<segment>__<tool>`:
 
 | Tool | Use for |
 |---|---|
@@ -56,7 +53,7 @@ The Jira MCP server (resolved via `$.mcp.jira`, default `mcp-atlassian`) provide
 | `jira_get_transitions` | Read valid transitions for an issue |
 | `jira_transition_issue` | Fire a status transition |
 
-Always fetch the issue first with `jira_get_issue` before any mutation.
+Always fetch the issue first with `mcp__<jira>__jira_get_issue` before any mutation.
 
 ## Required Information — Ask If Missing
 
@@ -72,7 +69,7 @@ For the Blocked-by-Question sub-workflow, also confirm the one-line blocker ques
 ### 1. Fetch the issue
 
 ```
-mcp__<$.mcp.jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
+mcp__<jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
 ```
 
 Capture the current description — it may already contain content from `jira-create` or a prior update.
@@ -104,7 +101,7 @@ Document:
 ### 5. Push the update
 
 ```
-mcp__<$.mcp.jira>__jira_update_issue(
+mcp__<jira>__jira_update_issue(
     issue_key: "<ISSUE-KEY>",
     fields: {description: "<merged description>"}
 )
@@ -133,7 +130,7 @@ Fires when implementation needs a stakeholder decision before it can continue. T
 State the blocker clearly, mention the relevant decision-maker, and include any options already considered.
 
 ```
-mcp__<$.mcp.jira>__jira_add_comment(
+mcp__<jira>__jira_add_comment(
     issue_key: "<ISSUE-KEY>",
     comment: "<blocker question + context>"
 )

@@ -10,21 +10,17 @@ metadata:
 
 Writes structured specification files designed for phased implementation with built-in progress tracking. Specs produced by this skill are directly compatible with the `implement-spec` skill.
 
-## Project Conventions slots
+## Filename placeholder substitution
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="inline" fallback="specs/{slug}.md"-->. It accepts these placeholders, which you substitute at spec-creation time:
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.spec.filename_pattern` | Template for the spec file path (placeholders below) | Default `specs/{slug}.md` |
-| `$.spec.research_docs` | Project-owned reference docs to consult during the research phase (architecture, glossaries, relationship maps) | No automatic consultation — skill stays generic |
-| `$.jira.project_key` | Resolves `{issue_key}` placeholder when the spec is Jira-backed (`HPB-1234`-style) | `{issue_key}` and any adjacent dash are omitted from the filename |
+- `{issue_key}` — full Jira key (e.g. `HPB-1234`). Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
 
-### Filename placeholder substitution
+  ```boost:conv
+  <!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch-pattern issue-key detection"-->
+  ```
 
-`$.spec.filename_pattern` accepts these placeholders:
-
-- `{issue_key}` — full Jira key (e.g. `HPB-1234`). Resolved from the user's input or from a branch that matches a Jira-keyed pattern in `$.branches.patterns`. If no issue is involved (or `$.jira.project_key` is absent), the placeholder resolves empty.
+  The configured Jira project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — the spec is treated as not-issue-backed)"-->. If no issue is involved (or no project key is configured), the placeholder resolves empty.
 - `{slug}` — URL-safe kebab-case from the feature name. Lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary.
 - `{date}` — ISO date (`YYYY-MM-DD`).
 
@@ -38,9 +34,9 @@ This skill reads the following slots from your project's **Project Conventions**
 
 ## Spec File Location
 
-Resolve the spec file path via `$.spec.filename_pattern` (default `specs/{slug}.md`). Apply the placeholder-substitution rules above to produce the final path.
+Resolve the spec file path via the filename pattern above. Apply the placeholder-substitution rules above to produce the final path.
 
-Subdirectories for related specs are fine — if `$.spec.filename_pattern` doesn't model the subdir convention, place spec files manually under the resolved parent dir:
+Subdirectories for related specs are fine — if the filename pattern doesn't model the subdir convention, place spec files manually under the resolved parent dir:
 
 ```
 specs/
@@ -52,7 +48,7 @@ specs/
 
 ## Research phase — project context
 
-Before drafting the spec, consult `$.spec.research_docs` if declared. Each path points at a project-owned doc covering architecture, domain glossary, relationship maps, or similar reference material. Read these before the technical sections so terminology + structural references match the project's canon. If a slot value points at a missing file, surface it (`boost doctor --check-conventions` would have caught this at sync time).
+Before drafting the spec, consult the project reference docs: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — the skill stays generic; gather context from the conversation"-->. If paths are shown, read them (architecture, domain glossary, relationship maps, or similar) before the technical sections so terminology + structural references match the project's canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` would have caught this at sync time).
 
 ## Spec Format
 

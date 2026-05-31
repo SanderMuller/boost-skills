@@ -10,16 +10,11 @@ metadata:
 
 A disciplined approach to fixing bugs: **reproduce first, fix second**. Write a failing test that captures the bug, then fix the code to make it pass.
 
-## Project Conventions slots
+## Test framework
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+This project's test runner is <!--boost:conv path="testing.backend_framework" mode="inline" fallback="auto-detected from the project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence; ask the user if ambiguous"-->. Write and run tests with that runner.
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.testing.backend_framework` | Selects test runner (`phpunit` / `pest`) for verify steps | Detect from project layout (`composer.json` scripts, `vendor/bin/*` presence) or ask user |
-| `$.testing.forbid` | List of frameworks / category aliases NOT to suggest | No restriction; vendor uses its judgement |
-
-If the user asks for a test in a framework listed in `$.testing.forbid` — or in a framework a listed category alias expands to — refuse and redirect to `$.testing.backend_framework`. Alias expansions: `js-test-frameworks` = vitest/jest/mocha/cypress/playwright; `browser-test-frameworks` = cypress/playwright; `php-browser-tests` = dusk/panther. (So `forbid: ['js-test-frameworks']` refuses a Cypress test even though `cypress` isn't named.)
+If the user asks for a test in a framework on the forbidden list (<!--boost:conv path="testing.forbid" mode="inline" fallback="none — no restriction"-->) — or in a framework a listed category alias expands to — refuse and redirect to the runner named above. Alias expansions: `js-test-frameworks` = vitest/jest/mocha/cypress/playwright; `browser-test-frameworks` = cypress/playwright; `php-browser-tests` = dusk/panther. (So a forbidden `js-test-frameworks` refuses a Cypress test even though `cypress` isn't named.)
 
 ## Core Principle
 
@@ -81,7 +76,7 @@ it('handles edge case with empty array input', function () {
 
 ### Phase 3: Verify Test Fails
 
-Run the test to confirm it fails. Use the project's configured runner per `$.testing.backend_framework`:
+Run the test to confirm it fails. Use the project's configured runner (named at the top of this skill):
 
 ```bash
 # pest
@@ -90,8 +85,6 @@ vendor/bin/pest --filter=handles_edge_case_with_empty_array_input
 # phpunit
 vendor/bin/phpunit --filter handles_edge_case_with_empty_array_input
 ```
-
-If `$.testing.backend_framework` is unset, detect from the project layout (`composer.json` scripts, presence of `vendor/bin/pest` vs `vendor/bin/phpunit`).
 
 **If the test passes**: The bug may not be what we thought. Revisit Phase 1.
 

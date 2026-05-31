@@ -9,18 +9,6 @@ metadata:
 
 Run an independent code review using OpenAI Codex, then critically evaluate and apply warranted findings.
 
-## Project Conventions slots
-
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
-
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.codex.invocation_mode` | Selects invocation path: `plugin` (companion script) or `bare_cli` (bare `codex` CLI) | Default `plugin` per schema |
-| `$.codex.setup_doc` | Optional path to project-specific Codex overrides (custom auth flow, project-specific focus areas, exclusions) | Vendor skill's built-in plugin / bare-CLI playbooks are sufficient — most consumers leave this unset |
-| `$.github.default_base_branch` | Resolves `--base <branch>` for plugin-mode feature-branch reviews | Default `main` per schema |
-
-Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
-
 ## Step 1: Determine what to review
 
 Check what has changed:
@@ -34,7 +22,7 @@ If there are uncommitted changes, review those. If the working tree is clean, re
 
 ## Step 2: Run Codex review
 
-Vendor invocation branches on `$.codex.invocation_mode`. Plugin is the canonical path (default per schema); bare CLI is the opt-in fallback for environments where the plugin can't be installed.
+This project's Codex invocation mode is <!--boost:conv path="codex.invocation_mode" mode="inline" fallback="plugin"-->. Follow the matching path below: `plugin` (the canonical path, default) or `bare_cli` (the opt-in fallback for environments where the plugin can't be installed).
 
 ### Plugin path (`invocation_mode: plugin`, default)
 
@@ -86,12 +74,18 @@ Pick one of four shapes depending on review scope and whether the user supplied 
 
 | Scope | Focus argument | Command |
 |---|---|---|
-| Feature branch vs `$.github.default_base_branch` | None | `node "$COMPANION" review --base <base> --background` |
-| Feature branch vs `$.github.default_base_branch` | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --base <base> --background "$FOCUS"` |
+| Feature branch vs base branch | None | `node "$COMPANION" review --base <base> --background` |
+| Feature branch vs base branch | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --base <base> --background "$FOCUS"` |
 | Uncommitted working tree only | None | `node "$COMPANION" review --scope working-tree --background` |
 | Uncommitted working tree only | Yes | `FOCUS="<user input>"; node "$COMPANION" adversarial-review --scope working-tree --background "$FOCUS"` |
 
-Substitute `<base>` with the resolved base branch: scan `$.branches.patterns` in declared order, first pattern matching the current branch name wins, and its `base` field is the base. If `$.branches.patterns` is unset or no pattern matches, fall back to `$.github.default_base_branch` (default `main`). Same resolution the `pull-requests` skill uses.
+Substitute `<base>` with the resolved base branch. Scan the configured branch patterns in declared order; the first pattern matching the current branch name wins, and its `base` field is the base:
+
+```boost:conv
+<!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch patterns configured"-->
+```
+
+If no pattern matches (or none are configured), fall back to the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"-->. Same resolution the `pull-requests` skill uses.
 
 **Always quote** `FOCUS` as a shell variable — never interpolate user input directly into the command line.
 
@@ -144,9 +138,9 @@ codex exec review --full-auto --uncommitted
 codex exec review --full-auto --commit HEAD
 ```
 
-**For changes against a base branch:**
+**For changes against a base branch** (resolve `<base>` the same way as the plugin path — branch patterns first, then the default base branch):
 ```bash
-codex exec review --full-auto --base <$.github.default_base_branch>
+codex exec review --full-auto --base <base>
 ```
 
 Synchronous — review ties up the agent session for the full review window (typically 2-5 min). No background queueing or polling loop (those are plugin-only features). Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
@@ -154,7 +148,7 @@ Synchronous — review ties up the agent session for the full review window (typ
 ### Cross-cutting concerns (apply identically under both invocation modes)
 
 - **Auth failure** — if `codex` is installed but reports an auth failure (whether surfaced by the plugin's companion script or by bare-CLI directly), leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
-- **`$.codex.setup_doc`** — if declared, load that file for project-specific overrides (custom auth flow, project-specific focus areas, exclusions) regardless of invocation mode. Most consumers leave the slot unset; the path-specific playbooks above are self-contained.
+- **Project-specific overrides doc** — <!--boost:conv path="codex.setup_doc" mode="inline" fallback="none — the path-specific playbooks above are self-contained"-->. If a path is shown, load that file for project-specific overrides (custom auth flow, focus areas, exclusions) regardless of invocation mode. Most consumers leave it unset.
 - **`pr.gates skill_invoked: codex-review` interaction** — if the codex review can't run (auth failure, plugin missing under `invocation_mode: plugin`, codex CLI missing under `invocation_mode: bare_cli`), the `pr.gates` `on_missing: stop_and_request` policy means the vendor `pull-requests` skill should leave the gate's checklist item unchecked + note the unrun-reason rather than blocking PR creation entirely.
 
 ## Step 3: Critically evaluate findings

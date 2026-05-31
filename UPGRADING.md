@@ -1,12 +1,31 @@
 # Upgrading
 
-## From 1.7.x to 1.9.x (current)
+## From 1.9.x to 2.0 (conventions inlining)
+
+**Breaking: requires `boost-core ^0.15`.** In 2.0 every slot-aware skill resolves its convention values at sync time via `boost-core 0.15.0`'s conventions-inlining tokens (`<!--boost:conv-->`) instead of reading the always-loaded `## Project Conventions` block at agent runtime. On any engine below `0.15` those tokens emit raw into the skill body (the value is lost), so `^0.15` is a hard floor — this is why 2.0 is a major bump.
+
+### Required
+
+- Adopt a family-package release that floats `boost-core` to include `^0.15` (`package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel`). `boost-skills` has no direct `boost-core` require — the family package pins the engine.
+
+### What changes
+
+- **Nothing in the slot vocabulary or your `boost.php`.** Same `->withConventions([...])` slots, same schema v1. You don't edit anything.
+- **The `## Project Conventions` block in `CLAUDE.md` disappears** once your full synced skill set is token-sourced (and nothing needs runtime, no token errored). The values are now baked into each skill at sync. The drop is automatic — the engine's fail-toward-keep gate keeps the block until everything converges, so a partial state is safe.
+- **`boost where --conventions`** shows each slot's effective resolved value (declared / schema-default / fallback) — use it to confirm what your tokens resolve to before/after.
+
+### What stays the same
+
+- Agent behavior: skills dispatch identically — the value is just inlined instead of read from the block.
+- The slot schema, `boost validate`, `boost slots`, and every convention you've declared.
+
+## From 1.7.x to 1.9.x
 
 The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. Engine versions past `0.9.0` add further improvements (cross-agent capability-loss fix in `0.10.0`, wrapper-injection-aware drift in `0.11.0`, markerless guidance files in `0.12.0`) that the current floor tracks.
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.13 || ^0.14` (normally pulled by the family package you adopt — `package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel` — which pins the engine; the current family line resolves `^0.13 || ^0.14`). The catalog's slot vocabulary works on any `boost-core 0.9.0+`; this range tracks the current family line. Notable engine versions: `0.9.3` (data-loss patch), `0.10.0` (cross-agent capability-loss fix), `0.11.0` (wrapper-injection-aware drift), `0.12.0` (markerless guidance files — `CLAUDE.md` / `AGENTS.md` wholesale boost-owned, operator content moves to `.ai/guidelines/`), `0.14.0` (project-scope reconcile-on-sync — dropped-emitter orphans reaped, sha-gated).
+Bump `sandermuller/boost-core` to `^0.13 || ^0.14` (the 1.9.x-era range — normally pulled by the family package you adopt). 1.9.x's slot-aware skills read convention values from the rendered `## Project Conventions` block at runtime, so they work on any `boost-core 0.9.0+`; the `^0.13 || ^0.14` range just tracks the family line at the 1.9.x cutoff. (The hard `^0.15` floor applies only to 2.0+ — see the 1.9.x → 2.0 section above.)
 
 ### Migrate existing conventions
 
