@@ -19,6 +19,18 @@
 - Agent behavior: skills dispatch identically — the value is just inlined instead of read from the block.
 - The slot schema, `boost validate`, `boost slots`, and every convention you've declared.
 
+### Gotcha — host `.blade.php` guidelines silently vanish
+
+Not a conventions change, but it bites on the same sync: **`boost-core 0.16`'s guideline loader only renders `.md` host guidelines natively (PassthroughRenderer). A host `.ai/guidelines/*.blade.php` file is silently dropped from the rendered `CLAUDE.md` / `AGENTS.md` on the v2/0.16 sync** — and `boost validate` passes anyway (it checks the conventions schema, not guideline-render completeness), so the drop is silent. Reported by two real consumers (mijntp, hihaho) that ship a `.blade.php` style guide.
+
+Fix: register a Blade renderer in `boost.php`:
+
+```php
+->withSkillRenderers([new BladeRenderer])
+```
+
+This works when you sync via `php artisan project-boost:sync` (the Laravel path bootstraps the container the `BladeRenderer` needs). After registering, re-sync and the `.blade.php` guideline content is restored. If all your host guidelines are `.md`, this doesn't apply. (Root cause is engine-side; a future `boost-core` may render `.blade.php` natively or warn on an unrenderable host guideline instead of dropping it silently.)
+
 ## From 1.7.x to 1.9.x
 
 The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. Engine versions past `0.9.0` add further improvements (cross-agent capability-loss fix in `0.10.0`, wrapper-injection-aware drift in `0.11.0`, markerless guidance files in `0.12.0`) that the current floor tracks.
