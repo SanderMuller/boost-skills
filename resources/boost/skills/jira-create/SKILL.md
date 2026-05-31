@@ -39,7 +39,7 @@ Resolve the target project in this order:
 2. Otherwise, use the configured project key: <!--boost:conv path="jira.project_key" mode="inline" fallback="(none configured)"-->.
 3. If no project key is configured and the user didn't name one, ask: "What Jira project key should new issues land in?" Use the answer for the rest of this session.
 
-**Cross-project refusal:** cross-project mutation refusal is set to <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When that is `true` and the resolved project differs from the configured key, refuse: "This project only creates issues in the configured key. To create elsewhere, set `jira.refuse_other_projects: false` in your Project Conventions or use a different project's tooling."
+**Cross-project refusal:** cross-project mutation refusal is set to <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When that is `true` and the resolved project differs from the configured key, refuse: "This project only creates issues in the configured key. To create elsewhere, set `jira.refuse_other_projects: false` in your `boost.php` conventions or use a different project's tooling."
 
 Cross-project linking and mentions remain allowed regardless — the refusal scopes to **mutation** (create/edit) only.
 

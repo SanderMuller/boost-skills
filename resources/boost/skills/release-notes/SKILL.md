@@ -138,7 +138,7 @@ Section order follows the Structure list (Breaking → Added → Changed → Fix
 
 ## Changed
 
-- Diagnostics section header renamed `Project Conventions` → `Diagnostics`. Covers conventions, stale-removal info, Copilot strip info, and render-fail warnings (previously only conventions).
+- Diagnostics header renamed to `Diagnostics` (from the legacy conventions-only label). Now covers conventions, stale-removal info, Copilot strip info, and render-fail warnings.
 
 ## Fixed
 

@@ -136,7 +136,7 @@ Vendor invokes `mcp__<tool>__<...>`. If the tool needs a server-name prefix, res
 
 ### Missing-gates UX
 
-If no gates are configured (the block above shows "none"), the gates step is skipped silently — no enforcement, no prompt. If a project wants to add gates, tell them to declare `pr.gates` in their `boost.php`'s `->withConventions([...])` array and re-sync.
+If no pre-PR gates are configured (the gates list above resolves to "none"), the gates step is skipped silently — no enforcement, no prompt. If a project wants to add gates, tell them to declare `pr.gates` in their `boost.php`'s `->withConventions([...])` array and re-sync.
 
 ## How to Work on Existing PRs
 

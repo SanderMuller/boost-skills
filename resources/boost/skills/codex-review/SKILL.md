@@ -66,7 +66,7 @@ Resolve the latest installed copy at invocation time — version path varies as 
 COMPANION=$(ls ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
 ```
 
-If the resolution returns nothing, the plugin is not installed — fall back to the **Plugin install** section above.
+If the resolution returns nothing, the plugin is not installed — fall back to the **Plugin install** steps earlier in this skill.
 
 #### Invocation patterns
 
@@ -159,7 +159,7 @@ Codex findings are a second opinion, not gospel. You have greater context on the
 2. **Is it already tested?** — Check if existing tests cover the scenario.
 3. **Is it a style preference?** — Skip. Don't change working code for style.
 4. **Is it a false positive?** — Codex may misunderstand framework internals or the project's architecture. Verify against the actual behavior.
-5. **Does it conflict with project conventions?** — Check sibling files. Established project patterns take precedence over Codex preferences.
+5. **Does it conflict with the project's established patterns?** — Check sibling files. Established project patterns take precedence over Codex preferences.
 
 Don't over-apply: a review that implements 2 real improvements is better than one that applies 10 questionable changes. For each finding, briefly note whether you're implementing or skipping it and why.
 

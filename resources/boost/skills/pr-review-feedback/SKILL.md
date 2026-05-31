@@ -101,7 +101,7 @@ For each comment, ask yourself:
 | Consider                                    | Action                                   |
 |---------------------------------------------|------------------------------------------|
 | Does it improve code quality?               | Apply it                                 |
-| Does it follow project conventions?         | Apply it                                 |
+| Does it follow the project's patterns?         | Apply it                                 |
 | Is it a subjective preference?              | Consider context                         |
 | Does it contradict project guidelines?      | Skip or discuss                          |
 | Is it from an automated reviewer (Copilot)? | Evaluate critically - these can be wrong |
@@ -118,7 +118,7 @@ Be skeptical of automated feedback suggesting:
 For each **bot** thread you deemed valid:
 
 1. **Read the relevant file** to understand context
-2. **Make the change** following project conventions
+2. **Make the change** following the project's patterns
 3. **Run code style checks** — `vendor/bin/pint --dirty --format agent`
 
 **Do not edit any file in response to a colleague thread in this phase.** Colleague feedback goes through Phase 3b first.

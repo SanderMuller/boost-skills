@@ -212,5 +212,5 @@ Record the handling even when you had to choose it yourself. Reserve `## Open Qu
 
 - **Existing code**: Reference specific files and line numbers when extending or modifying code.
 - **Code snippets**: Show code for non-obvious implementation choices, but don't write every line.
-- **Conventions**: Follow project conventions (check sibling files for patterns).
+- **Conventions**: Follow the project's existing patterns (check sibling files for patterns).
 - **Cross-version**: Note any runtime or framework version-specific considerations.
