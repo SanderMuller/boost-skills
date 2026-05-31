@@ -18,7 +18,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "sandermuller/boost-core": "^0.15"
+        "sandermuller/boost-core": "^0.16"
     },
     "require-dev": {
         "laravel/pao": "^1.0",

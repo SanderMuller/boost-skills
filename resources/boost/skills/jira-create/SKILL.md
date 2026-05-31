@@ -10,13 +10,7 @@ metadata:
 
 Creates a new Jira issue with a properly formatted description, via the project's configured MCP server.
 
-**Jira MCP tool calls** in this skill use your project's MCP server mapping:
-
-```boost:conv
-<!--boost:conv path="mcp" mode="yaml" fallback="jira: mcp-atlassian"-->
-```
-
-Use the `jira` value above as the MCP server-namespace segment `<jira>`. If the rendered map has no `jira:` key (the project declared other MCP servers but not jira), default `<jira>` to `mcp-atlassian`. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with `jira: mcp-atlassian`, call `mcp__mcp-atlassian__jira_create_issue`. The tool-call examples below write `mcp__<jira>__…`; substitute `<jira>` with the value above. A bare `jira_*` name is NOT a callable tool.
+**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool-call examples below are written `mcp__<jira>__jira_*`; substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with the namespace `mcp-atlassian`, call `mcp__mcp-atlassian__jira_create_issue`. A bare `jira_*` name is NOT a callable tool.
 
 ## When to Use This Skill
 

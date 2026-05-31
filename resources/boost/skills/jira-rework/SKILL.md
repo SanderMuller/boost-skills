@@ -11,13 +11,7 @@ metadata:
 
 Research a Jira issue that has been sent back for rework — understand the feedback, investigate the codebase, and propose options for fixing it.
 
-**Jira MCP tool calls** in this skill use your project's MCP server mapping:
-
-```boost:conv
-<!--boost:conv path="mcp" mode="yaml" fallback="jira: mcp-atlassian"-->
-```
-
-Use the `jira` value above as the MCP server-namespace segment `<jira>`. If the rendered map has no `jira:` key (the project declared other MCP servers but not jira), default `<jira>` to `mcp-atlassian`. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with `jira: mcp-atlassian`, call `mcp__mcp-atlassian__jira_get_issue`. The tool references below write `mcp__<jira>__…` or a bare `jira_*` name for brevity; the actual call is always `mcp__<jira>__jira_*`.
+**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool references below are written `mcp__<jira>__jira_*` (or a bare `jira_*` for brevity); substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->. The actual call is always the fully-qualified `mcp__<jira>__jira_*` — e.g. with the namespace `mcp-atlassian`, `mcp__mcp-atlassian__jira_get_issue`. A bare `jira_*` name is NOT a callable tool.
 
 **Project scope:** the configured project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — skip the prefix check)"-->; cross-project refusal is <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When refusal is `true` and the issue key's prefix differs from the configured key, refuse the rework research and tell the user.
 

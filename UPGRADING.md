@@ -2,11 +2,11 @@
 
 ## From 1.9.x to 2.0 (conventions inlining)
 
-**Breaking: requires `boost-core ^0.15`.** In 2.0 every slot-aware skill resolves its convention values at sync time via `boost-core 0.15.0`'s conventions-inlining tokens (`<!--boost:conv-->`) instead of reading the always-loaded `## Project Conventions` block at agent runtime. On any engine below `0.15` those tokens emit raw into the skill body (the value is lost), so `^0.15` is a hard floor — this is why 2.0 is a major bump.
+**Breaking: requires `boost-core ^0.16`.** In 2.0 every slot-aware skill resolves its convention values at sync time via `boost-core`'s conventions-inlining tokens (`<!--boost:conv-->`, shipped in `0.15.0`) instead of reading the always-loaded `## Project Conventions` block at agent runtime. The three Jira skills additionally use an `mcp.jira` sub-key token that only the `0.16.0` resolver handles (earlier engines emit it raw, losing the value). On any engine below `0.16` at least one token emits raw into the skill body, so `^0.16` is a hard floor — this is why 2.0 is a major bump.
 
 ### Required
 
-- Adopt a family-package release that floats `boost-core` to include `^0.15` (`package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel`). `boost-skills` has no direct `boost-core` require — the family package pins the engine.
+- Adopt a family-package release that floats `boost-core` to include `^0.16` (`package-boost-php ^0.16.1` / `package-boost-laravel` / `project-boost` / `project-boost-laravel`). `boost-skills` 2.0 also declares a direct `boost-core ^0.16` require, so the constraint holds even if a family package lags.
 
 ### What changes
 
@@ -25,7 +25,7 @@ The `1.8.x → 1.9.x` line's substantive migration step is the conventions-sourc
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.13 || ^0.14` (the 1.9.x-era range — normally pulled by the family package you adopt). 1.9.x's slot-aware skills read convention values from the rendered `## Project Conventions` block at runtime, so they work on any `boost-core 0.9.0+`; the `^0.13 || ^0.14` range just tracks the family line at the 1.9.x cutoff. (The hard `^0.15` floor applies only to 2.0+ — see the 1.9.x → 2.0 section above.)
+Bump `sandermuller/boost-core` to `^0.13 || ^0.14` (the 1.9.x-era range — normally pulled by the family package you adopt). 1.9.x's slot-aware skills read convention values from the rendered `## Project Conventions` block at runtime, so they work on any `boost-core 0.9.0+`; the `^0.13 || ^0.14` range just tracks the family line at the 1.9.x cutoff. (The hard `^0.16` floor applies only to 2.0+ — see the 1.9.x → 2.0 section above.)
 
 ### Migrate existing conventions
 
