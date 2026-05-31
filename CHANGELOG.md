@@ -5,6 +5,38 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.8 - 2026-05-31
+
+<!-- verified-sha: d089455c180515a0eee643abd330dc889cf8641a -->
+### Changed
+
+- **Consumer-facing `boost-core` floor `^0.11` → `^0.13`** (README + UPGRADING). The `^0.11` floor (set in 1.9.5) had gone stale + disjoint from the family: the current family packages narrow `boost-core` to `^0.13`, so a consumer reading "Requires `^0.11`" while installing a current family package (which pulls `^0.13`) got contradictory guidance — `^0.11` and `^0.13` are non-overlapping ranges. The floor now matches the family line and lists the notable engine versions folded into it:
+  
+  - `0.9.0` — conventions-source-flip (values move to `boost.php`)
+  - `0.9.3` — render-fail-then-write data-loss patch
+  - `0.10.0` — cross-agent capability-loss fix + `boost doctor` entry-point banner
+  - `0.11.0` — `BoostWrapperContract` (bare-CLI sync stops false-positive-deleting wrapper-injected files)
+  - `0.12.0` — **markerless guidance files**: `CLAUDE.md` / `AGENTS.md` become wholesale boost-owned; operator content moves to `.ai/guidelines/`
+  
+  boost-skills has no direct `boost-core` require (it's a markdown catalog — the family package pins the engine), so this is prose-floor accuracy, not a composer-constraint change.
+  
+
+### Internal
+
+- `require-dev` `package-boost-php` `^0.13` → `^0.15` (dev-env dogfood; pulls `boost-core 0.13.0`). The catalog now dev-syncs under the markerless guidance model — verified safe: boost-skills' own `CLAUDE.md` is fully vendor-generated (zero hand-authored content), so wholesale-ownership regenerates it losslessly.
+- `.gitignore` managed block adds `.boost/` (the `0.13` sync-manifest dir).
+
+### Adoption
+
+```bash
+composer require --dev "sandermuller/boost-skills:^1.9.8"
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+```
+No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.7...1.9.8
+
 ## 1.9.7 - 2026-05-31
 
 <!-- verified-sha: 29b5d544c3514a6d69d9f78dd3da3356c91b8ff6 -->
@@ -26,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 ```
 No schema or convention changes — the alias map is unchanged (this renders the existing schema map into agent context).
@@ -66,6 +99,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -93,6 +127,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -140,6 +175,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -181,6 +217,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -189,6 +226,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -226,6 +264,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -243,6 +282,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -301,6 +341,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -380,6 +421,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -398,6 +440,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -560,6 +603,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
