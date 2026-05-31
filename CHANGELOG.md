@@ -5,6 +5,40 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.0 - 2026-05-31
+
+<!-- verified-sha: e18578c6a76df8005ed2edae28e33085d424c018 -->
+Slot-aware skills now resolve their project-convention values **into the skill body at sync time** via `boost-core`'s conventions-inlining tokens (shipped in `0.15.0`), instead of reading the always-loaded `## Project Conventions` block at agent runtime. Once a consumer's synced catalog is fully token-sourced, that block drops entirely — the values are baked into each skill. Adopting needs `boost-core ^0.16`.
+
+### Breaking
+
+- **Requires `boost-core ^0.16` (hard floor).** The 10 slot-aware skills (`jira-create` / `jira-rework` / `jira-updates`, `pull-requests`, `codex-review`, `write-spec`, `interview`, `bug-fixing`, `backend-quality`, `test-writing`) now contain `<!--boost:conv-->` tokens. The inliner ships in `0.15.0`, but the three Jira skills use an `mcp.jira` open-vocab sub-key token that only the `0.16.0` resolver handles — on `0.15` it emits raw, losing the value. On any engine below `0.16` at least one token emits raw into the skill body, so `^0.16` is enforced as a composer `require` constraint, not just documentation. This also makes the slot-aware skills `sandermuller/boost-core`-specific — they don't resolve under `laravel/boost` (no inliner). Adopt a family-package release that floats `boost-core` to include `^0.16` (e.g. `package-boost-php ^0.16.1`). See [UPGRADING.md](UPGRADING.md).
+
+### Changed
+
+- **All slot-aware skills migrated from runtime `$.slot` references to render-time tokens.** Each skill's `## Project Conventions slots` documentation table is removed (obsolete once values inline); the slot dependency is now in the tokens + the schema. Agent behavior is unchanged — skills dispatch identically; the value is inlined instead of read from the block.
+- **The three Jira skills inline `mcp.jira` as a clean scalar token** (`<!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->`), resolving the MCP server-namespace segment directly — declared `mcp.jira` → schema-default `mcp-atlassian` → fallback. (`pull-requests` still renders the whole `mcp` map as YAML for its gate tools.)
+- **`conventions-schema.json` gains `render` mode pins** on the structured / list slots (`branches.patterns`, `pr.gates`, `mcp` → `yaml`; `testing.forbid`, `spec.research_docs` → `inline`/`bullets`) as drift guards so a slot always renders in a consistent mode.
+
+### How it works
+
+- **Scalar slots** (`github.default_base_branch`, `codex.invocation_mode`, `jira.project_key`, …) inline their value directly into the prose.
+- **Structured slots** (`branches.patterns`, `pr.gates`) render as YAML data the skill's algorithm prose then operates on at agent runtime — the value is inlined, the logic stays in the skill.
+- **Unset slots** render a written fallback (a sensible default or a detection instruction), so a skill reads correctly whether or not the convention is declared.
+- `boost where --conventions` shows each slot's effective resolved value (declared / schema-default / fallback).
+
+### Upgrading
+
+```bash
+composer require --dev "sandermuller/boost-skills:^2.0"
+# via a family package that floats boost-core to include ^0.16 (e.g. package-boost-php ^0.16.1)
+vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+```
+No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/1.9.9...2.0.0
+
 ## 1.9.9 - 2026-05-31
 
 <!-- verified-sha: 11649674a94d98b5f389f24e2e1ee8746efac0f5 -->
@@ -20,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 ```
 No schema, slot, or skill-body changes — floor-tracking only.
@@ -54,6 +89,7 @@ composer require --dev "sandermuller/boost-skills:^1.9.8"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -80,6 +116,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -124,6 +161,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -151,6 +189,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -202,6 +241,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -245,6 +285,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -253,6 +294,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -294,6 +336,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -311,6 +354,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -371,6 +415,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -454,6 +499,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -472,6 +518,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -636,6 +683,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
