@@ -10,14 +10,6 @@ metadata:
 
 Run backend quality checks after making changes to PHP files. Which checks to run depends on where you are in the workflow — see the two tiers below.
 
-## Project Conventions slots
-
-This skill reads the following slot from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
-
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.testing.backend_framework` | Selects test runner (`phpunit` / `pest`) for the Tier 1 + Tier 2 test commands | Detect from project layout (`composer.json` scripts, `vendor/bin/*` presence) |
-
 ## When to Use This Skill
 
 Activate this skill when:
@@ -28,7 +20,7 @@ Activate this skill when:
 
 ## Two Tiers of Checks
 
-**Test runner.** The test commands below use `vendor/bin/pest`. For a PHPUnit project (per `$.testing.backend_framework`), run `vendor/bin/phpunit` instead — both take a file-path argument and `--filter`. If the project defines a `composer test` script, prefer it for the full suite (it runs whatever the project configured).
+**Test runner.** Your project's configured runner is <!--boost:conv path="testing.backend_framework" mode="inline" fallback="auto-detect from project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence"-->. The test commands below show `vendor/bin/pest`; if your runner is `phpunit`, run `vendor/bin/phpunit` instead — both take a file-path argument and `--filter`. If the project defines a `composer test` script, prefer it for the full suite (it runs whatever the project configured).
 
 ### Tier 1: During Development (after each change)
 

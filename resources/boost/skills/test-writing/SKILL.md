@@ -9,18 +9,11 @@ metadata:
 
 Conventions for writing tests that are specific, descriptive, and well-structured. The principles are language-agnostic; the examples use PHP/Pest, but the same rules apply to any test framework.
 
-## Project Conventions slots
+## Which framework to write for
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+Write tests in <!--boost:conv path="testing.backend_framework" mode="inline" fallback="the test runner your project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present, else follow sibling test files"-->. Never write a test in any framework on the project's forbidden list (<!--boost:conv path="testing.forbid" mode="inline" fallback="none — no restriction"-->), or in any framework a listed **category alias** expands to; if asked to, redirect to the framework named above.
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.testing.backend_framework` | Selects the runner (`phpunit` / `pest`) to write tests for — match its syntax + idiom | Detect from project layout (`composer.json` scripts, `vendor/bin/pest` vs `vendor/bin/phpunit`) or follow sibling test files |
-| `$.testing.forbid` | List of frameworks / category aliases NOT to write tests in | No restriction; follow project conventions |
-
-Write tests in the runner named by `$.testing.backend_framework`. Never write a test in a framework listed in `$.testing.forbid`, or in any framework a listed **category alias** expands to; if asked to, redirect to `$.testing.backend_framework`.
-
-Category alias expansions (a `forbid` entry of the alias forbids every framework in its set):
+Category alias expansions (a forbidden alias forbids every framework in its set):
 
 | Alias | Expands to |
 |---|---|

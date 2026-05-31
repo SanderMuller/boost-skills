@@ -10,18 +10,13 @@ metadata:
 
 Creates a new Jira issue with a properly formatted description, via the project's configured MCP server.
 
-## Project Conventions slots
+**Jira MCP tool calls** in this skill use your project's MCP server mapping:
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+```boost:conv
+<!--boost:conv path="mcp" mode="yaml" fallback="jira: mcp-atlassian"-->
+```
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.jira.project_key` | Target project key | Ask user once per session, use the answer |
-| `$.jira.refuse_other_projects` | Whether to refuse mutating issues outside `project_key` | Default `false` (allow cross-project) |
-| `$.jira.description_format_doc` | Path to project-owned Jira description format doc | Default: use the **Generic description format** below |
-| `$.mcp.jira` | MCP server-name segment for Jira tools | Default: `mcp-atlassian` |
-
-Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
+Use the `jira` value above as the MCP server-namespace segment `<jira>`. If the rendered map has no `jira:` key (the project declared other MCP servers but not jira), default `<jira>` to `mcp-atlassian`. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with `jira: mcp-atlassian`, call `mcp__mcp-atlassian__jira_create_issue`. The tool-call examples below write `mcp__<jira>__…`; substitute `<jira>` with the value above. A bare `jira_*` name is NOT a callable tool.
 
 ## When to Use This Skill
 
@@ -41,16 +36,16 @@ Do **NOT** use this skill for:
 Resolve the target project in this order:
 
 1. If the user names a project or gives an existing issue key (`PROJ-1234` → project `PROJ`), use that project.
-2. Otherwise, use `$.jira.project_key` from Project Conventions.
-3. If `$.jira.project_key` is unset and the user didn't name one, ask: "What Jira project key should new issues land in?" Use the answer for the rest of this session.
+2. Otherwise, use the configured project key: <!--boost:conv path="jira.project_key" mode="inline" fallback="(none configured — ask the user, see step 3)"-->.
+3. If no project key is configured and the user didn't name one, ask: "What Jira project key should new issues land in?" Use the answer for the rest of this session.
 
-**Cross-project refusal:** if `$.jira.refuse_other_projects` is `true` and the resolved project differs from `$.jira.project_key`, refuse: "This project only creates issues in `<project_key>`. To create elsewhere, set `jira.refuse_other_projects: false` in your Project Conventions or use a different project's tooling."
+**Cross-project refusal:** cross-project mutation refusal is set to <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When that is `true` and the resolved project differs from the configured key, refuse: "This project only creates issues in the configured key. To create elsewhere, set `jira.refuse_other_projects: false` in your Project Conventions or use a different project's tooling."
 
 Cross-project linking and mentions remain allowed regardless — the refusal scopes to **mutation** (create/edit) only.
 
 ## Description Format
 
-If `$.jira.description_format_doc` is set, read that file and follow its rules (voice, sections, templates). It overrides the generic structure below.
+Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline" fallback="none — use the Generic description format below"-->. If a path is shown, read that file and follow its rules (voice, sections, templates) — it overrides the generic structure below.
 
 Otherwise, use the **Generic description format**:
 
@@ -111,22 +106,20 @@ Confirm the target project (per **Target Project**), summary, issue type, and wh
 
 ### 2. Compose the description
 
-Follow `$.jira.description_format_doc` if set; otherwise the **Generic description format**.
+Follow the project's description-format doc if one was shown above; otherwise the **Generic description format**.
 
 ### 3. Create the issue
 
-The MCP server name comes from `$.mcp.jira` (default `mcp-atlassian`). Vendor invokes:
+Invoke the `jira_create_issue` tool (per the MCP namespace defined at the top of this skill):
 
 ```
-mcp__<$.mcp.jira>__jira_create_issue(
+mcp__<jira>__jira_create_issue(
     project_key: "<PROJECT>",
     summary: "<summary>",
     issue_type: "Task" | "Bug" | "<project's type>",
     description: "<composed description>",
 )
 ```
-
-E.g. with `$.mcp.jira: mcp-atlassian`, the actual call is `mcp__mcp-atlassian__jira_create_issue(...)`.
 
 The response contains the new issue key and URL — report both. The `assignee` is set in the next step.
 
@@ -135,7 +128,7 @@ The response contains the new issue key and URL — report both. The `assignee` 
 `jira_create_issue`'s `assignee` field does not accept `currentUser()`, so assign with a follow-up call:
 
 ```
-mcp__<$.mcp.jira>__jira_update_issue(
+mcp__<jira>__jira_update_issue(
     issue_key: "<ISSUE-KEY>",
     fields: {assignee: "<identifier>"}
 )
@@ -149,9 +142,9 @@ mcp__<$.mcp.jira>__jira_update_issue(
 
 If the implementation-flow trigger fired, transition the new issue to "In Progress":
 
-1. Call `mcp__<$.mcp.jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and find the transition whose display name is "In Progress" (or the project's equivalent).
+1. Call `mcp__<jira>__jira_get_transitions(issue_key: "<ISSUE-KEY>")` and find the transition whose display name is "In Progress" (or the project's equivalent).
 2. Use the **returned ID** — never hardcode transition IDs; they vary per project and Jira workflow.
-3. Call `mcp__<$.mcp.jira>__jira_transition_issue(issue_key: "<ISSUE-KEY>", transition_id: "<returned id>")`.
+3. Call `mcp__<jira>__jira_transition_issue(issue_key: "<ISSUE-KEY>", transition_id: "<returned id>")`.
 
 **If no matching transition is returned** (the workflow restricts the path, or the issue is already In Progress): stop and ask the user how to proceed. Do not pick a different transition.
 

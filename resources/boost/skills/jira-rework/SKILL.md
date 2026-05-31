@@ -11,17 +11,15 @@ metadata:
 
 Research a Jira issue that has been sent back for rework — understand the feedback, investigate the codebase, and propose options for fixing it.
 
-## Project Conventions slots
+**Jira MCP tool calls** in this skill use your project's MCP server mapping:
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+```boost:conv
+<!--boost:conv path="mcp" mode="yaml" fallback="jira: mcp-atlassian"-->
+```
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.mcp.jira` | MCP server-name segment for Jira tool calls | Default `mcp-atlassian` |
-| `$.jira.project_key` | Validates the issue key prefix matches the project's expected key (if `refuse_other_projects` set) | Skip the prefix check |
-| `$.jira.refuse_other_projects` | Refuse rework research on issues outside `$.jira.project_key` | Default `false` (allow cross-project) |
+Use the `jira` value above as the MCP server-namespace segment `<jira>`. If the rendered map has no `jira:` key (the project declared other MCP servers but not jira), default `<jira>` to `mcp-atlassian`. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with `jira: mcp-atlassian`, call `mcp__mcp-atlassian__jira_get_issue`. The tool references below write `mcp__<jira>__…` or a bare `jira_*` name for brevity; the actual call is always `mcp__<jira>__jira_*`.
 
-Vendor invokes `mcp__<$.mcp.jira>__jira_*` at runtime.
+**Project scope:** the configured project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — skip the prefix check)"-->; cross-project refusal is <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When refusal is `true` and the issue key's prefix differs from the configured key, refuse the rework research and tell the user.
 
 ## When to Use This Skill
 
@@ -41,7 +39,7 @@ Do NOT use for:
 
 1. **Fetch the Jira issue:**
    ```
-   mcp__<$.mcp.jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
+   mcp__<jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
    ```
    Extract the summary and description (the original requirement), the current status and assignee, and any linked issues or parent epic.
 
@@ -124,7 +122,7 @@ For a straightforward fix with one obvious solution, a single recommendation is 
 5. **Commit and push.**
 6. If the original PR was merged, **open a new PR** referencing the Jira issue.
 7. **Update Jira** if the fix changes user-facing behaviour (use the `jira-updates` skill).
-8. **Transition the issue** to the appropriate review status — discover the transition via `mcp__<$.mcp.jira>__jira_get_transitions`; never hardcode transition IDs.
+8. **Transition the issue** to the appropriate review status — discover the transition via `jira_get_transitions`; never hardcode transition IDs.
 
 ## Guidelines
 

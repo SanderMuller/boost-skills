@@ -63,6 +63,7 @@
             "properties": {
                 "patterns": {
                     "type": "array",
+                    "render": "yaml",
                     "items": {
                         "type": "object",
                         "required": ["pattern", "base"],
@@ -97,6 +98,7 @@
                 },
                 "gates": {
                     "type": "array",
+                    "render": "yaml",
                     "description": "Pre-PR gates enforced by the pull-requests skill. v1 vocabulary: skill_invoked, shell_command, mcp_tool. Unknown types are rejected by JSONSchema validation.",
                     "items": {
                         "oneOf": [
@@ -189,6 +191,7 @@
                 },
                 "forbid": {
                     "type": "array",
+                    "render": ["inline", "bullets"],
                     "items": {
                         "type": "string"
                     },
@@ -224,6 +227,7 @@
                 },
                 "research_docs": {
                     "type": "array",
+                    "render": ["inline", "bullets"],
                     "items": {
                         "type": "string"
                     },
@@ -233,6 +237,7 @@
         },
         "mcp": {
             "type": "object",
+            "render": "yaml",
             "description": "Project-specific MCP server-name mappings. Each value is the tool-namespace segment as it appears between the 'mcp__' prefix and the '__<tool>' suffix in the actual MCP tool name — NOT the package's npm/composer name. Example: tool 'mcp__laravel-boost__database-schema' → slot value 'laravel-boost'; tool 'mcp__mcp-atlassian__jira_get_issue' → slot value 'mcp-atlassian'. Vendor skills then resolve 'mcp.<slot>' to call the tool: e.g. with `mcp.jira: mcp-atlassian`, vendor invokes `mcp__mcp-atlassian__jira_get_issue` at runtime. NOTE: unlike sibling groups, mcp.* INTENTIONALLY allows arbitrary property names — the vocabulary of service keys (jira, laravel, atlassian, github, etc.) is consumer-defined; closing this to a fixed set would force the schema to enumerate every MCP namespace boost-skills knows about, which doesn't match how MCP works in practice.",
             "additionalProperties": {
                 "type": "string"

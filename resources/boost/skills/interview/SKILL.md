@@ -10,16 +10,11 @@ metadata:
 
 A structured interview process that gathers requirements for a complex feature through focused questions with predefined options where possible. This skill owns the questioning; it does **not** write the spec file. Once requirements are gathered, hand off to the `write-spec` skill, which owns the spec file format.
 
-## Project Conventions slots
+## Project context
 
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
+Before interviewing, consult these project reference docs upfront so terminology and architectural references match project canon: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — gather context from the conversation only"-->. If paths are shown, read them first.
 
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.spec.research_docs` | Project-owned reference docs to consult upfront so terminology and architectural references match project canon | No automatic consultation — gather context from conversation only |
-| `$.jira.project_key` | Detects whether the interview should ask for / verify an issue key during gathering | Skip the Jira-key question; `write-spec` will treat any resulting spec as not-issue-backed |
-
-Interview hands off to `write-spec` after gathering. Both skills declare `schema-required: ^1` so they ship together when consumers declare the schema-version constraint.
+If a Jira project key is configured (<!--boost:conv path="jira.project_key" mode="inline" fallback="none — skip the Jira-key question; write-spec treats the resulting spec as not-issue-backed"-->), ask for / verify the issue key during gathering so `write-spec` can resolve it.
 
 ## When to Use This Skill
 

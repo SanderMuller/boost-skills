@@ -11,48 +11,45 @@ metadata:
 
 CRUD-style management of your own pull requests with the GitHub `gh` CLI: create a PR, write its description, verify it, request review, and route the review based on risk. This skill is for authoring and updating PRs — for applying feedback from a review, use the `pr-review-feedback` skill instead.
 
-## Project Conventions slots
-
-This skill reads the following slots from your project's **Project Conventions** — declared in `boost.php` via `->withConventions([...])` and rendered into `CLAUDE.md` at sync time (requires `sandermuller/boost-core ^0.9`):
-
-| Slot | Used for | If missing |
-|---|---|---|
-| `$.github.owner` | GitHub owner (user or org) for PR creation | Ask user once per session |
-| `$.github.repo` | GitHub repository name | Ask user once per session |
-| `$.github.default_base_branch` | Fallback base branch when no pattern matches | Default `main` per schema |
-| `$.branches.patterns` | Typed array of `{pattern, base}` for branch-name → base-branch resolution | Skip pattern-matching, fall through to `$.github.default_base_branch` (or ask user if absent) |
-| `$.pr.title_format` | PR title template (placeholders: `{issue_key}`, `{short_title}`) | Ask user for the title format once per session |
-| `$.pr.template_path` | Path to PR template (read fresh at creation time) | Default `.github/pull_request_template.md` per schema; if file absent, skip template injection |
-| `$.pr.gates` | Typed array of pre-PR gates (`skill_invoked` / `shell_command` / `mcp_tool`) | Skip the gates step entirely (no enforcement) |
-
-Your conventions validate against `sandermuller/boost-skills`'s `conventions-schema.json` v1; `vendor/bin/boost validate` flags missing required slots.
-
 ## How to Create PRs
+
+### Base-branch resolution
+
+This skill resolves the PR base branch from the project's configured branch patterns:
+
+```boost:conv
+<!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch patterns configured"-->
+```
+
+Scan those patterns in declared order against the current branch name; first match wins, and its `base` field is the target base. If no pattern matches (or none are configured), the base is the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"--> (ask the user if neither is available).
+
+### Repository
+
+The PR's repository is `<owner>/<repo>` where `<owner>` is <!--boost:conv path="github.owner" mode="inline" fallback="inferred from the git remote (`git remote get-url origin`)"--> and `<repo>` is <!--boost:conv path="github.repo" mode="inline" fallback="inferred from the git remote"-->. The `gh pr` commands below auto-detect this from the remote; the raw `gh api repos/<owner>/<repo>/...` calls need it spelled out — substitute the resolved values.
 
 ### Preflight Checklist
 
 Before creating the PR, verify all of the following:
 
-1. **The current branch matches a pattern in `$.branches.patterns`** (if declared). For each pattern in declared order, attempt to match the current branch name. First match wins; the matched pattern's `base` field is the target base branch for the PR.
-   - If `$.branches.patterns` is unset or no pattern matches: target base is `$.github.default_base_branch` (or, if also unset, ask the user).
+1. **The current branch matches one of the configured branch patterns above** (if any). Resolve the base per **Base-branch resolution** above.
    - If the current branch is named correctly but the branch has **no upstream** (never pushed): proceed.
    - If the branch is named correctly and **already has an upstream or an open PR**: proceed (PR update flow, see [How to Work on Existing PRs](#how-to-work-on-existing-prs)).
    - If the branch name does **not** match any pattern AND has no upstream: rename it with `git branch -m <new-name>`, picking a name that matches the most specific pattern that fits the work being done.
    - If the branch name does **not** match any pattern AND has an upstream: **STOP** and ask the user to rename it manually — never auto-rename a pushed branch.
-2. **The PR title will follow `$.pr.title_format`** (see [PR Title](#pr-title) below).
-3. **The project's PR template will be read fresh** at creation time from `$.pr.template_path` (default `.github/pull_request_template.md`) if the file exists — never hardcode a template.
+2. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
+3. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 
 ---
 
 Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters to keep responses small — never fetch full PR payloads when only specific fields are needed.
 
 1. Get the current branch name from git.
-2. Resolve the base branch via `$.branches.patterns` (see Preflight step 1).
+2. Resolve the base branch (see **Base-branch resolution** above).
 3. Analyze the commits with `git log <base>..HEAD --oneline`.
 4. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
-5. **Run pre-PR gates from `$.pr.gates`** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
+5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
 6. **Risk assessment** — Before creating the PR, ask the user to evaluate the risk level (see [Risk Assessment](#risk-assessment-before-pr-creation) below).
-7. Create the PR. If `$.pr.template_path` resolves to an existing file, read it fresh, fill in each section, and write the body to a temp file. Then run:
+7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
      --title "<title>" \
@@ -75,7 +72,13 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
 ## Pre-PR Gates
 
-`$.pr.gates` is a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Vendor enforces each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`.
+This project's configured pre-PR gates:
+
+```boost:conv
+<!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates; skip the gates step entirely"-->
+```
+
+The gates are a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Enforce each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`. The gate-type reference below explains each `type`.
 
 ### Gate types
 
@@ -117,7 +120,13 @@ Vendor invokes the named MCP tool with the declared args. Used for policy that d
   on_missing: stop_and_request     # default; or: warn / skip
 ```
 
-Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the tool needs a server-name prefix). Gate passes when the MCP tool returns a success-shape response (no exception, no error field). Gate fails when: the tool throws an exception; the tool returns a structured error response; the tool is not available in the consumer's MCP namespace; or the args fail the tool's own validation.
+Vendor invokes `mcp__<tool>__<...>`. If the tool needs a server-name prefix, resolve it from the project's MCP server-name mappings:
+
+```boost:conv
+<!--boost:conv path="mcp" mode="yaml" fallback="none — gate tools are already fully qualified"-->
+```
+
+(e.g. a gate `tool: jira-status-check` keyed to the `jira` mapping above invokes `mcp__<jira-value>__jira-status-check`.) Gate passes when the MCP tool returns a success-shape response (no exception, no error field). Gate fails when: the tool throws an exception; the tool returns a structured error response; the tool is not available in the consumer's MCP namespace; or the args fail the tool's own validation.
 
 ### `on_missing` behavior
 
@@ -125,9 +134,9 @@ Vendor invokes `mcp__<tool>__<...>` (resolution per `$.mcp.*` mappings if the to
 - `warn` — print a warning but proceed with PR creation.
 - `skip` — silently skip the failing gate, proceed.
 
-### Missing-slot UX
+### Missing-gates UX
 
-If `$.pr.gates` is unset, the gates step is skipped silently (no enforcement, no prompt). If a project wants to add gates mid-session, tell them to declare `$.pr.gates` in their `boost.php`'s `->withConventions([...])` array and re-sync.
+If no gates are configured (the block above shows "none"), the gates step is skipped silently — no enforcement, no prompt. If a project wants to add gates, tell them to declare `pr.gates` in their `boost.php`'s `->withConventions([...])` array and re-sync.
 
 ## How to Work on Existing PRs
 
@@ -158,7 +167,7 @@ Before creating a PR, ensure you have:
 | Required                   | Ask if missing                                          |
 |----------------------------|---------------------------------------------------------|
 | Commits/changes to include | "Which commits or branch should I analyze for this PR?" |
-| Target branch              | If `$.branches.patterns` resolution doesn't yield one and `$.github.default_base_branch` is unset, ask the user |
+| Target branch              | If the branch-pattern resolution doesn't yield one and no default base branch is configured, ask the user |
 
 If the user hasn't provided:
 - **Security implications** → Ask: "Are there any security or privacy considerations I should mention?"
@@ -193,22 +202,22 @@ Use `AskUserQuestion` with:
 
 ## PR Title
 
-Follow `$.pr.title_format` if set. Recognized placeholders:
+Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline" fallback="none configured — ask the user once per session for the desired title format"-->. Recognized placeholders:
 
 - `{issue_key}` — full issue key (e.g. `HPB-1234`). Resolved from the branch name's issue segment when the branch matches a Jira-keyed pattern.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
 
 If a placeholder resolves empty (e.g. no issue key on this branch), the placeholder and any single adjacent dash are omitted. Example: `[HPB-XXXX] Short title` with no issue → `Short title`.
 
-If `$.pr.title_format` is unset, ask the user once per session for the desired title format.
-
 General guidance regardless of format:
 - Use imperative mood.
 - Keep the title concise (aim for under 70 characters).
 
-## PR Description
+## PR template
 
-If `$.pr.template_path` resolves to an existing file, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
+The project's PR template path is <!--boost:conv path="pr.template_path" mode="inline" fallback=".github/pull_request_template.md"-->. If that file exists, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
+
+## PR Description
 
 If there is no template, write a clear description that covers:
 - **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
