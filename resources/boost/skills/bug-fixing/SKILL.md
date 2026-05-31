@@ -19,7 +19,7 @@ This skill reads the following slots from your project's **Project Conventions**
 | `$.testing.backend_framework` | Selects test runner (`phpunit` / `pest`) for verify steps | Detect from project layout (`composer.json` scripts, `vendor/bin/*` presence) or ask user |
 | `$.testing.forbid` | List of frameworks / category aliases NOT to suggest | No restriction; vendor uses its judgement |
 
-If the user asks for a test in a framework listed in `$.testing.forbid` (or covered by a category alias — see schema description), refuse and redirect to `$.testing.backend_framework`.
+If the user asks for a test in a framework listed in `$.testing.forbid` — or in a framework a listed category alias expands to — refuse and redirect to `$.testing.backend_framework`. Alias expansions: `js-test-frameworks` = vitest/jest/mocha/cypress/playwright; `browser-test-frameworks` = cypress/playwright; `php-browser-tests` = dusk/panther. (So `forbid: ['js-test-frameworks']` refuses a Cypress test even though `cypress` isn't named.)
 
 ## Core Principle
 

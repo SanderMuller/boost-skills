@@ -18,7 +18,17 @@ This skill reads the following slots from your project's **Project Conventions**
 | `$.testing.backend_framework` | Selects the runner (`phpunit` / `pest`) to write tests for — match its syntax + idiom | Detect from project layout (`composer.json` scripts, `vendor/bin/pest` vs `vendor/bin/phpunit`) or follow sibling test files |
 | `$.testing.forbid` | List of frameworks / category aliases NOT to write tests in | No restriction; follow project conventions |
 
-Write tests in the runner named by `$.testing.backend_framework`. Never write a test in a framework listed in `$.testing.forbid` (or covered by a category alias — see the schema description for alias expansions); if asked to, redirect to `$.testing.backend_framework`.
+Write tests in the runner named by `$.testing.backend_framework`. Never write a test in a framework listed in `$.testing.forbid`, or in any framework a listed **category alias** expands to; if asked to, redirect to `$.testing.backend_framework`.
+
+Category alias expansions (a `forbid` entry of the alias forbids every framework in its set):
+
+| Alias | Expands to |
+|---|---|
+| `js-test-frameworks` | `vitest`, `jest`, `mocha`, `cypress`, `playwright` |
+| `browser-test-frameworks` | `cypress`, `playwright` |
+| `php-browser-tests` | `dusk`, `panther` |
+
+So `forbid: ['js-test-frameworks']` refuses a Cypress test even though `cypress` isn't listed by name — it's a member of the alias set. (This expansion is the schema's canonical alias map; adding an alias is a minor schema bump, removing/redefining one is major.)
 
 ## Test the Specific Scenario
 
