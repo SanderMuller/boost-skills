@@ -6,7 +6,7 @@ The `1.8.x → 1.9.x` line's substantive migration step is the conventions-sourc
 
 ### Required
 
-Bump `sandermuller/boost-core` to `^0.13` (normally pulled by the family package you adopt — `package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel` — which pins the engine; the current family line resolves `^0.13`). The catalog's slot vocabulary works on any `boost-core 0.9.0+`; `^0.13` tracks the current family line. Notable engine versions: `0.9.3` (data-loss patch), `0.10.0` (cross-agent capability-loss fix), `0.11.0` (wrapper-injection-aware drift), `0.12.0` (markerless guidance files — `CLAUDE.md` / `AGENTS.md` wholesale boost-owned, operator content moves to `.ai/guidelines/`).
+Bump `sandermuller/boost-core` to `^0.13 || ^0.14` (normally pulled by the family package you adopt — `package-boost-php` / `package-boost-laravel` / `project-boost` / `project-boost-laravel` — which pins the engine; the current family line resolves `^0.13 || ^0.14`). The catalog's slot vocabulary works on any `boost-core 0.9.0+`; this range tracks the current family line. Notable engine versions: `0.9.3` (data-loss patch), `0.10.0` (cross-agent capability-loss fix), `0.11.0` (wrapper-injection-aware drift), `0.12.0` (markerless guidance files — `CLAUDE.md` / `AGENTS.md` wholesale boost-owned, operator content moves to `.ai/guidelines/`), `0.14.0` (project-scope reconcile-on-sync — dropped-emitter orphans reaped, sha-gated).
 
 ### Migrate existing conventions
 
@@ -101,7 +101,7 @@ Most consumers will land the migration as a single atomic commit:
 # 1. Update constraints
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9" \
-  "sandermuller/boost-core:^0.13"
+  "sandermuller/boost-core:^0.13 || ^0.14"
 
 # 2. Migrate conventions edit surface
 vendor/bin/boost convert-conventions
