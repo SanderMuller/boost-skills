@@ -31,6 +31,22 @@ Fix: register a Blade renderer in `boost.php`:
 
 This works when you sync via `php artisan project-boost:sync` (the Laravel path bootstraps the container the `BladeRenderer` needs). After registering, re-sync and the `.blade.php` guideline content is restored. If all your host guidelines are `.md`, this doesn't apply. (Root cause is engine-side; a future `boost-core` may render `.blade.php` natively or warn on an unrenderable host guideline instead of dropping it silently.)
 
+### Gotcha — a host shadow of a slot-aware skill keeps the block
+
+If you keep a **host shadow** (`.ai/skills/<name>/SKILL.md`) of a slot-aware vendor skill (`write-spec`, `pull-requests`, `codex-review`, the `jira-*` skills, `bug-fixing`, `backend-quality`, `test-writing`, `interview`) carried over from the 1.9 line, that shadow still contains `$.slot` references. On 2.0 the **vendor** skill is token-migrated, but **your host shadow is not** — and the gate's legacy-ref check (a `$.<slot-root>` ref such as `$.spec…` / `$.jira…` → "skill requires runtime") sets `fullyMigrated = false`, so the `## Project Conventions` block is (correctly) kept in `CLAUDE.md`. A real consumer (hihaho) hit exactly this: a `$.spec.filename_pattern` ref in their `write-spec` shadow held the block.
+
+This is invisible to `boost validate` / `boost doctor` — the leak scan catches raw `<!--boost:conv-->` tokens, not legacy `$.` refs. Grep your host sources directly:
+
+```bash
+grep -rnE '\$\.[a-z]' .ai/skills .ai/guidelines
+```
+
+Fix — **preferred: drop the shadow** (adopt the migrated vendor skill), unless it carries project-specific content no slot feeds. If you must keep it, **replace the `$.slot` refs with the literal resolved values** (e.g. write the actual filename pattern in place of `$.spec.filename_pattern`).
+
+⚠️ **Do not migrate a kept shadow to `<!--boost:conv-->` tokens if its agent-dir entry is a symlink to your `.ai/` source.** boost declines to write through a user-placed symlink (by design — writing through it would clobber your `.ai/` source; it records `SKIPPED_SYMLINK` instead), so the raw source is served verbatim and a token there is never inlined — it reaches the agent literally. This is about **real-file vs user-symlink, not which sync command**: a token inlines wherever boost writes a real file (bare-CLI `boost sync` or `project-boost:sync`, equally), and *any* user-symlinked shadow is served raw under either. (A bare-CLI consumer who symlinks `.claude/skills/x` → `.ai/skills/x` hits the same thing.) For any symlinked shadow, **use literal values or drop the shadow** — this is the durable rule, not a temporary state: boost will not write through a user symlink, so there is no future mode that inlines tokens there. (boost-core #88 makes the leak scan read through the link so a stray token surfaces instead of reading clean.)
+
+Re-sync; once no synced source carries a legacy `$.` ref or pointer phrase, the block drops. Note the block only ever lived in `CLAUDE.md` (by design — other agent files get the values inlined into skill bodies, never the block), so a `0` count in `AGENTS.md`/`GEMINI.md` is expected, not a drop. A legacy `$.<root>` ref is worth removing regardless of the block: it is never resolved (only detected), so under a non-Claude agent — which never gets the block — the ref dangles unresolved.
+
 ## From 1.7.x to 1.9.x
 
 The `1.8.x → 1.9.x` line's substantive migration step is the conventions-source-flip that originally shipped in `1.8.1` (the `1.8.0` tag was mis-tagged; pin to `^1.8.1` or `^1.9.0+` if migrating from `1.7.x`). The flip aligns with `boost-core 0.9.0`'s engine surface: slot vocabulary, agent-read surface, schema-versioning contract, and validation behavior are all unchanged. **The operator-edit surface moves from `CLAUDE.md` (YAML between marker comments) to `boost.php` (the `->withConventions([...])` array).** A single command migrates existing setups. Engine versions past `0.9.0` add further improvements (cross-agent capability-loss fix in `0.10.0`, wrapper-injection-aware drift in `0.11.0`, markerless guidance files in `0.12.0`) that the current floor tracks.
