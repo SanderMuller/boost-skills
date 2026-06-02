@@ -23,7 +23,7 @@
     "require-dev": {
         "laravel/pao": "^1.0",
         "nunomaduro/collision": "^8.0",
-        "sandermuller/package-boost-php": "^0.16",
+        "sandermuller/package-boost-php": "^0.17",
         "stolt/skill-validator": "^0.0.1"
     },
     "scripts": {
