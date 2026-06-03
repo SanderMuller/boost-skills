@@ -62,7 +62,7 @@ return BoostConfig::configure()
         'sandermuller/boost-skills',
         'sandermuller/package-boost-php',
     ])
-    ->withTags('php', 'github');
+    ->withTags(['php', 'github']);
 ```
 
 Declare your project's capabilities in `->withTags(...)` — tagged skills and guidelines sync only to projects that opt in. Common starters are `'php'` and `'github'`; see the [Tags](#tags) registry for the full vocabulary. After a sync, `vendor/bin/boost tags` shows which tagged content is currently filtered out vs synced — handy for spotting capabilities you may want to declare.
@@ -148,7 +148,7 @@ Declare conventions in `boost.php`:
 return BoostConfig::configure()
     ->withAgents([Agent::CLAUDE_CODE, Agent::COPILOT, Agent::CODEX])
     ->withAllowedVendors(['sandermuller/boost-skills', /* ... */])
-    ->withTags(Tag::Php, Tag::Github, Tag::Laravel)
+    ->withTags([Tag::Php, Tag::Github, Tag::Laravel])
     ->withConventions([
         'schema-version' => 1,
         'jira' => [
