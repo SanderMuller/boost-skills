@@ -1,5 +1,32 @@
 # Upgrading
 
+## From 2.0.x to 2.1.0 (boost-core floor raised to `^0.20`)
+
+**Breaking: requires `boost-core ^0.20`.** 2.1.0 drops `boost-core 0.16–0.19` from the accepted range (now `^0.20 || ^0.21 || ^0.22 || ^0.23 || ^1.0`). This is a support-policy cutoff, not a hard requirement of the shipped skills — they still resolve correctly on `0.16` (the `mcp.jira` conventions-token resolver remains the actual content floor). The cutoff aligns boost-skills with the config API `boost-core` froze for `1.0`: `->withTags(...)` became a single `array` argument in `boost-core 0.20.0` (it was variadic through `0.19`), and both the README setup example and boost-skills' own `boost.php` now use the array form.
+
+### Required
+
+- Move `sandermuller/boost-core` to `0.20+` (normally pulled by the family package you adopt; boost-skills 2.1.0 also declares the `^0.20` floor directly).
+
+### Migrate your `boost.php` — `withTags` is now an array
+
+When you move to `boost-core 0.20+`, update your project's `->withTags(...)` call to the single-array form. `boost sync` migrates a variadic call it parses, but update it by hand to avoid a `TypeError` the next time the config is loaded directly:
+
+```php
+// before (boost-core ≤0.19)
+->withTags(Tag::Php, Tag::Github)
+->withTags('php', 'github')
+
+// after (boost-core 0.20+)
+->withTags([Tag::Php, Tag::Github])
+->withTags(['php', 'github'])
+```
+
+### What stays the same
+
+- The slot vocabulary, schema v1, every `->withConventions([...])` value, and all skill/guideline behavior — nothing in your conventions data changes.
+- If you were already on `boost-core 0.20+`, the only effective change is the added `^0.23` in the accepted range.
+
 ## From 1.9.x to 2.0 (conventions inlining)
 
 **Breaking: requires `boost-core ^0.16`.** In 2.0 every slot-aware skill resolves its convention values at sync time via `boost-core`'s conventions-inlining tokens (`<!--boost:conv-->`, shipped in `0.15.0`) instead of reading the always-loaded `## Project Conventions` block at agent runtime. The three Jira skills additionally use an `mcp.jira` sub-key token that only the `0.16.0` resolver handles (earlier engines emit it raw, losing the value). On any engine below `0.16` at least one token emits raw into the skill body, so `^0.16` is a hard floor — this is why 2.0 is a major bump.
