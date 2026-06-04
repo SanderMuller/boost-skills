@@ -177,6 +177,50 @@
                             }
                         ]
                     }
+                },
+                "risk": {
+                    "type": "object",
+                    "render": "yaml",
+                    "description": "Optional PR risk-tier routing for the pull-requests skill. ABSENT ⇒ the skill uses its generic Low/Medium/High risk question (no behavior change). Orthogonal to pr.gates: gates are always enforced; risk tiers are a separate optional layer — a gate-only project never declares risk and is never pushed into a tier.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "matrix_doc": {
+                            "type": "string",
+                            "description": "Optional path to a project-owned doc holding the risk-assessment methodology (the subjective how-to-score prose). The tier→routing TABLE is data (see tiers); this doc holds only prose. Validated for file-existence by 'boost doctor --check-conventions'."
+                        },
+                        "assessment_skill": {
+                            "type": "string",
+                            "description": "Optional host skill the pull-requests skill invokes to score a PR's tier before routing (e.g. 'pr-risk-assessment')."
+                        },
+                        "ai_reviewers": {
+                            "type": "array",
+                            "render": ["inline", "bullets"],
+                            "items": { "type": "string" },
+                            "description": "Default AI reviewers requested across all tiers (e.g. ['copilot', 'codex']). A tier may override via its own ai_reviewers. Hoisted here because it is typically constant across tiers."
+                        },
+                        "tiers": {
+                            "type": "array",
+                            "render": "yaml",
+                            "description": "Risk tiers in ascending severity. Variable length — no mandated count or names. 'routing' selects the routing model; this version implements 'reviewer_count' only.",
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "routing"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": { "type": "string", "description": "Tier identifier (e.g. 'low', 'critical')." },
+                                    "label": { "type": "string", "description": "Optional PR label applied for this tier (e.g. 'risk:high')." },
+                                    "routing": {
+                                        "enum": ["reviewer_count"],
+                                        "description": "Routing model for this tier. This version implements 'reviewer_count' only. RESERVED future modes (documented, not yet implemented; a later additive minor adds them as enum values): 'codeowners_path' (route by CODEOWNERS path/team ownership), 'blast_radius' (route by semver/public-API impact, for package consumers), 'gate_skill' (route by a gate-skill verdict)."
+                                    },
+                                    "human_reviewers": { "type": "integer", "minimum": 0, "description": "(reviewer_count) Human approvals required for this tier." },
+                                    "require_codeowners": { "type": "boolean", "default": false, "description": "(reviewer_count) When true, CODEOWNERS approval is required for this tier." },
+                                    "ai_reviewers": { "type": "array", "items": { "type": "string" }, "description": "Optional per-tier override of pr.risk.ai_reviewers." },
+                                    "extra": { "type": "array", "items": { "type": "string" }, "description": "Free-form required-action strings the skill surfaces for this tier (e.g. 'security-tag', 'cab-ticket'). NOT a canonicalized vocabulary — project-defined, surfaced verbatim." }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -241,6 +285,43 @@
             "description": "Project-specific MCP server-name mappings. Each value is the tool-namespace segment as it appears between the 'mcp__' prefix and the '__<tool>' suffix in the actual MCP tool name — NOT the package's npm/composer name. Example: tool 'mcp__laravel-boost__database-schema' → slot value 'laravel-boost'; tool 'mcp__mcp-atlassian__jira_get_issue' → slot value 'mcp-atlassian'. Vendor skills then resolve 'mcp.<slot>' to call the tool: e.g. with `mcp.jira: mcp-atlassian`, vendor invokes `mcp__mcp-atlassian__jira_get_issue` at runtime. NOTE: unlike sibling groups, mcp.* INTENTIONALLY allows arbitrary property names — the vocabulary of service keys (jira, laravel, atlassian, github, etc.) is consumer-defined; closing this to a fixed set would force the schema to enumerate every MCP namespace boost-skills knows about, which doesn't match how MCP works in practice.",
             "additionalProperties": {
                 "type": "string"
+            }
+        },
+        "translations": {
+            "type": "object",
+            "render": "yaml",
+            "description": "Optional DB-DRIVEN translation-key validation, consumed by the evaluate skill. SCOPED TO DB-DRIVEN KEYS ONLY — keys stored in a database that bypass the framework's file-based translation validation and can be malformed. File-based-only projects (standard Laravel lang files) should NOT declare this; their keys are framework-validated already. ABSENT ⇒ evaluate performs no translation-key check (no behavior change).",
+            "additionalProperties": false,
+            "required": ["key_pattern"],
+            "properties": {
+                "key_pattern": {
+                    "type": "string",
+                    "description": "Per-consumer regex a valid DB-driven translation key must match (NOT a shared constant — each project defines its own, e.g. '^(enum_[A-Za-z0-9_]+|[a-z0-9_]+(\\.[a-z0-9_]+)+)$'). evaluate flags DB-driven keys that fail this pattern."
+                },
+                "file_based_prefixes": {
+                    "type": "object",
+                    "render": "yaml",
+                    "additionalProperties": false,
+                    "description": "Marks keys that are file-based (framework-validated) and therefore EXEMPT from the DB-driven check.",
+                    "properties": {
+                        "framework_groups": {
+                            "type": "array",
+                            "render": ["inline", "bullets"],
+                            "items": { "type": "string" },
+                            "default": ["auth", "validation", "passwords", "pagination"],
+                            "description": "Top-level framework lang groups whose keys are file-based and exempt. Baseline covers standard Laravel groups; consumer-extensible."
+                        },
+                        "vendor_namespace_exempt": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "When true, any key matching a vendor namespace prefix (regex '^[\\w-]+::', e.g. 'filament::') is file-based and exempt — covers all package-namespaced keys without per-package enumeration."
+                        }
+                    }
+                },
+                "rules_doc": {
+                    "type": "string",
+                    "description": "Optional path to a project-owned doc with subjective naming-quality rules (prose). The subjective judgement stays prose; only key_pattern format is enforced as data. Validated for file-existence by 'boost doctor --check-conventions'."
+                }
             }
         }
     },

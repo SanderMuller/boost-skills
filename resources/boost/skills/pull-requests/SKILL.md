@@ -175,9 +175,13 @@ If the user hasn't provided:
 
 ## Risk Assessment Before PR Creation
 
-**Always ask the user to assess the risk level before creating a PR.** This determines the review process.
+**Always assess the risk level before creating a PR.** It determines the review process (step 10).
 
-Present a summary of the changes, then ask the user to rate the risk as **Low**, **Medium**, or **High** based on these factors:
+<!--boost:conv path="pr.risk" mode="yaml" fallback="No project risk tiers configured."-->
+
+**If risk tiers are configured above**, score the PR against them — invoke the project's `assessment_skill` if set (consulting its `matrix_doc`) — then apply the matched tier's `label`, request its `human_reviewers` / `require_codeowners` and `ai_reviewers`, surface any `extra` required actions, and route per that tier. This replaces the generic question below.
+
+**Otherwise**, present a summary of the changes and ask the user to rate the risk **Low / Medium / High** with `AskUserQuestion` (include your own recommendation), based on these factors:
 
 | Factor | What to consider |
 |--------|-----------------|
@@ -187,18 +191,9 @@ Present a summary of the changes, then ask the user to rate the risk as **Low**,
 | **Data migrations** | Existing data transformations, backfills, data format changes |
 | **Non-reversible actions** | Destructive operations, external API calls, sent notifications |
 
-### Risk Levels
-
-- **Low**: Purely additive changes, isolated features, no security or data impact. Author plus any automated review is sufficient.
+- **Low**: Purely additive, isolated, no security or data impact. Author plus any automated review is sufficient.
 - **Medium**: Touches existing behavior, adds migrations, or affects integrations. A human reviewer should review.
-- **High**: Security-sensitive, involves data migrations, or includes non-reversible actions. A human reviewer **must** review.
-
-### How to Ask
-
-Use `AskUserQuestion` with:
-- A brief summary of the risk factors present in the PR
-- Options: Low, Medium, High
-- Include your own recommendation based on the changes
+- **High**: Security-sensitive, data migrations, or non-reversible actions. A human reviewer **must** review.
 
 ## PR Title
 
