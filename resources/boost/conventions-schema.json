@@ -181,8 +181,9 @@
                 "risk": {
                     "type": "object",
                     "render": "yaml",
-                    "description": "Optional PR risk-tier routing for the pull-requests skill. ABSENT ⇒ the skill uses its generic Low/Medium/High risk question (no behavior change). Orthogonal to pr.gates: gates are always enforced; risk tiers are a separate optional layer — a gate-only project never declares risk and is never pushed into a tier.",
+                    "description": "Optional PR risk-tier routing for the pull-requests skill. ABSENT ⇒ the skill uses its generic Low/Medium/High risk question (no behavior change). Orthogonal to pr.gates: gates are always enforced; risk tiers are a separate optional layer — a gate-only project never declares risk and is never pushed into a tier. Declaring pr.risk requires at least the tiers array (an empty pr.risk would disable the generic fallback with nothing to route by).",
                     "additionalProperties": false,
+                    "required": ["tiers"],
                     "properties": {
                         "matrix_doc": {
                             "type": "string",
@@ -204,7 +205,7 @@
                             "description": "Risk tiers in ascending severity. Variable length — no mandated count or names. 'routing' selects the routing model; this version implements 'reviewer_count' only.",
                             "items": {
                                 "type": "object",
-                                "required": ["name", "routing"],
+                                "required": ["name", "routing", "human_reviewers"],
                                 "additionalProperties": false,
                                 "properties": {
                                     "name": { "type": "string", "description": "Tier identifier (e.g. 'low', 'critical')." },

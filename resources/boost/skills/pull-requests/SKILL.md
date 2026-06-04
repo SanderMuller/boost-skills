@@ -67,8 +67,8 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
    If any assertion fails, fix it inline before continuing. Use the REST API for body/title patches rather than `gh pr edit` — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation path in some `gh` versions.
 9. **Request review** — request a reviewer on the PR (an automated reviewer if the project uses one, and/or human reviewers). Use `gh pr edit <pr-number> --add-reviewer <login>` or the project's configured review mechanism.
 10. **Handle review based on risk level**:
-    - **Low risk**: Mark the PR as ready immediately with `gh pr ready <pr-number>`. Any automated review runs asynchronously.
-    - **Medium/High risk**: A human reviewer must also review. Leave the PR as a draft and tell the user to assign a human reviewer.
+    - **If `pr.risk` tiers are configured** (see [Risk Assessment](#risk-assessment-before-pr-creation)): route per the matched tier — a tier with `human_reviewers: 0` and no `require_codeowners` → mark ready with `gh pr ready <pr-number>`; a tier needing one or more human reviewers (or `require_codeowners`) → leave it a draft, request the tier's reviewers, and tell the user which approvals it needs.
+    - **Otherwise** (generic assessment): **Low** → mark ready immediately with `gh pr ready <pr-number>`; **Medium/High** → a human reviewer must also review, so leave it a draft and tell the user to assign one.
 
 ## Pre-PR Gates
 
