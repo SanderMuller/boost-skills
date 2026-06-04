@@ -2,6 +2,8 @@
 name: evaluate
 description: "Self-directed eval loop: review own implementation, fix issues found, re-evaluate until clean, then run code review. Fix yourself; only ask the user for decisions. Activates when: evaluating implementation, self-reviewing code, checking for issues, or when user mentions: evaluate, check implementation, self-review, verify implementation."
 argument-hint: "[file path, feature name, or description of what to evaluate]"
+metadata:
+  schema-required: "^1"
 ---
 
 # Evaluate Implementation
@@ -58,6 +60,12 @@ Read through all changed files and check for:
 | **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
+
+**DB-driven translation keys** (only when a project translation-key policy is configured):
+
+<!--boost:conv path="translations" mode="yaml" fallback="not configured — skip this check"-->
+
+If a policy is shown above, flag any DB-driven translation key that does not match its `key_pattern`. Exempt file-based keys: top-level groups listed in `file_based_prefixes.framework_groups`, and — when `vendor_namespace_exempt` is true — any key matching a vendor namespace prefix like `package::` (keys validated by the framework's own file-based lang files are out of scope). If `rules_doc` is set, also apply its naming-quality guidance. When nothing is configured, skip this check.
 
 ### Phase 3: Fix Issues
 
