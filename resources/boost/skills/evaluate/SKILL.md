@@ -65,7 +65,7 @@ Read through all files in the resolved scope and check for:
 |----------|-----------------|
 | **Edge cases** | Null handling, empty collections, zero values, boundary conditions |
 | **Race conditions** | Concurrent requests causing data corruption, non-atomic operations |
-| **Security** | Unvalidated input, type confusion |
+| **Security** | Missing auth checks, unvalidated input, XSS, SQL injection, type confusion |
 | **Logic errors** | Wrong conditions, off-by-one errors, swallowed exceptions |
 | **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
