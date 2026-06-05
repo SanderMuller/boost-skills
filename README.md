@@ -88,6 +88,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
+| `final-verification-review` | Pre-PR closeout: run the full evaluate loop, dry-run the PR preflight and gates, report READY / NOT READY. | `github`        |
 | `frontend-quality`     | Frontend quality gate: type-checking and linting for the project's frontend toolchain.               | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
 | `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |
@@ -180,7 +181,7 @@ Missing-slot behavior is per-slot: value slots prompt the user once per session;
 | `jira` | Jira issue tracker — project key, refuse-other-projects policy, description-format doc | `jira-create`, `jira-rework`, `jira-updates` |
 | `github` | GitHub repo identity — owner, repo, default base branch | `pull-requests`, `pr-review-feedback`, `github-issue-updates` |
 | `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
-| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`) | `pull-requests` |
+| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`) | `pull-requests`, `final-verification-review` |
 | `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
 | `codex` | Codex invocation — `plugin` (default) / `bare_cli`, setup doc | `codex-review` |
 | `spec` | Spec-file conventions — filename pattern, research docs | `write-spec`, `implement-spec`, `interview` |
