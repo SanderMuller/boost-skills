@@ -5,6 +5,23 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.3.0 - 2026-06-05
+
+<!-- verified-sha: 090b63eb8298be5226494488d6d99628d4e7d942 -->
+### Added
+
+- **`final-verification-review` skill** — a thin pre-PR closeout orchestrator for the moment work is done and a PR is next. It runs the full `evaluate` loop (including the Codex review per its dedup rules), then dry-runs the `pull-requests` preflight **check-only** — branch/base resolution with the rename/stop semantics mirrored from `pull-requests`, work state, the project's `pr.gates`, and title-format/template preconditions — and ends in a single **READY / NOT READY** verdict with the exact missing items. It never creates the PR; that stays `pull-requests`' job. Orchestrates without duplicating: code verification belongs to `evaluate`, gate definitions to `pull-requests`. Tagged `github`; reads the existing `branches.patterns`, `github.default_base_branch`, and `pr.gates` slots.
+
+### Changed
+
+- **`codex-review` hardened with a re-review loop.** A review is stale the moment a fix changes a file, so the skill now re-runs the review after applying fixes until a round comes back clean — with explicit stop rules (a clean round is final, a dismissals-only round is final, capped at 3 rounds) and scope-aware re-review semantics so committed-work reviews see the fix commits while working-tree reviews never sweep the user's uncommitted work into a commit. Also new: a sibling sweep (an accepted finding that reveals a bug class triggers a scan of the reviewed scope for other instances) and an engine-fidelity rule (retry the same engine on capacity/transient failures; never substitute another reviewer or fall back to self-review).
+- **`evaluate` Phase 7 (Codex review) generalized.** The manual-invocation-only carve-out is gone: the external review now applies regardless of how evaluate was invoked, with a dedup-based skip that mirrors the `pull-requests` gate's `since_last_code_change` freshness window — any task file counts (code, docs, skills, config), not only code, so docs-only changes can no longer slip past a stale review. An unrunnable Codex review is surfaced in the report instead of silently skipped.
+- **Capability-gated parallel-execution guidance** in `evaluate` and `final-verification-review`. Subagent support is now near-universal across the synced agents but with divergent semantics (barrier-style, explicit-request-only, serial delegation), and the Agent Skills spec defines no orchestration vocabulary — so both skills describe parallelism as portable prose intent: read-only fan-out only, fixes always serial in the main context, no nesting, the sequential order stays canonical, and a scripted workflow feature is an optional escalation rather than a dependency.
+
+The closeout-loop patterns (re-review-until-clean, bug-class sweep, engine fidelity) were informed by studying the public [`openclaw/agent-skills`](https://github.com/openclaw/agent-skills) autoreview skill and validated through dogfooding on this repository's own release flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.2.0...2.3.0
+
 ## 2.2.0 - 2026-06-04
 
 <!-- verified-sha: 90733eb11d838d8e3b0c8797d6590a06acc706b2 -->
@@ -153,6 +170,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -173,6 +191,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -225,6 +244,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -251,6 +271,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -313,6 +334,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -340,6 +362,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -409,6 +432,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -461,6 +485,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -469,6 +494,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -528,6 +554,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -545,6 +572,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -614,6 +642,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -715,6 +744,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -733,6 +763,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -906,6 +937,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
