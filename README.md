@@ -84,7 +84,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `backend-quality`      | Two-tier PHP quality gate: Pint + related tests on every change, PHPStan + full suite on completion. | `php`           |
 | `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
-| `codex-review`         | Request an independent review from the OpenAI Codex CLI, then apply the warranted fixes.             | —               |
+| `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
