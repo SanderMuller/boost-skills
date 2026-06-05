@@ -81,6 +81,16 @@ Two preflight items from the `pull-requests` skill are creation-time commitments
 - **Template** — if the project configures a PR template path (see the `pull-requests` skill), check that the file exists; a missing template would otherwise only surface at creation time.
 - **Title format** — report the configured title format in the verdict so the eventual PR title is written against it; if enough is known about the task (e.g. an issue key the format requires), flag anything already missing.
 
+## Parallel Closeout
+
+The step order above is the canonical flow. When the harness can run independent tasks concurrently (subagents, parallel tasks, a background shell), overlap the independent parts — as an optimization, never a requirement:
+
+- **Within Step 2** — 2a through 2d are independent checks; run them concurrently.
+- **Step 2 alongside Step 1's tail** — Step 2 is read-only, so it may start once Step 1's fix loop has stopped changing files (evaluate's remaining passes are verification). Two caveats: a `skill_invoked` gate (2c) can only be settled after the review it checks has run, and any later file change from Step 1 stales Step 2 — re-run the affected checks.
+- **Dedup across lanes** — a `shell_command` gate that duplicates a check evaluate already ran clean (e.g. the test suite) does not need a fresh run unless files changed since.
+
+Fan out read-only work only — nothing in this skill's own steps mutates the repo. Harnesses with a scripted workflow feature may consolidate this fan-out into one workflow run; that is an optional escalation, never a dependency.
+
 ## Step 3: Verdict
 
 ```markdown

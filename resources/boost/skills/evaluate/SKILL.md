@@ -150,6 +150,20 @@ Summarize what you found and fixed across all passes:
 
 If no issues were found, say so briefly and move on.
 
+## Parallel Execution
+
+The phase order above is the canonical flow. When the harness can run independent subtasks concurrently (subagents, parallel tasks, a background shell), use that capability — as an optimization, never a requirement:
+
+- **Phase 1** — backend and frontend checks are independent toolchains; run them concurrently.
+- **Phases 2 + 3, finding only** — the review dimensions and the comment inventory are read-only lenses over the same resolved scope; fan them out as parallel subtasks and merge the findings before fixing anything.
+- **Phases 6 + 7** — the external review (Phase 7) may be launched in the background when Phase 6 starts, since both review the same scope. Trade-off: if Phase 6 findings change code, the external review is stale — the `codex-review` skill's re-review rules then apply.
+
+Hard rules, regardless of harness:
+
+- **Fan out read-only work only.** All edits — comment cleanups (Phase 3), issue fixes (Phase 4), re-evaluation fixes (Phase 5) — happen serially in the main context: parallel editors conflict, and design decisions go through the user.
+- **Do not nest.** If this skill is already running inside a subagent, run sequentially.
+- **Degrade gracefully.** Concurrency semantics differ per harness (some block until all subtasks finish, some delegate only on explicit request, some have none) — when unsure, the sequential order is always correct. Harnesses with a scripted workflow feature may consolidate the fan-out into one workflow run; that is an optional escalation, never a dependency.
+
 ## Guidelines
 
 - **Fix, don't report** — the point of this skill is to catch and fix issues, not to generate a list for the user
