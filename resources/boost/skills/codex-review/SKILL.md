@@ -1,13 +1,13 @@
 ---
 name: codex-review
-description: "Requests an independent code review from OpenAI Codex CLI, critically evaluates its findings, and applies warranted fixes. Activates when: the user says /codex-review, asks for a Codex review, or wants an external AI review of changes."
+description: "Requests an independent code review from OpenAI Codex CLI, critically evaluates its findings, applies warranted fixes, and re-reviews until clean. Activates when: the user says /codex-review, asks for a Codex review, or wants an external AI review of changes."
 metadata:
   schema-required: "^1"
 ---
 
 # Codex Code Review
 
-Run an independent code review using OpenAI Codex, then critically evaluate and apply warranted findings.
+Run an independent code review using OpenAI Codex, critically evaluate and apply warranted findings, and re-review after fixes until a round comes back clean.
 
 ## Step 1: Determine what to review
 
@@ -148,6 +148,7 @@ Synchronous — review ties up the agent session for the full review window (typ
 ### Cross-cutting concerns (apply identically under both invocation modes)
 
 - **Auth failure** — if `codex` is installed but reports an auth failure (whether surfaced by the plugin's companion script or by bare-CLI directly), leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
+- **Capacity / transient failures** — if the review fails on model capacity, rate limiting, or a transient error, retry the same command a few times with the same engine and model. Never substitute a different review engine or fall back to reviewing the code yourself under this skill's name — the whole value here is the independent second opinion. If retries keep failing, leave the review unrun and surface it to the user.
 - **Project-specific overrides doc** — <!--boost:conv path="codex.setup_doc" mode="inline" fallback="none — the path-specific playbooks above are self-contained"-->. If a path is shown, load that file for project-specific overrides (custom auth flow, focus areas, exclusions) regardless of invocation mode. Most consumers leave it unset.
 - **`pr.gates skill_invoked: codex-review` interaction** — if the codex review can't run (auth failure, plugin missing under `invocation_mode: plugin`, codex CLI missing under `invocation_mode: bare_cli`), the `pr.gates` `on_missing: stop_and_request` policy means the vendor `pull-requests` skill should leave the gate's checklist item unchecked + note the unrun-reason rather than blocking PR creation entirely.
 
@@ -168,9 +169,25 @@ Don't over-apply: a review that implements 2 real improvements is better than on
 For findings that are genuine issues:
 
 1. Fix the code
-2. Verify with the project's tests and static analysis (see the `backend-quality` / `frontend-quality` skills for the relevant stack)
+2. **Sweep for siblings** — when an accepted finding reveals a bug class or repeated pattern, check the rest of the reviewed scope for other instances and fix them in the same pass. Stay within the scope under review; instances elsewhere in the codebase are follow-up territory, not this change.
+3. Verify with the project's tests and static analysis (see the `backend-quality` / `frontend-quality` skills for the relevant stack)
 
-## Step 5: Report
+## Step 5: Re-review until clean
+
+A review is stale the moment a fix changes any file. If Step 4 changed any files, run the review again and repeat Steps 3–4 on the new findings. Loop until a round comes back clean: no warranted findings, where findings dismissed with reasoning count as handled. A review that predates the last file change is stale — the same staleness a `pr.gates` freshness window (`window: since_last_code_change`) guards against.
+
+Re-review the change's **current state**, not the original target:
+
+- Original scope was the **uncommitted working tree** → leave the round's fixes uncommitted and re-run the working-tree review; it covers the original change plus the fixes.
+- Original scope was **committed work** (a commit or branch vs base) → commit the round's fixes first (Step 7 format), then re-review the full range including the fix commit — the same base for a branch review, or the originally reviewed commit's parent as base when a single commit was reviewed. Re-running the original mode unchanged would re-review the unfixed code and re-surface the same findings.
+
+Stop rules:
+
+- **A clean round is final.** Never run an extra review to confirm a clean result or to get a nicer closing line.
+- **A dismissals-only round is final.** If a round changed no code (all findings dismissed), there is nothing to re-review — stop.
+- **Cap at 3 review rounds.** If warranted findings keep surfacing after three rounds, stop and surface the remaining findings to the user rather than looping further.
+
+## Step 6: Report
 
 Summarize to the user:
 
@@ -187,9 +204,11 @@ Summarize to the user:
 - [Categories that were clean]
 ```
 
-## Step 6: Commit (if changes were applied)
+## Step 7: Commit (if changes were applied)
 
-If you applied any fixes, commit them separately so each review round stays traceable in git history. Only list the **implemented** changes in the commit message — keep dismissed findings and their rationale in the conversation for the user's reference:
+This step applies when the reviewed scope was **committed work** (a commit or branch vs base): commit the applied fixes separately so each review round stays traceable in git history. When the reviewed scope was the **uncommitted working tree**, leave the fixes uncommitted — they are part of the same in-progress change the user has not committed yet, and committing would sweep up unrelated work-in-progress. Only commit a working-tree review's fixes when the user explicitly asks.
+
+Only list the **implemented** changes in the commit message — keep dismissed findings and their rationale in the conversation for the user's reference:
 
 ```
 Apply codex-review feedback

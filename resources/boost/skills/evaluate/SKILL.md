@@ -118,11 +118,16 @@ After fixing issues, re-run only the checks affected by your fixes (e.g., if you
 
 Once the evaluate-fix loop is clean, run the `code-review` skill for a structured review from a different angle (functionality, UX/UI, security, testing). Fix any findings from the code review and re-verify.
 
-### Phase 7: Codex Review (Manual Invocation Only)
+### Phase 7: Codex Review
 
-If the user directly requested this evaluation (e.g., typed `/evaluate`, said "evaluate this", or "review your work"), run the `codex-review` skill for a multi-model second opinion. Critically evaluate and implement any warranted feedback, then re-verify.
+Run the `codex-review` skill for a multi-model second opinion. Critically evaluate and implement any warranted feedback, then re-verify. This phase applies regardless of how evaluate was invoked — directly by the user or as the closeout step of another flow (e.g. right before PR creation).
 
-**Skip this phase** when the evaluate skill is invoked automatically by another skill or workflow (e.g., as part of the PR flow or implementation pipeline) rather than by the user themselves.
+**Skip this phase only when both are true** (the same dedup logic as Phase 1, and the same freshness window the `pull-requests` pre-PR gate checks):
+
+1. `codex-review` already ran in this conversation and ended clean — no warranted findings remaining (every finding applied or dismissed with reasoning)
+2. No task files were added, removed, or changed since that clean run — any file counts (code, docs, skills, config), not only code; only edits inside agent-managed paths are exempt, mirroring the gate's `since_last_code_change` semantics
+
+If in doubt, run it. If `codex-review` cannot run (CLI or plugin missing, auth failure), note that in the Phase 8 report instead of silently skipping.
 
 ### Phase 8: Report
 
