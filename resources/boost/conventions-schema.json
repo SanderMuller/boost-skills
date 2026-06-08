@@ -288,6 +288,24 @@
                 "type": "string"
             }
         },
+        "review": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional PR review-feedback conventions, consumed by the pr-review-feedback skill. ABSENT ⇒ built-in defaults: the built-in bot-reviewer set and the colleague gate ON (a human colleague's threads are never auto-acted on).",
+            "properties": {
+                "bot_reviewers": {
+                    "type": "array",
+                    "render": ["inline", "bullets"],
+                    "items": { "type": "string" },
+                    "description": "ADDITIONAL author logins treated as automated reviewers (bots), eligible for auto-handling (apply/skip, reply, resolve). EXTENDS the built-in set — it does NOT replace it. The built-in set is always active: the literal logins 'copilot-pull-request-reviewer', 'github-actions', 'codex', plus any login ending in the literal four-character suffix '[bot]' (e.g. 'dependabot[bot]'). Declare here only the extra logins specific to the project (e.g. an org CI bot, a different AI reviewer). A thread is classified 'bot' only when EVERY comment in it is from a bot login; one human comment makes the whole thread 'colleague'."
+                },
+                "colleague_gate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When true (default, and when this slot is absent), threads containing any human-colleague comment are NEVER auto-acted on — the skill evaluates, presents a recommendation, and lets the user decide whether to apply, reply, or resolve. When false, the skill may auto-handle colleague threads the same way it handles bot threads (full automation) — opt in only when the team accepts the agent acting on human review comments without a confirmation step. Bot-thread auto-handling is unaffected either way."
+                }
+            }
+        },
         "translations": {
             "type": "object",
             "render": "yaml",

@@ -52,6 +52,8 @@ QA test cases use a **Preconditions → Steps → Expected** shape, written so a
 
 **Functional edge cases get their own test case.** Each edge case QA can trigger from the UI — a feature × setting combination, an interacting frontend/backend state, a boundary condition, a permission edge — is its own test-case block, never folded into the happy-path case. The `Expected` line states how the app handles it, so QA learns both that the edge exists and what correct behaviour is. Technical-only edges (retry, timeout, parallel invocation) stay in the PR description per the engineer-only filter above.
 
+When the work is backed by a spec (see the `write-spec` skill), its `## Edge Cases` table is the source list — translate each UI-triggerable row into a QA-testable block. For a thin backlog ticket created before any spec or implementation exists, you may not know the edge cases yet; the `jira-updates` skill adds these blocks once the implementation lands.
+
 ## Required Information — Ask If Missing
 
 Before creating the issue, ensure you have:

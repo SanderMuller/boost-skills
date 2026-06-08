@@ -32,6 +32,23 @@ The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="i
 - Converting loose notes or issues into a formal spec
 - **Not** for implementing (`implement-spec` skill)
 
+## Gate: Are Requirements Settled?
+
+Before writing a single line of spec, check for fuzziness. **Judge fuzziness only after loading all available context** — read the linked issue and run the [Research checklist](#research-before-writing--required-checklist) below first. An issue-backed ask like "write a spec for the export feature" is one sentence on its own, but if the linked issue carries a concrete description + acceptance criteria, intent is sharp and the gate does not fire — converting an issue into a spec is a documented use of this skill. Bounce to `interview` only when ambiguity remains *after* the context is in hand.
+
+If **any** of these are true with all context loaded, **bounce the user to the `interview` skill first** — do not power through:
+
+- The ask is underspecified — even after reading the issue — or uses overloaded terms without disambiguation.
+- The proposed solution requires picking between two or more genuinely different architectures.
+- The issue's acceptance criteria contradict each other or the description.
+- You'd be guessing at edge-case behavior, error handling, or scope boundaries.
+
+A short bounce message:
+
+> "I'm seeing ambiguity around [X, Y]. Want me to run the `interview` skill first to grill those out, then write the spec from solid answers?"
+
+If the user insists on writing immediately, capture each unresolved item in `## Open Questions` rather than inventing an answer. A spec built on guessed requirements ships those guesses as bugs.
+
 ## Spec File Location
 
 Resolve the spec file path via the filename pattern above. Apply the placeholder-substitution rules above to produce the final path.
@@ -46,9 +63,30 @@ specs/
     └── deprecated-method-removal.md
 ```
 
-## Research phase — project context
+## If a Spec File Already Exists
 
-Before drafting the spec, consult the project reference docs: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — the skill stays generic; gather context from the conversation"-->. If paths are shown, read them (architecture, domain glossary, relationship maps, or similar) before the technical sections so terminology + structural references match the project's canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` would have caught this at sync time).
+Before writing from a fresh template, check whether a spec for this work already exists at (or under) the resolved path — an earlier `write-spec` run, or a requirements doc the `interview` skill's output was saved into. If one exists, read it and classify before doing anything:
+
+| What you find | Action |
+|---|---|
+| Already implementation-ready — has a phased `## Implementation` section (or `### Phase N:` task checkboxes) | **Stop.** Don't re-wrap. Ask the user what they want changed (add tasks? a new phase? edit existing?). |
+| Requirements-shaped — has problem/overview/edge-cases/acceptance content but no phased Implementation | **Convert in place** (below). |
+| Loose notes / neither | Treat as input; fall through to the from-scratch flow. |
+| More than one candidate file for the same work | **Stop and ask** which is authoritative — never pick silently. |
+
+**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
+
+## Research Before Writing — Required Checklist
+
+Specs are only as good as the research behind them. Before writing the spec body, do all of the following and reference findings in the spec:
+
+1. **Read the issue** (if any) — description, acceptance criteria, all comments.
+2. **Locate relevant code** — grep for the primary domain term(s); list the files you'll touch.
+3. **Read the project reference docs**: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — gather context from the conversation and codebase"-->. If paths are shown, read the ones matching the feature area (architecture, domain glossary, relationship maps, or similar) so terminology + structural references match project canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` catches this at sync time).
+4. **Verify any stated existing behavior** — if the user said "X currently does Y", read the code and confirm. If they're wrong, surface the contradiction before writing the spec around it.
+5. **Check terminology against the reference docs** — use canonical names. If the user used a different word, flag it in `## Terminology` so the spec doesn't propagate ambiguity.
+
+Skip steps that genuinely don't apply (e.g. step 4 when there's no claim to verify), but never skip 2 and 3 when a codebase and reference docs exist.
 
 ## Spec Format
 
@@ -65,10 +103,14 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 
 {2-3 sentences: what this does and why it matters.}
 
+## Assumptions
+
+<!-- The Assumptions Audit (below) fills this ledger — one bullet per AI-introduced inference, kept so the user can sign off by skimming this section alone. Carried forward verbatim in Conversion Mode. -->
+
 ---
 ```
 
-After the overview, use numbered top-level sections (`## 1. Data Model`, `## 2. API Design`, etc.) for the technical design. Adapt sections to fit the feature.
+After the overview and assumptions ledger, use numbered top-level sections (`## 1. Data Model`, `## 2. API Design`, etc.) for the technical design. Adapt sections to fit the feature.
 
 After the technical sections, include `## Edge Cases` — a compact table the Edge Case Sweep (below) fills in. Each row names a scenario the feature must handle and how the app handles it.
 
@@ -123,6 +165,10 @@ For focused changes that don't need multiple phases.
 ## Overview
 
 {2-3 sentences: what this fixes/improves and why.}
+
+## Assumptions
+
+<!-- The Assumptions Audit (below) fills this ledger. Omit the section only when the audit surfaced nothing. -->
 
 ---
 
@@ -186,7 +232,7 @@ For focused changes that don't need multiple phases.
 
 **Findings** — Always present, even if empty. Implementation notes go here: design decisions, deviations from spec, discovered issues.
 
-## Edge Case Sweep — Required Before Finalising
+## Edge Case Sweep — Required Before the Assumptions Audit
 
 Once the spec body has shape (technical sections + draft Implementation phases), sweep for edge cases. Edges left implicit ship as production bugs with no test coverage. The sweep is codebase research, not guesswork.
 
@@ -206,7 +252,30 @@ Fill the `## Edge Cases` table (`Scenario | Handling`). Every row must be backed
 - a `- [ ] Tests —` entry in the relevant phase that covers the scenario, and
 - an implementation note in the technical section when the handling is non-obvious.
 
-Record the handling even when you had to choose it yourself. Reserve `## Open Questions` for edge cases whose handling needs a product or UX decision you cannot make.
+Record the handling even when you had to choose it yourself — the Assumptions Audit grills every AI-chosen handling next. Reserve `## Open Questions` for edge cases whose handling needs a product or UX decision you cannot make.
+
+## Assumptions Audit — Required Before Finalising
+
+After drafting the spec and running the Edge Case Sweep, audit for every AI-introduced inference, then grill the user one at a time. Goal: the spec is sign-off-ready **without the user reading it end-to-end**.
+
+This audit runs even when the requirements came from the `interview` skill — `write-spec` adds technical sections and Implementation phases, and each is a fresh source of AI assumptions on top of whatever the interview captured.
+
+**Step 1 — Scan the spec.** Flag every statement that meets *any* of these:
+
+- **Magic numbers invented from nothing** — char caps, retry counts, backoff sequences, cache TTLs, delays, pagination sizes.
+- **Naming and string content invented** — message templates, cache-key prefixes, error wording, queue names.
+- **Behavioural defaults the user did not bless** — retry-vs-fail-fast, silent-skip vs surfaced-error, idempotency.
+- **Unverified factual claims** — "this column is already indexed", "this endpoint is fast enough".
+- **Deviations from the user's original wording** — surface original intent vs final spec even when an earlier answer let you make the swap.
+- **Filled-gap behaviours** — user said "store the answers", you assumed JSON column vs separate rows.
+- **Convention-added pieces the user did not ask for** — factory/policy/observer added because that's how the codebase usually wires it.
+- **Edge-case handling the AI chose** — every `## Edge Cases` row whose handling you decided rather than confirmed from code or an explicit user statement, plus any retry / conflict / timeout / missing-record / parallel-invocation behaviour the table doesn't cover.
+- **"Recommended" choices accepted without engaging with the framing.**
+- **MVP trade-offs worth re-flagging** — an earlier accepted shortcut that's load-bearing enough to re-confirm now.
+
+**Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, 1-2 concrete alternatives, "Other / let me clarify". Never batch.
+
+**Step 3 — Record outcomes.** Capture each into a `## Assumptions` section near the top of the spec — the complete audit ledger, one bullet per scanned item regardless of outcome. This is the contract that lets the user sign off by skimming `## Assumptions` alone. Promote anything that became a real decision into `## Resolved Questions`; route anything still undecided to `## Open Questions`.
 
 ## Writing Guidelines
 

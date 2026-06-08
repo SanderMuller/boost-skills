@@ -4,6 +4,7 @@ description: "Applies PR review feedback with critical evaluation. Activates whe
 argument-hint: "[PR number]"
 metadata:
   boost-tags: "github"
+  schema-required: "^1"
 ---
 
 # Applying PR Review Feedback
@@ -12,25 +13,47 @@ A disciplined approach to addressing PR review comments: **evaluate first, apply
 
 ## Core Principle
 
-**Never blindly apply all feedback. And never auto-act on a human colleague's comments.**
+**Never blindly apply all feedback.** And, by default, **never auto-act on a human colleague's comments** — a project can opt out of that gate via `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)).
 
 1. Fetch the PR and its review comments
 2. Filter out resolved conversations
 3. **Classify each thread by author** — bot vs. human colleague
 4. Critically evaluate each piece of feedback
 5. **Bots**: apply/skip, reply, and resolve automatically
-6. **Colleagues**: evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve
+6. **Colleagues** (default, `review.colleague_gate: true`): evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve. When the gate is `false`, handle them like bot threads.
 
 ## Author Classification
 
-For every unresolved thread, classify the **first comment's** `author.login`:
+Classify a thread as **bot** only if **every comment** in it was authored by a bot. If *any* comment in the thread — including follow-ups — was authored by a human colleague, classify the whole thread as **colleague**: a human jumping into a bot-started thread is the signal that this thread now needs the user's judgement. Classify by scanning all comments, not just the first.
 
-| Classification | Matches                                                | Auto-handling allowed?                      |
-|----------------|--------------------------------------------------------|---------------------------------------------|
-| **bot**        | `copilot-pull-request-reviewer`, `*[bot]`, `github-actions`, `codex` | Yes — apply/skip, reply, resolve |
-| **colleague**  | Anything else (a real human GitHub username)           | **No** — discuss with user, never auto-act  |
+The "every comment" rule only holds if you actually fetched every comment. The Phase 1 query pulls `comments(first: 100)` with `totalCount`; if a thread's `totalCount` exceeds the fetched nodes (a thread with 100+ comments), you cannot prove it is all-bot — **fail safe and classify it as colleague**, or page the remaining comments before classifying. Never treat a truncated thread as bot.
+
+A comment author is a **bot** when `author.login` matches any of the built-in set:
+
+- The literal string `copilot-pull-request-reviewer`
+- The literal string `github-actions`
+- The literal string `codex`
+- A login ending in the literal four-character suffix `[bot]` (regex `\[bot\]$`) — e.g. `dependabot[bot]`, `renovate[bot]`. Note: `[bot]` is a literal suffix here, **not** a regex character class.
+
+Plus any additional logins this project declares as automated reviewers: <!--boost:conv path="review.bot_reviewers" mode="inline" fallback="none — built-in set only"-->.
+
+These **extend** the built-in set; they do not replace it. Any `author.login` not in the combined set is a **colleague**.
+
+| Classification | Rule                                                                                     | Auto-handling allowed?                      |
+|----------------|------------------------------------------------------------------------------------------|---------------------------------------------|
+| **bot**        | Every comment in the thread matches a bot login (built-in set + `review.bot_reviewers`)  | Yes — apply/skip, reply, resolve            |
+| **colleague**  | At least one comment is from a non-bot login, or any login is ambiguous                  | **Gated** — when `review.colleague_gate` is `true` (default), no auto-act: discuss with user. When `false`, handle like a bot thread. |
 
 When in doubt (ambiguous login), treat the thread as **colleague** and discuss with the user.
+
+### Colleague gate toggle
+
+This project's colleague-gate setting: <!--boost:conv path="review.colleague_gate" mode="inline" fallback="true (default) — colleague threads are never auto-acted on"-->.
+
+- **`true` (default, and when unset)** — the colleague handling below applies in full: evaluate, present a recommendation, and let the user decide whether to apply, reply, or resolve. Never auto-act on a colleague thread.
+- **`false`** — the project has opted into full automation: handle colleague threads the same way as bot threads (apply/skip, reply, resolve without a confirmation step). The Phase 3b discussion gate is skipped. Bot-thread handling is identical either way.
+
+The rest of this skill describes the `true` (default) behavior; under `false`, treat every colleague thread as a bot thread for action purposes.
 
 ## When to Use This Skill
 
@@ -58,7 +81,8 @@ Use this skill when:
              id
              isResolved
              isOutdated
-             comments(first: 10) {
+             comments(first: 100) {
+               totalCount
                nodes {
                  body
                  url
@@ -90,7 +114,7 @@ Use this skill when:
 **First, split threads into two buckets by author** (see Author Classification above):
 
 - **Bot bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6).
-- **Colleague bucket** — evaluate to form a recommendation, but do **not** apply, reply, or resolve. Surface every colleague thread to the user with your recommendation and let them decide (Phase 3b). The user replies/resolves themselves, or explicitly tells you to do it on their behalf.
+- **Colleague bucket** — handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)). Under the default (`true`): evaluate to form a recommendation, but do **not** apply, reply, or resolve — surface every colleague thread to the user and let them decide (Phase 3b); the user replies/resolves themselves, or explicitly tells you to do it on their behalf. Under `false`: treat the colleague bucket exactly like the bot bucket (auto apply/reply/resolve), and skip Phase 3b.
 
 **Handle outdated threads carefully:**
 - If `isOutdated: true`, use `diffHunk`, `path`, and the current file contents to understand how the code changed
@@ -125,7 +149,9 @@ For each **bot** thread you deemed valid:
 
 ### Phase 3b: Discuss Colleague Feedback With User
 
-For every colleague thread, build a short proposal and present it to the user **before doing anything else**:
+*(Skipped entirely when `review.colleague_gate` is `false` — see [Colleague gate toggle](#colleague-gate-toggle). Under that setting, colleague threads are handled like bot threads in Phase 3.)*
+
+For every colleague thread, build a short proposal and present it to the user **before taking any action on that colleague thread** (apply, reply, or resolve). This gate blocks action on the colleague thread itself, not the whole skill run — bot threads continue through Phase 3 in parallel. The proposal covers:
 
 - **What the colleague said** — 1-2 line summary + link
 - **Your evaluation** — valid, partially valid, contradicts conventions, subjective, blocked on missing context, etc.
@@ -195,12 +221,10 @@ mutation($threadId: ID!) {
 }' -f threadId="<THREAD_ID>"
 ```
 
-**Colleague threads** — **never** auto-reply, **never** auto-resolve. The user owns these threads. Only reply or resolve when:
+**Colleague threads** — handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)):
 
-- The user explicitly says so in the current turn ("post that reply", "resolve thread 3", "reply and resolve all of these")
-- *and* the instruction is specific enough to know which thread(s) it covers
-
-Default to leaving colleague threads untouched on GitHub even after applying their suggested code change. The user can reply/resolve themselves once they're happy with the diff.
+- **Gate `true` (default)** — **never** auto-reply, **never** auto-resolve. The user owns these threads. Only reply or resolve when the user explicitly says so in the current turn ("post that reply", "resolve thread 3", "reply and resolve all of these") *and* the instruction is specific enough to know which thread(s) it covers. Default to leaving colleague threads untouched on GitHub even after applying their suggested code change — the user can reply/resolve themselves once they're happy with the diff.
+- **Gate `false`** — the project opted into full automation: reply and resolve colleague threads the same way as bot threads above, no per-turn confirmation needed.
 
 **Reply guidelines (when you do reply):**
 - **Applied feedback**: "Fixed as suggested." or a brief note on what was changed

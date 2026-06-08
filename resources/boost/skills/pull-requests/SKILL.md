@@ -48,7 +48,7 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 3. Analyze the commits with `git log <base>..HEAD --oneline`.
 4. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
-6. **Risk assessment** — Before creating the PR, ask the user to evaluate the risk level (see [Risk Assessment](#risk-assessment-before-pr-creation) below).
+6. **Resolve risk + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask (tier-scored or no risk question, plus pre-supplied direction), skip the call entirely.
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
@@ -173,9 +173,44 @@ If the user hasn't provided:
 - **Security implications** → Ask: "Are there any security or privacy considerations I should mention?"
 - **Testing steps** → Ask: "What are the steps to test this change?"
 
+## Ask the User for a Direction
+
+The author knows the PR's intent in a way the diff cannot reveal — which user value matters most, which constraint forced the design, what to downplay. Before drafting any description body, ask them in their own words.
+
+### When to ask
+
+- **By default**, on every PR creation, batched together with the risk-level question in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
+- **Skip** only when the user already supplied a direction in the current turn (e.g. their request was "create a PR — focus on the cross-tenant isolation, that's the headline").
+
+### How to ask
+
+Ask the direction as a single open-ended question with a small set of pre-filled starter options the user can pick or override with free text. Phrase it like a smart colleague asking before they start writing:
+
+> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (You can also say 'use the diff' to let me decide.)"*
+
+Offer 2–3 short starter options derived from the analysis you already did in steps 1–4 (commits, diff, any linked issue), each phrased as a candidate angle the description could take — e.g. "Frame around the new viewer-facing capability (X)", "Frame around the migration safety / rollout plan", "Frame around the performance win (~Nx faster)", "Use the diff — no specific angle". The user picks one, edits one, or types free text; the "Other" escape hatch is always present.
+
+### How to use the answer
+
+1. **Treat the user's input as the spine of the summary** — the opening sentence reflects their framing, not the first commit message.
+2. **Reconcile against the analysis** — if the user emphasises something the diff does not back up (e.g. "focus on the security hardening" but no security-touching files changed), surface the mismatch before drafting. Never silently invent support for the framing.
+3. **Stay within the [Why, Not What](#writing-the-description-why-not-what) rules** — the direction sets *what to emphasise*; it does not relax the bans on class names, file paths, commit recaps, or reviewer choreography.
+4. **One-shot only** — do not loop the user through revisions of the summary afterward. Draft, create the PR, let them edit if needed.
+
+Treat all of the following as "no direction" and fall through to diff-driven drafting (applying the Why, Not What rules): explicit "use the diff", empty/whitespace input, non-substantive replies ("idk", "whatever", "you decide"), and the `Use the diff — no specific angle` starter option.
+
+### Batching with the risk-level question
+
+Step 6 renders the still-open questions in a single `AskUserQuestion` call. Possible questions:
+
+- **Question 1 — Risk level** (`header: "Risk level"`, `multiSelect: false`): asked **only** when no `pr.risk` tiers are configured — the generic `Low` / `Medium` / `High`, with your recommendation. When `pr.risk` tiers are configured, the tier is scored by the agent (per [Risk Assessment](#risk-assessment-before-pr-creation)), not asked — omit this question.
+- **Question 2 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
+
+Order when both are present: risk first, direction second. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when the user already supplied direction this turn, and skip the call entirely when neither remains.
+
 ## Risk Assessment Before PR Creation
 
-**Always assess the risk level before creating a PR.** It determines the review process (step 10).
+**Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with the description-direction question in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
 
 <!--boost:conv path="pr.risk" mode="yaml" fallback="No project risk tiers configured."-->
 
@@ -222,7 +257,17 @@ If there is no template, write a clear description that covers:
 
 ## Writing the Description: Why, Not What
 
-A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. Lead with the problem solved and the user-visible behaviour change. The diff already says *what* changed; the description must say *why*, and what it enables.
+A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. Lead with the problem solved and the user-visible behaviour change. The diff already says *what* changed; the description must say *why*, and what it enables. AI tends to over-address: list everything, in fancy language, with the most words on the most obvious parts. Don't.
+
+### How much to say about each change
+
+| Type of change | Treatment |
+|---|---|
+| Obvious from the diff (rename, formatting, dependency bump with no behaviour change, file move, test added for existing code) | **Omit.** Mentioning it wastes the reviewer's time. |
+| Easy to miss (deliberate behaviour tweak, renamed user-facing label, changed config default) | **One plain sentence.** No mechanism, no class names. |
+| Non-obvious or risk-bearing (new model relationship, breaking API change, migration needing deploy ordering, security-sensitive path) | **Elaborate** — still plain language. Explain *why* and the *implication*, not the syntax. |
+
+Per sentence, ask: *would the reviewer be worse off without this?* If no, cut it.
 
 ### Rules for the summary
 
@@ -241,6 +286,22 @@ A PR description is read by reviewers, future maintainers, and release-notes wri
 | Refactor framing ("factors out", "extracts", "consolidates") | The behaviour change the refactor enables; if there is none, say "no behaviour change" |
 | Commit-by-commit recaps ("9 commits: 1. …, 2. …") | A single narrative paragraph |
 
+### Plain language — no AI mumbo jumbo
+
+Write like you'd describe it to a teammate over coffee. Audience by PR type: user-facing PRs must be readable by a product owner, designer, or QA without a glossary; infrastructure / migration / security PRs must be readable by another engineer not in your subsystem (subsystem terminology is fine, AI-narrator phrasing is not). Banned in the summary and other sections, even when technically accurate:
+
+| Don't write (correct, but hard to read) | Write instead |
+|---|---|
+| "strengthens 13 weak tests via data-provider collapses" | "tightens 13 tests by replacing repeated assertions with a single data provider" |
+| "producing a flurry of unrelated feedback toasts" | "showing several unrelated toast notifications at once" |
+| "defers an unconditional transcription-service computed into the QA-only debug block" | "only loads the transcription service when the QA debug panel is open" |
+
+- **No compound-noun stacks** ("transcription-service computed") — break into verb + object.
+- **No metaphors** ("flurry of", "cascade of", "fan out to") — say what actually happens.
+- **No diff-only jargon** ("computed", "selector", "reducer") unless the audience is exclusively engineers in that subsystem.
+
+This is the same standard the `humanizer` skill applies to prose — if a description reads like an AI narrating a diff, run it through that lens before submitting.
+
 ### Keep the rest of the description signal, not noise
 
 Do **not** pad the description with:
@@ -258,9 +319,11 @@ What *does* belong beyond the summary:
 
 ### Quick test before submitting
 
-Re-read the summary and ask:
-1. Would someone who doesn't read code understand what this PR delivers?
-2. Could the summary be reused almost verbatim in release notes?
+Re-read the **whole description** and ask:
+1. For user-facing PRs: would a product owner or designer understand what this delivers? For infra / migration / security PRs: would the on-call engineer understand the operational impact?
+2. For user-facing PRs: could the summary be reused almost verbatim in release notes? (Skip for internal-only PRs.)
 3. Does it answer *why now* — not just *what changed*?
+4. Does it sound like a human, or like an AI narrating a diff? Compound-noun stacks and "flurry of"-style metaphors are a fail regardless of audience.
+5. For every sentence: would the reviewer be worse off without it? If no, delete it.
 
-If any answer is no, rewrite before creating the PR.
+If any answer is no, rewrite or cut before creating the PR.
