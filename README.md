@@ -88,7 +88,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
-| `final-verification-review` | Pre-PR closeout: run the full evaluate loop, dry-run the PR preflight and gates, report READY / NOT READY. | `github`        |
+| `final-verification-review` | Closeout verdict: run the full evaluate loop, dry-run the closeout preflight (PR flow *or* no-PR commit/release), report READY / NOT READY. | `github`        |
 | `frontend-quality`     | Frontend quality gate: type-checking and linting for the project's frontend toolchain.               | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
 | `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |

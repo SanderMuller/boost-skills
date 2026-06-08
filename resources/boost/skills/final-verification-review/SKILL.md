@@ -1,6 +1,6 @@
 ---
 name: final-verification-review
-description: "Pre-PR closeout verdict: runs the full evaluate loop (incl. Codex review), then dry-runs the pull-requests preflight and pre-PR gates without creating a PR, and reports READY or NOT READY with what's missing. Activates when: work is done and a PR is next, final verification, final check, closeout check, or when user mentions: final-verification-review, final review, ship check, ready to ship, ready for PR."
+description: "Closeout verdict before shipping: runs the full evaluate loop (incl. Codex review), then dry-runs the closeout preflight check-only — the pull-requests preflight + gates in a PR flow, or the direct commit/release preconditions in a no-PR flow — and reports READY or NOT READY with what's missing. Creates nothing. Activates when: work is done and a commit/PR/release is next, final verification, final check, closeout check, or when user mentions: final-verification-review, final review, ship check, ready to ship, ready for PR, ready to commit."
 argument-hint: "[file path, feature name, or commit range]"
 metadata:
   boost-tags: "github"
@@ -9,13 +9,16 @@ metadata:
 
 # Final Verification Review
 
-A thin closeout orchestrator for the moment implementation work is done and opening a PR is the next step. It verifies the **code** (the full `evaluate` loop), then verifies the **PR preconditions** (the `pull-requests` preflight and pre-PR gates, check-only), and ends with a single READY / NOT READY verdict.
+A thin closeout orchestrator for the moment implementation work is done and shipping is the next step. It verifies the **code** (the full `evaluate` loop), then verifies the **closeout preconditions** (check-only), and ends with a single READY / NOT READY verdict. It works in two flows:
 
-This skill **never creates the PR** — when the verdict is READY, hand off to the `pull-requests` skill.
+- **PR flow** — the change ships via a pull request. The closeout preflight is the `pull-requests` preflight + pre-PR gates; READY hands off to `pull-requests`.
+- **No-PR flow** — the change ships by committing directly to a target branch, optionally cutting a release. The closeout preflight checks the commit/release preconditions; READY hands off to a commit (and `pre-release` when a release follows).
+
+This skill **creates nothing** — it never branches, commits, pushes, opens a PR, or tags. It reports, and hands off.
 
 ## When to Use This Skill
 
-- Implementation work is finished and a PR is the next step
+- Implementation work is finished and the next step is a commit, a PR, or a release
 - The user asks for a final check / "are we ready to ship?"
 
 Do NOT use for:
@@ -25,16 +28,23 @@ Do NOT use for:
 
 ## Step 1: Verify the Code — Run `evaluate`
 
-Invoke the `evaluate` skill in full. It owns the entire code-verification loop — quality checks, self-review, comment audit, fix-until-clean, `code-review`, and `codex-review` (per its Phase 7 dedup rules). Do not pre-skip any of its phases here; its own skip criteria decide what can be deduped.
+Invoke the `evaluate` skill in full. It owns the entire code-verification loop — quality checks, self-review, comment audit, fix-until-clean, `code-review`, `codex-review` (per its Phase 7 dedup rules), and any project-configured evaluate checks (e.g. the `fixtures.anonymization` gate). Those run **inside** this evaluate pass — do not re-run them in Step 2, and do not pre-skip any of evaluate's phases here; its own skip criteria decide what can be deduped.
 
 Carry two things forward into the verdict:
 
 - The evaluation summary (issues found and fixed, what was verified)
 - Anything evaluate could not resolve itself (open design decisions, a Codex review that could not run)
 
-## Step 2: Dry-Run the PR Preflight (Check-Only)
+## Step 2: Dry-Run the Closeout Preflight (Check-Only)
 
-Everything in this step is **report-only**: never rename branches, never push, never create anything, and never halt — a failing check becomes a NOT READY item instead.
+Everything in this step is **report-only**: never rename branches, never commit, never push, never create anything, and never halt — a failing check becomes a NOT READY item instead.
+
+**Resolve the closeout flow first**, because it changes what "ready" means:
+
+- **PR flow** — default when PR machinery is configured (`branches.patterns` or any `pr.*` slot is set) or the user is on / heading to a feature branch. Run checks 2a–2d below as written.
+- **No-PR flow** — the change ships by committing straight to a target branch (and optionally a release), no PR. Use when no PR machinery is configured, when the work lands on the default/release branch directly, or when the user asks for it (e.g. invoked with "without PR" / "no-pr" / "release"). Apply the **No-PR flow** note under each check.
+
+When the signals conflict, state which flow you picked and why; the user can re-run with an explicit `pr` / `no-pr` argument. The gate checks (2c) are flow-agnostic; only the branch/work-state interpretation (2a, 2b) and the PR-only items (2d) differ.
 
 ### 2a. Branch and base
 
@@ -53,12 +63,16 @@ When patterns are configured but the current branch matches none, do not fall ba
 
 Report the matched pattern (or the rename situation) and which base the PR will target.
 
+**No-PR flow:** the branch logic inverts — being **on the target branch** is the correct state, not a problem. Confirm the current branch is the one the change ships to (the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"--> or a release branch), not a stale feature branch. There is no feature-branch requirement and no rename concern.
+
 ### 2b. Work state
 
 - `git status` — uncommitted or untracked work belonging to this task means the PR diff would be incomplete. Report it.
 - `git log <base>..HEAD --oneline` — an empty commit range means there is nothing to open a PR for. Unpushed commits are not blocking (they just need to reach the remote by the time the PR is opened), but report them.
 
-### 2c. Pre-PR gates
+**No-PR flow:** uncommitted work is **expected** here — it is the deliverable about to be committed — so it is *not* blocking; still report `git status` so the user commits the complete set, and call out anything untracked that should be included or ignored. There is no "empty commit range" requirement (the work may be entirely uncommitted). If a release follows, also check `git log <last-tag>..HEAD` is the intended set.
+
+### 2c. Closeout gates (flow-agnostic)
 
 This project's configured pre-PR gates:
 
@@ -66,20 +80,22 @@ This project's configured pre-PR gates:
 <!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates"-->
 ```
 
-Evaluate each gate in declared order exactly as the `pull-requests` skill defines them (`skill_invoked`, `shell_command`, `mcp_tool`), but in check-only mode:
+These gates are flow-agnostic — they gate the PR in a PR flow and the commit/release in a no-PR flow. The gate vocabulary (`skill_invoked` / `shell_command` / `mcp_tool`) and `on_missing` policy are exactly what the `pull-requests` skill defines. Evaluate each in declared order, check-only:
 
 - Report PASS / FAIL per gate.
-- Ignore `on_missing` for flow control — never halt — but report what the policy would do at PR time (`stop_and_request` blocks, `warn` proceeds, `skip` is silent).
+- Ignore `on_missing` for flow control — never halt — but report what the policy would do at closeout (`stop_and_request` blocks the PR/commit, `warn` proceeds, `skip` is silent).
 - For `skill_invoked` with `window: since_last_code_change`: assess from the current conversation whether the named skill ran after the most recent task-file edit (any non-managed file counts — code, docs, skills — not only code). Step 1's evaluate run typically satisfies a `codex-review` gate — unless its Phase 7 dedup-skipped against a clean run that predates a later edit.
 
 If no gates are configured, say so and move on.
 
-### 2d. Title format and template
+### 2d. Endpoint-specific preconditions
 
-Two preflight items from the `pull-requests` skill are creation-time commitments; verify their preconditions now:
+**PR flow** — two `pull-requests` preflight items are creation-time commitments; verify their preconditions now:
 
 - **Template** — if the project configures a PR template path (see the `pull-requests` skill), check that the file exists; a missing template would otherwise only surface at creation time.
 - **Title format** — report the configured title format in the verdict so the eventual PR title is written against it; if enough is known about the task (e.g. an issue key the format requires), flag anything already missing.
+
+**No-PR flow** — there is no PR title or template. If the endpoint is a **release**, the next step is the `pre-release` skill (its gauntlet, CI gate, and tag handoff own the release preconditions) — this skill does not duplicate those; just confirm the change is the intended release scope. If the endpoint is a **plain commit to the target branch**, there are no extra preconditions beyond 2a–2c.
 
 ## Parallel Closeout
 
@@ -93,13 +109,15 @@ Fan out read-only work only — nothing in this skill's own steps mutates the re
 
 ## Step 3: Verdict
 
+State the flow you resolved, then report. PR-flow example:
+
 ```markdown
-## Final Verification — READY / NOT READY
+## Final Verification — READY / NOT READY  (PR flow)
 
 ### Code (evaluate)
 - [N issues found & fixed / clean on first pass]; tests, static analysis, style verified
 
-### PR preflight
+### Closeout preflight
 - Branch `feature/x` matches `<pattern>` → base `main` — PASS
 - All task work committed — PASS
 - Gate `skill_invoked: codex-review` — PASS (ran clean after last edit)
@@ -110,6 +128,27 @@ Fan out read-only work only — nothing in this skill's own steps mutates the re
 
 Next: run `/pull-requests` to open the PR.
 ```
+
+No-PR-flow example (same code section; preflight and next step differ):
+
+```markdown
+## Final Verification — READY / NOT READY  (no-PR flow)
+
+### Code (evaluate)
+- [clean / N fixed]; tests, static analysis, style verified
+
+### Closeout preflight
+- On target branch `main` — PASS
+- Work uncommitted (N files) — expected, ready to commit (not blocking)
+- Gate `skill_invoked: codex-review` — PASS (ran clean after last edit)
+
+### Blocking (only when NOT READY)
+1. [Exact missing item + the action that resolves it]
+
+Next: commit to `main` (then `/pre-release` if this ships as a release).
+```
+
+Pick the **Next** line from the resolved flow: `/pull-requests` (PR), or commit-to-target-branch — and `/pre-release` when a release follows (no-PR).
 
 The verdict is point-in-time: any task-file edit after this run stales it (the same `since_last_code_change` semantics the gates use). Say so when relevant.
 
