@@ -5,6 +5,30 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.4.0 - 2026-06-08
+
+<!-- verified-sha: 28d2c1e6d3861ad1fdd9d3ea23dda3b51c490436 -->
+Two new optional conventions slots and a batch of skill refinements drawn from real-world adoption. Everything here is **additive under conventions `schema-version 1`** — a consumer that declares neither new slot, and existing slot-aware skills, behave exactly as before.
+
+### Added
+
+- **`fixtures.anonymization` conventions slot** — an optional anonymization gate, consumed by the `evaluate` skill (and inherited by `final-verification-review`), that guards a publicly-shipped package against leaking proprietary product domain — real entity/class names, table/column names, route keys, domain jargon, copied comments — through code samples and fixtures. Declare a `guideline` pointer (the policy prose lives in your own always-on guideline, not the slot), a `scope` (default `['tests/', 'src/']` — `src/` ships in the dist archive, so its code samples are the worst leak surface), and an optional `forbidden_terms` denylist for a deterministic fast-path. Absent ⇒ no check, no behavior change. Mirrors the `translations` gate's knobs-in-slot / prose-in-guideline split.
+- **`review` conventions slot** — optional PR review-feedback configuration for the `pr-review-feedback` skill: extra `bot_reviewers` logins (extends the built-in automated-reviewer set rather than replacing it) and a `colleague_gate` on/off toggle. With the gate on (default), a human colleague's review threads are never auto-acted on; turning it off opts a project into full automation. Absent ⇒ built-in defaults.
+- **No-PR flow in `final-verification-review`** — the closeout skill is now flow-aware. Alongside the existing PR flow it supports projects that ship by committing directly to a target branch (optionally cutting a release): the branch and work-state checks adapt, the gates stay flow-agnostic, and the verdict points at the matching next step (a PR, or a commit and `pre-release`).
+
+### Changed
+
+- **`pull-requests`** — expanded the description guide with a per-change-type "how much to say" table and a plain-language / no-AI-mumbo-jumbo section (compound-noun stacks, metaphors, and diff-jargon are out), cross-referencing the `humanizer` skill. Before drafting a description the skill now asks the author for a direction — what the PR's headline is — batched with the risk question in a single prompt.
+- **`pr-review-feedback`** — sharpened the bot-vs-colleague classification: a thread counts as a bot thread only when *every* comment in it is from a bot, so one human reply flips the whole thread to colleague (and a thread whose comments were truncated fails safe to colleague). Configurable via the new `review` slot.
+- **`interview`** — rewritten from a structured-questionnaire flow into an adversarial grilling flow: read the codebase before asking, one question at a time with a recommended answer, sharpen fuzzy terms, stress-test rules with concrete edge cases, cross-reference stated behavior against the code, and a final assumptions-and-fuzziness audit so a spec can be signed off without an end-to-end read.
+- **`write-spec`** — added a requirements-settled gate (bounce back to `interview` when the ask is still fuzzy, judged after loading issue context), a research-before-writing checklist, an Assumptions Audit with an `## Assumptions` ledger, and a light "spec already exists" conversion mode.
+- **`jira-create` / `jira-updates`** — functional edge cases now become dedicated QA-testable blocks, sourced from the spec's `## Edge Cases` table or the PR's edge-case list; technical-only edges stay out of the issue tracker.
+- **`evaluate`** — runs the new `fixtures.anonymization` check as part of its review phase when the slot is configured.
+
+The skill refinements were sourced from upstream and production adoption feedback, then dogfooded through this repository's own closeout and release flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.3.0...2.4.0
+
 ## 2.3.0 - 2026-06-05
 
 <!-- verified-sha: 090b63eb8298be5226494488d6d99628d4e7d942 -->
@@ -171,6 +195,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -191,6 +216,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -245,6 +271,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -271,6 +298,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -335,6 +363,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -362,6 +391,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -433,6 +463,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -486,6 +517,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -494,6 +526,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -555,6 +588,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -572,6 +606,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -642,6 +677,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -745,6 +781,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -763,6 +800,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -937,6 +975,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
