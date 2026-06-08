@@ -93,7 +93,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
 | `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |
 | `implement-spec`       | Implement a specification file phase by phase with progress tracking.                                | —               |
-| `interview`            | Structured Q&A to gather a complex feature's requirements before writing its spec.                   | —               |
+| `interview`            | Adversarially grill out a complex feature's requirements — code-first, assumptions-audited — before writing its spec. | —               |
 | `jira-create`          | Create a Jira issue with a well-formed, user-facing description.                                     | `jira`          |
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira` `github` |
