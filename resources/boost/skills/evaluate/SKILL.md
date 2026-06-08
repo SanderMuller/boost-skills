@@ -77,6 +77,12 @@ Read through all files in the resolved scope and check for:
 
 If a policy is shown above, flag any DB-driven translation key that does not match its `key_pattern`. Exempt file-based keys: top-level groups listed in `file_based_prefixes.framework_groups`, and — when `vendor_namespace_exempt` is true — any key matching a vendor namespace prefix like `package::` (keys validated by the framework's own file-based lang files are out of scope). If `rules_doc` is set, also apply its naming-quality guidance. When nothing is configured, skip this check.
 
+**Fixture / code-sample anonymization** (only when a project anonymization policy is configured):
+
+<!--boost:conv path="fixtures.anonymization" mode="yaml" fallback="not configured — skip this check"-->
+
+If a policy is shown above, scan the files **in the resolved evaluation scope** (do not broaden) that fall under its `scope` paths for proprietary product domain leaking into a publicly-shipped package: real product entity / class names, real table / column names, route keys, domain jargon, and comments copied from a host application. `src/` ships in the Composer dist archive — code-sample heredocs (e.g. rule `CodeSample` blocks) there are the worst leak surface; `tests/` is usually `export-ignore`d from the archive but still lives in version control. Scan both per the configured `scope`; never narrow to `tests/` alone. When `forbidden_terms` is set, treat any literal match as a deterministic blocking hit; otherwise apply the judgment criteria in the `guideline` doc. Treat every hit as a blocking issue carried into Phase 4 — apply the fix directly when it is an unambiguous rename to a placeholder (per the fix-don't-report ethos), and flag it for the user only when anonymizing needs a judgment call. When nothing is configured, skip this check.
+
 ### Phase 3: Audit Code Comments
 
 Within the **same evaluation scope resolved in Phase 2** (do not re-derive or broaden it), find every comment **added or changed** in this work. This covers **all** comment syntaxes in the changed languages, not only the obvious ones: docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Do not skip template comments. Never judge pre-existing comments outside that scope.

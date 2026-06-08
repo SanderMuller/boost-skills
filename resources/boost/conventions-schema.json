@@ -306,6 +306,39 @@
                 }
             }
         },
+        "fixtures": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional test-fixture / code-sample anonymization gate, consumed by the evaluate skill (and inherited by final-verification-review, which runs the full evaluate loop). Guards a package that ships publicly against leaking proprietary product domain — real entity/class names, table/column names, route keys, domain jargon, copied comments — through code samples and fixtures. ABSENT ⇒ evaluate performs no anonymization check (no behavior change).",
+            "properties": {
+                "anonymization": {
+                    "type": "object",
+                    "render": "yaml",
+                    "additionalProperties": false,
+                    "required": ["guideline"],
+                    "description": "Anonymization-gate knobs. Mirrors the translations slot's split: machine-readable knobs here, judgment-criteria prose in the host guideline (which is composed into always-on context). Declaring this object requires at least `guideline`.",
+                    "properties": {
+                        "guideline": {
+                            "type": "string",
+                            "description": "Path to the project-owned guideline holding the anonymization policy prose: what counts as proprietary, how to anonymize, placeholder naming conventions. The slot carries only knobs; the judgment criteria live in this always-on doc. Validated for file-existence by 'boost doctor --check-conventions'."
+                        },
+                        "scope": {
+                            "type": "array",
+                            "render": ["inline", "bullets"],
+                            "items": { "type": "string" },
+                            "default": ["tests/", "src/"],
+                            "description": "Paths the gate scans. Default covers BOTH 'src/' — which SHIPS in the Composer dist archive, making code-sample heredocs there the worst leak surface — and 'tests/', which is typically export-ignored from the archive but still lives in version control. Do not narrow to 'tests/' only."
+                        },
+                        "forbidden_terms": {
+                            "type": "array",
+                            "render": ["inline", "bullets"],
+                            "items": { "type": "string" },
+                            "description": "OPTIONAL fast-path denylist of literal terms (real product entity names, domain jargon) that must never appear in scoped files — enables a deterministic grep-based check. Absent ⇒ the gate falls back to the judgment criteria in the `guideline` doc."
+                        }
+                    }
+                }
+            }
+        },
         "translations": {
             "type": "object",
             "render": "yaml",
