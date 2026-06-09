@@ -5,6 +5,21 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.5.0 - 2026-06-09
+
+<!-- verified-sha: 1decdb174eac0df5c4ab6e6dc85a107abe00af34 -->
+A trio of skill refinements around the review-and-merge flow: self-review feedback now auto-applies, the feedback flow syncs the branch with its base before touching code, and conflict detection moved earlier so it can run without side effects. All additive under conventions `schema-version 1` — no new slots, and a project that never reviews its own PRs sees the same behavior as before.
+
+### Added
+
+- **`pr-review-feedback` — self-review comments auto-apply.** Thread authors now fall into three roles instead of two: **self** (the authenticated `gh api user` login), **bot**, and **colleague** (any other human). A thread is auto-handled when every comment in it is from a bot or from you, so the common loop — open your own PR, leave notes-to-self, then run the skill — now picks those notes up, evaluates them, and applies/replies/resolves automatically, exactly like bot feedback. Another human commenting anywhere in the thread still flips the whole thread to colleague and back behind the `colleague_gate`. Previously a self comment was treated as a colleague thread and gated.
+- **`pr-review-feedback` — Phase 1b base-branch sync.** Before applying feedback, the skill now brings the PR's base branch in, so changes land on top of an up-to-date branch rather than one that has drifted. It checks for a clean working tree, probes for conflicts without side effects, and hands off to `resolve-conflicts` when the merge would conflict — with an old-Git fallback and a note that thread line numbers go stale after the merge (match by `diffHunk`, not `line`).
+- **`resolve-conflicts` — Phase 0 side-effect-free conflict detection.** A new first phase finds out *whether* a merge will conflict and *which files* without touching the working tree: `git merge-tree --write-tree` locally (with the exit-code semantics spelled out — 0 clean, 1 split into conflict-vs-error by stdout, 128 for the `--quiet`+`--name-only` combo), or GitHub's GraphQL `mergeable` / `mergeStateStatus` when only a PR number is in hand (including the `UNKNOWN`-is-async caveat). This is what `pr-review-feedback`'s Phase 1b probe hands off to.
+
+The refinements were sourced from real-world adoption feedback and dogfooded through this repository's own review and release flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.4.0...2.5.0
+
 ## 2.4.0 - 2026-06-08
 
 <!-- verified-sha: 28d2c1e6d3861ad1fdd9d3ea23dda3b51c490436 -->
@@ -196,6 +211,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -216,6 +232,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -272,6 +289,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -298,6 +316,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -364,6 +383,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -391,6 +411,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -464,6 +485,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -518,6 +540,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -526,6 +549,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -589,6 +613,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -606,6 +631,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -677,6 +703,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -782,6 +809,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -800,6 +828,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -975,6 +1004,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
