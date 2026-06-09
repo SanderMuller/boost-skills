@@ -9,24 +9,28 @@ metadata:
 
 # Applying PR Review Feedback
 
-A disciplined approach to addressing PR review comments: **evaluate first, apply selectively**, and **never auto-act on a human colleague's comments**.
+A disciplined approach to addressing PR review comments: **evaluate first, apply selectively**, and **never auto-act on another human colleague's comments**.
 
 ## Core Principle
 
-**Never blindly apply all feedback.** And, by default, **never auto-act on a human colleague's comments** — a project can opt out of that gate via `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)).
+**Never blindly apply all feedback.** And, by default, **never auto-act on *another* human colleague's comments** — though your own self-review comments are fair game, and a project can opt out of the colleague gate via `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)).
 
 1. Fetch the PR and its review comments
 2. Filter out resolved conversations
-3. **Classify each thread by author** — bot vs. human colleague
+3. **Classify each thread by author** — bot vs. self (you) vs. other human colleague
 4. Critically evaluate each piece of feedback
-5. **Bots**: apply/skip, reply, and resolve automatically
-6. **Colleagues** (default, `review.colleague_gate: true`): evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve. When the gate is `false`, handle them like bot threads.
+5. **Bots and self**: apply/skip, reply, and resolve automatically
+6. **Other colleagues** (default, `review.colleague_gate: true`): evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve. When the gate is `false`, handle them like bot threads.
 
 ## Author Classification
 
-Classify a thread as **bot** only if **every comment** in it was authored by a bot. If *any* comment in the thread — including follow-ups — was authored by a human colleague, classify the whole thread as **colleague**: a human jumping into a bot-started thread is the signal that this thread now needs the user's judgement. Classify by scanning all comments, not just the first.
+First, resolve **who you are** — the authenticated GitHub account running this skill:
 
-The "every comment" rule only holds if you actually fetched every comment. The Phase 1 query pulls `comments(first: 100)` with `totalCount`; if a thread's `totalCount` exceeds the fetched nodes (a thread with 100+ comments), you cannot prove it is all-bot — **fail safe and classify it as colleague**, or page the remaining comments before classifying. Never treat a truncated thread as bot.
+```bash
+gh api user --jq .login
+```
+
+Every comment author falls into one of three roles — **self** (`author.login` equals your authenticated `gh api user` login), **bot** (matches the automated-reviewer set below), or **colleague** (any other human login).
 
 A comment author is a **bot** when `author.login` matches any of the built-in set:
 
@@ -37,14 +41,20 @@ A comment author is a **bot** when `author.login` matches any of the built-in se
 
 Plus any additional logins this project declares as automated reviewers: <!--boost:conv path="review.bot_reviewers" mode="inline" fallback="none — built-in set only"-->.
 
-These **extend** the built-in set; they do not replace it. Any `author.login` not in the combined set is a **colleague**.
+These **extend** the built-in set; they do not replace it.
 
-| Classification | Rule                                                                                     | Auto-handling allowed?                      |
-|----------------|------------------------------------------------------------------------------------------|---------------------------------------------|
-| **bot**        | Every comment in the thread matches a bot login (built-in set + `review.bot_reviewers`)  | Yes — apply/skip, reply, resolve            |
-| **colleague**  | At least one comment is from a non-bot login, or any login is ambiguous                  | **Gated** — when `review.colleague_gate` is `true` (default), no auto-act: discuss with user. When `false`, handle like a bot thread. |
+**Classify the thread by scanning all its comments, not just the first.** A thread is **bot/self** (auto-handled) only if **every comment** in it was authored by a bot or by you. If *any* comment — including follow-ups — was authored by another human colleague, classify the whole thread as **colleague**: a colleague jumping into your or a bot's thread is the signal that this thread now needs the user's judgement.
 
-When in doubt (ambiguous login), treat the thread as **colleague** and discuss with the user.
+The "every comment" rule only holds if you actually fetched every comment. The Phase 1 query pulls `comments(first: 100)` with `totalCount`; if a thread's `totalCount` exceeds the fetched nodes (a thread with 100+ comments), you cannot prove it is all bot/self — **fail safe and classify it as colleague**, or page the remaining comments before classifying. Never treat a truncated thread as bot/self.
+
+| Classification | Rule                                                                                            | Auto-handling allowed?                      |
+|----------------|-------------------------------------------------------------------------------------------------|---------------------------------------------|
+| **bot / self** | Every comment in the thread is from a bot login (built-in set + `review.bot_reviewers`) or from your own login | Yes — apply/skip, reply, resolve |
+| **colleague**  | At least one comment is from another human, or any login is ambiguous                           | **Gated** — when `review.colleague_gate` is `true` (default), no auto-act: discuss with user. When `false`, handle like a bot thread. |
+
+**Self** covers the common case: you open your own PR, manually review it, leave feedback comments, then run this skill to pick them up. Those are your own notes-to-self — apply them automatically like bot feedback (still evaluating each critically).
+
+When in doubt (ambiguous login that is neither a clear bot nor a match for your own login), treat the thread as **colleague** and discuss with the user.
 
 ### Colleague gate toggle
 
@@ -76,6 +86,7 @@ Use this skill when:
      repository(owner: $owner, name: $repo) {
        pullRequest(number: $number) {
          headRefName
+         baseRefName
          reviewThreads(first: 100) {
            nodes {
              id
@@ -99,6 +110,7 @@ Use this skill when:
      }
    }' --jq '{
      headRefName: .data.repository.pullRequest.headRefName,
+     baseRefName: .data.repository.pullRequest.baseRefName,
      threads: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)]
    }'
    ```
@@ -109,16 +121,37 @@ Use this skill when:
    - Extract branch name from `headRefName`
    - `git checkout <branch-name> && git pull origin <branch-name>`
 
+### Phase 1b: Sync the Branch With Its Base
+
+Apply feedback on top of an up-to-date branch — a branch that has drifted from its base can produce changes that pass locally but conflict or break once merged. Bring the base (`baseRefName` from Phase 1) in first.
+
+1. **Confirm the working tree is clean first.** `git merge-tree` only compares `HEAD` to the base, so it can report a clean merge while the actual `git merge` below aborts on local changes. Right after the Phase 1 checkout the tree should already be clean; verify with `git status --porcelain` and, if anything is staged or modified, stash it (`git stash -u`) before merging and pop it after, or skip this phase if the changes can't be safely set aside.
+
+2. **Fetch and check for conflicts without side effects** (Git ≥ 2.38):
+   ```bash
+   git fetch origin <baseRefName>
+   git merge-tree --write-tree --name-only HEAD origin/<baseRefName>
+   ```
+   - **Exit 0** — clean. Merge it in: `git merge --no-edit origin/<baseRefName>`. The merge commit rides along with the feedback commits pushed in Phase 5 (if no feedback changes are applied, push the sync merge on its own).
+   - **Exit 1 with file names on stdout** — conflicts. **Do not force a resolution here.** Hand off to the `resolve-conflicts` skill, then return to this skill once the merge is committed. (Exit 1 with *empty* stdout and a `merge-tree:` line on stderr is a bad ref, not a conflict — fix the ref name and retry.)
+   - **Already up to date** (base is an ancestor of HEAD) — nothing to do; continue.
+   - **`git merge-tree --write-tree` unavailable** (Git < 2.38) — skip the probe and run `git merge --no-edit origin/<baseRefName>` directly. A clean merge proceeds as in Exit 0; if it stops with conflicts, hand off to `resolve-conflicts` (which documents an older-Git temp-worktree fallback) instead of resolving inline. Do not let an old Git client stall the rest of the skill.
+
+3. **If the merge changed any files, the Phase 1 thread snapshot no longer lines up with the working tree.** GitHub does not recompute thread positions or `isOutdated` until the merge commit is *pushed* (Phase 5), so re-running the Phase 1 query here returns the same pre-merge `path`/`line`/`diffHunk` — it cannot refresh them. Don't rely on those line numbers after the merge. In the later phases, locate each comment's target by **content** — match its `diffHunk` against the current merged file — rather than by `line`. Thread IDs are unaffected, so reply and resolve still target the right thread.
+
+4. If the user explicitly asked to *only* apply comments and not touch the branch's history, skip this phase.
+
 ### Phase 2: Classify and Evaluate Each Comment
 
-**First, split threads into two buckets by author** (see Author Classification above):
+**First, split threads into buckets by author** (see Author Classification above):
 
-- **Bot bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6).
-- **Colleague bucket** — handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)). Under the default (`true`): evaluate to form a recommendation, but do **not** apply, reply, or resolve — surface every colleague thread to the user and let them decide (Phase 3b); the user replies/resolves themselves, or explicitly tells you to do it on their behalf. Under `false`: treat the colleague bucket exactly like the bot bucket (auto apply/reply/resolve), and skip Phase 3b.
+- **Bot + self bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6). Self comments are your own self-review notes; treat them like bot feedback.
+- **Colleague bucket** — *other* humans. Handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)). Under the default (`true`): evaluate to form a recommendation, but do **not** apply, reply, or resolve — surface every colleague thread to the user and let them decide (Phase 3b); the user replies/resolves themselves, or explicitly tells you to do it on their behalf. Under `false`: treat the colleague bucket exactly like the bot/self bucket (auto apply/reply/resolve), and skip Phase 3b.
 
 **Handle outdated threads carefully:**
 - If `isOutdated: true`, use `diffHunk`, `path`, and the current file contents to understand how the code changed
 - Decide whether the feedback is now obsolete or still applicable
+- **If Phase 1b merged the base locally, treat *every* thread's `line` as unreliable — not just `isOutdated: true` ones.** GitHub won't recompute positions until the merge is pushed (Phase 5), so a clean sync merge can shift lines while `isOutdated` stays `false`. Locate each comment's target by matching its `diffHunk` against the current merged file before applying.
 
 For each comment, ask yourself:
 
@@ -137,21 +170,21 @@ Be skeptical of automated feedback suggesting:
 - **Generic security warnings** — Verify whether a real vulnerability exists
 - **"Missing type hints"** — Check if the project already has strict PHPStan rules covering this
 
-### Phase 3: Apply Changes (Bots Only)
+### Phase 3: Apply Changes (Bots + Self)
 
-For each **bot** thread you deemed valid:
+For each **bot** or **self** thread you deemed valid:
 
 1. **Read the relevant file** to understand context
 2. **Make the change** following the project's patterns
 3. **Run code style checks** — `vendor/bin/pint --dirty --format agent`
 
-**Do not edit any file in response to a colleague thread in this phase.** Colleague feedback goes through Phase 3b first.
+**Do not edit any file in response to a colleague thread in this phase.** Other-colleague feedback goes through Phase 3b first.
 
 ### Phase 3b: Discuss Colleague Feedback With User
 
 *(Skipped entirely when `review.colleague_gate` is `false` — see [Colleague gate toggle](#colleague-gate-toggle). Under that setting, colleague threads are handled like bot threads in Phase 3.)*
 
-For every colleague thread, build a short proposal and present it to the user **before taking any action on that colleague thread** (apply, reply, or resolve). This gate blocks action on the colleague thread itself, not the whole skill run — bot threads continue through Phase 3 in parallel. The proposal covers:
+For every *other*-colleague thread (not bot, not self), build a short proposal and present it to the user **before taking any action on that colleague thread** (apply, reply, or resolve). This gate blocks action on the colleague thread itself, not the whole skill run — bot and self threads continue through Phase 3 in parallel. The proposal covers:
 
 - **What the colleague said** — 1-2 line summary + link
 - **Your evaluation** — valid, partially valid, contradicts conventions, subjective, blocked on missing context, etc.
@@ -183,7 +216,7 @@ After applying feedback, use the `backend-quality` skill (Tier 1: Pint + related
 
 ### Phase 5: Commit and Push
 
-If any code changes were applied (from either the bot bucket or user-approved colleague items):
+If any code changes were applied (from the bot/self bucket or user-approved colleague items):
 
 1. **Stage changes**: `git add <specific-files>`
 2. **Commit with descriptive message**:
@@ -195,13 +228,13 @@ If any code changes were applied (from either the bot bucket or user-approved co
    ```
 3. **Push to the branch**: `git push origin <branch-name>`
 
-If no code changes were applied, skip this phase.
+If no code changes were applied **but Phase 1b created a sync merge commit**, still push it: `git push origin <branch-name>`. The branch must reach GitHub for the base sync to take effect and for thread positions to recompute. Only skip this phase entirely when there are neither feedback changes nor a pending sync merge.
 
 ### Phase 6: Reply to Review Threads
 
 Reply/resolve permissions depend on the thread's author bucket from Phase 2.
 
-**Bot threads (applied or skipped)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed:
+**Bot and self threads (applied or skipped)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed. (For self threads, a reply is optional — they're your own notes; resolving is usually enough.)
 
 ```bash
 # Reply to the thread
@@ -221,7 +254,7 @@ mutation($threadId: ID!) {
 }' -f threadId="<THREAD_ID>"
 ```
 
-**Colleague threads** — handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)):
+**Colleague threads (other humans)** — handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)):
 
 - **Gate `true` (default)** — **never** auto-reply, **never** auto-resolve. The user owns these threads. Only reply or resolve when the user explicitly says so in the current turn ("post that reply", "resolve thread 3", "reply and resolve all of these") *and* the instruction is specific enough to know which thread(s) it covers. Default to leaving colleague threads untouched on GitHub even after applying their suggested code change — the user can reply/resolve themselves once they're happy with the diff.
 - **Gate `false`** — the project opted into full automation: reply and resolve colleague threads the same way as bot threads above, no per-turn confirmation needed.
@@ -235,18 +268,18 @@ Keep replies concise. Do not repeat the reviewer's comment back to them.
 
 ## Response Template
 
-Summarize once Phases 3 + 3b are complete. Bot items are already replied to and resolved on the PR. Colleague items are presented as proposals — the user decides next steps.
+Summarize once Phases 3 + 3b are complete. Bot and self items are already applied and resolved on the PR. Colleague items are presented as proposals — the user decides next steps (unless `review.colleague_gate` is `false`, in which case they're already handled too).
 
 ```markdown
-## Bot Feedback — Applied (replied & resolved)
+## Bot & Self Feedback — Applied (resolved)
 
-1. **[File]** — [bot login]
+1. **[File]** — [bot/self login]
    - Comment: [Brief summary]
    - Change: [What was done]
 
-## Bot Feedback — Skipped (replied & resolved)
+## Bot & Self Feedback — Skipped (resolved)
 
-1. **[File]** — [bot login]
+1. **[File]** — [bot/self login]
    - Comment: [Brief summary]
    - Reason: [Why it was skipped]
 

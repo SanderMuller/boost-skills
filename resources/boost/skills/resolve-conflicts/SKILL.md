@@ -26,6 +26,43 @@ A good resolution keeps the intent of **both**: apply HEAD's refactor/pattern to
 
 ## Workflow
 
+### Phase 0: Detect Conflicts Before Merging (No Side Effects)
+
+Before starting a real merge, find out **whether** there will be conflicts and **which files** — without touching the working tree. This lets you tell the user what they're in for, and lets other skills gate on it.
+
+**Local — `git merge-tree` (preferred).** Performs the merge in-memory and writes nothing to the working tree or index:
+
+```bash
+git fetch origin <base-branch>
+git merge-tree --write-tree --name-only HEAD origin/<base-branch>
+```
+
+- **Exit 0** — clean merge. The first output line is the resulting tree OID; nothing to resolve.
+- **Exit 1** — **either** conflicts **or** a usage error; they share the same exit code, so distinguish by **stdout**:
+  - Conflicts write the resulting tree OID, then the conflicted file paths, then conflict messages, all to **stdout** (stderr stays empty). These are exactly the files Phase 2 must reason about.
+  - A real error (bad/unknown ref, unrelated histories) writes **nothing to stdout** and a `merge-tree: <ref> - not something we can merge` line to **stderr**. Read it and fix the ref — do not mistake it for a conflict.
+  - In short: exit 1 **with non-empty stdout** = conflicts; exit 1 **with empty stdout** = error on stderr.
+- Do **not** combine `--quiet` with `--name-only` — git rejects it with exit 128 (`options '--quiet' and '--name-only' cannot be used together`).
+
+This needs Git ≥ 2.38. On older Git, fall back to a throwaway probe in a temp worktree (`git worktree add`), never in the user's live working tree.
+
+**Remote — GitHub API (when you only have the PR, not a checkout).** GraphQL exposes a computed mergeability flag:
+
+```bash
+gh api graphql -F owner='{owner}' -F repo='{repo}' -F number=<NUMBER> -f query='
+query ($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) { mergeable mergeStateStatus }
+  }
+}' --jq '.data.repository.pullRequest'
+```
+
+- `mergeable`: `MERGEABLE` / `CONFLICTING` / `UNKNOWN`.
+- **`UNKNOWN` is not "no conflicts"** — GitHub computes mergeability asynchronously and returns `UNKNOWN` until the background job finishes. Re-query after a few seconds; do not treat it as clean.
+- `mergeStateStatus` (`DIRTY` = conflicts, `BEHIND`, `CLEAN`, …) adds detail but does **not** name the conflicted files. For file-level detail you still need the local `git merge-tree` check.
+
+Use the API check for a quick yes/no when working off a PR number; use `git merge-tree` whenever you have the branches locally, since it also names the files.
+
 ### Phase 1: Start the Merge
 
 ```bash
