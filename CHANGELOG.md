@@ -5,6 +5,28 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.9.0 - 2026-06-14
+
+<!-- verified-sha: c54b86703b300d50caa6df796ac30b00a43add4b -->
+An issue-resolution preflight for the `pull-requests` skill, so a PR is never opened without a tracker issue behind it unless the change is a deliberate chore. Surfaced while tightening a downstream application's issue workflow, where PRs were landing with no linked issue because nothing in the flow asked for one. Additive under conventions `schema-version 1` — a project whose branch patterns carry no `{issue_key}` placeholder sees no new step, and no new convention slot is introduced.
+
+#### Added
+
+- **`pull-requests` — issue-resolution preflight.** A new first preflight item runs only when the project's branch patterns include an `{issue_key}` placeholder (i.e. the project links PRs to a tracker). It resolves the issue *before* the branch is named, since the key feeds the branch name, the PR title, and the template's issue reference. The branch's existing key is reused when present; an issue known from the conversation is confirmed against the tracker; otherwise the user is asked — via a single `AskUserQuestion` — to name an existing issue, create one on the spot, or proceed as a chore against a no-`{issue_key}` branch pattern (e.g. `chore/{slug}`). A project whose patterns carry no `{issue_key}` placeholder skips the step entirely.
+- **`pull-requests` — tracker-aware issue verification and creation.** A dedicated step splits the resolution path by key style so the right tool is used: a bare GitHub issue number goes through `gh issue view` / `gh issue create`, while a Jira-style key (`HPB-1234`) goes through the read-only `jira_get_issue` MCP tool to confirm and the `jira-create` skill to open one. `gh issue` is never run against a non-GitHub key, and `jira-updates` is explicitly excluded — it is a post-PR mutation flow, not a pre-PR lookup.
+
+#### Changed
+
+- **`pull-requests` — branch-rename and title guidance now issue-aware.** The branch-pattern preflight step folds the resolved issue key into the suggested rename when an `{issue_key}` pattern applies (e.g. `feature/1234-add-export`). The PR-title placeholder docs no longer assume a Jira-style key: `{issue_key}` resolves a Jira-style key (`HPB-1234`) or a bare GitHub issue number (`1234`) depending on the project's patterns. The empty-placeholder rule trims an adjacent dash or `#` and drops any brackets left wrapping nothing, so a chore PR title reads cleanly (`[#{issue_key}] {short_title}` → `Add export` when there is no issue).
+
+The change was dogfooded through a downstream application's PR flow, then reviewed (including an external Codex pass) before shipping.
+
+### What's Changed
+
+* Add issue-resolution preflight to pull-requests skill by @SanderMuller in https://github.com/SanderMuller/boost-skills/pull/7
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.8.0...2.9.0
+
 ## 2.8.0 - 2026-06-14
 
 <!-- verified-sha: 2e14e6e1ba4a0576c0a674a6baff63f1065468ca -->
@@ -261,6 +283,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -281,6 +304,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -345,6 +369,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -371,6 +396,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -445,6 +471,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -472,6 +499,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -553,6 +581,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -611,6 +640,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -619,6 +649,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -690,6 +721,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -707,6 +739,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -782,6 +815,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -895,6 +929,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -913,6 +948,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1092,6 +1128,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
