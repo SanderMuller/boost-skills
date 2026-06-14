@@ -5,6 +5,20 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.7.0 - 2026-06-14
+
+<!-- verified-sha: a606626f0904810a32b97baecc3ad2ec7b1ecb08 -->
+A code-brevity lens folded into the `evaluate` self-review loop and the `code-review` skill, inspired by the "lazy senior developer" pattern — stop at the first viable solution, and prefer the standard library, a native or framework feature, or an already-installed dependency over hand-rolled code. The family already pushed hard on correctness, style, and convention; this adds the missing pull toward writing less. It rides the existing review-and-fix loop rather than a standalone always-on guideline, so a project whose code is already lean sees no change.
+
+### Added
+
+- **`evaluate` — over-engineering review row + brevity floor.** Phase 2's review table gains an **Over-engineering** category: unrequested abstractions, speculative generality, premature flexibility, and hand-rolled code a stdlib/native/framework feature or installed dependency replaces — anything deletable without losing required behavior. A **"brevity has a floor"** guardrail sits directly under the table: shortening code is a win only when nothing required is lost, and validation at trust boundaries, error / data-loss handling, security, accessibility, explicitly-requested functionality, and tests for non-trivial logic are never traded away to shrink code. Findings flow through the existing Phase 4 fix loop like any other.
+- **`code-review` — sharpened Code Quality bullet.** The soft "Unnecessary complexity" line becomes an **Over-engineering** lens carrying the same floor, so the structured fresh-eyes pass (run as `evaluate`'s Phase 6 and standalone) checks brevity independently of the self-review.
+
+The lens was dogfooded through this repository's own evaluate → review → release flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.6.0...2.7.0
+
 ## 2.6.0 - 2026-06-14
 
 <!-- verified-sha: 3bf77bb93aab6f4d20d3fae8895e7673b09f1e22 -->
@@ -228,6 +242,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -248,6 +263,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -308,6 +324,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -334,6 +351,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -404,6 +422,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -431,6 +450,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -508,6 +528,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -564,6 +585,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -572,6 +594,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -639,6 +662,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -656,6 +680,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -729,6 +754,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -838,6 +864,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -856,6 +883,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1033,6 +1061,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
