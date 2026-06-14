@@ -244,6 +244,18 @@
                 }
             }
         },
+        "quality": {
+            "type": "object",
+            "description": "Optional automated code-quality tooling conventions. Used by backend-quality and pull-requests skills. ABSENT ⇒ no Rector step (no behavior change).",
+            "additionalProperties": false,
+            "properties": {
+                "rector": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, backend-quality Tier 2 (at completion) and the pull-requests preflight run `vendor/bin/rector process` to completion BEFORE Pint, then always run Pint afterward (Rector output is not style-clean). Absent/false ⇒ no Rector step (no behavior change). Opt in explicitly here — skills do NOT auto-detect Rector from a `rector.php` config or a `vendor/bin/rector` binary, so adopting this catalog never changes an existing project's flow until it declares `quality.rector: true`."
+                }
+            }
+        },
         "codex": {
             "type": "object",
             "description": "Codex invocation configuration. Used by codex-review skill.",

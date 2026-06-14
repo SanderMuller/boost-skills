@@ -183,6 +183,7 @@ Missing-slot behavior is per-slot: value slots prompt the user once per session;
 | `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
 | `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`) | `pull-requests`, `final-verification-review` |
 | `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
+| `quality` | Automated code-quality tooling (optional) — `rector` opt-in (Rector before Pint at completion / PR preflight) | `backend-quality`, `pull-requests` |
 | `codex` | Codex invocation — `plugin` (default) / `bare_cli`, setup doc | `codex-review` |
 | `spec` | Spec-file conventions — filename pattern, research docs | `write-spec`, `implement-spec`, `interview` |
 | `mcp` | Project-specific MCP server-name mappings (open vocabulary) | `jira-*`, `pull-requests` (when MCP-mediated) |
@@ -190,7 +191,7 @@ Missing-slot behavior is per-slot: value slots prompt the user once per session;
 | `fixtures` | Test-fixture / code-sample anonymization gate (optional) — guideline pointer, scan scope (`src/` + `tests/`), optional denylist | `evaluate` |
 | `review` | PR review-feedback conventions (optional) — extra bot-reviewer logins + colleague-gate on/off toggle | `pr-review-feedback` |
 
-All 11 groups are root-optional — only `schema-version: 1` is root-required. A consumer without (say) a Jira tracker simply doesn't declare the `jira` group; no scaffold noise, no forced placeholder. Inside each declared group, leaves with `required` semantics must be present (e.g. `jira.project_key` is required if `jira` is declared at all). The full machine-readable contract lives in [`resources/boost/conventions-schema.json`](resources/boost/conventions-schema.json).
+All 12 groups are root-optional — only `schema-version: 1` is root-required. A consumer without (say) a Jira tracker simply doesn't declare the `jira` group; no scaffold noise, no forced placeholder. Inside each declared group, leaves with `required` semantics must be present (e.g. `jira.project_key` is required if `jira` is declared at all). The full machine-readable contract lives in [`resources/boost/conventions-schema.json`](resources/boost/conventions-schema.json).
 
 ### Tooling
 
