@@ -63,6 +63,20 @@ specs/
     └── deprecated-method-removal.md
 ```
 
+## Planning Commit Stamp
+
+When the spec is written in a git repository, stamp the commit it was planned against immediately under the spec's `# Title`:
+
+```markdown
+<!-- spec:planned-at <full-sha> <YYYY-MM-DD> -->
+```
+
+This lets `implement-spec` detect when cited code has drifted before it builds against stale `file:line` references.
+
+- **SHA** — `git rev-parse HEAD` (full SHA, not short — matches the repo's `verified-sha` convention). **Date** — ISO `YYYY-MM-DD`.
+- **Not a git repo** — omit the stamp entirely; the drift preflight then no-ops.
+- **Dirty worktree** — the spec's `file:line` references come from the *working tree*, but `HEAD` names only the last commit. If `git status --porcelain` is non-empty, append a `+uncommitted` marker so the baseline is flagged approximate: `<!-- spec:planned-at <sha> <date> +uncommitted -->`. Prefer stamping against a clean tree when practical.
+
 ## If a Spec File Already Exists
 
 Before writing from a fresh template, check whether a spec for this work already exists at (or under) the resolved path — an earlier `write-spec` run, or a requirements doc the `interview` skill's output was saved into. If one exists, read it and classify before doing anything:
@@ -74,7 +88,9 @@ Before writing from a fresh template, check whether a spec for this work already
 | Loose notes / neither | Treat as input; fall through to the from-scratch flow. |
 | More than one candidate file for the same work | **Stop and ask** which is authoritative — never pick silently. |
 
-**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
+**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## STOP Conditions`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
+
+**Stamp on conversion**: if the existing spec carries a `spec:planned-at` stamp, refresh it to the current `HEAD` when the conversion materially re-bases the spec's `file:line` references on today's code — otherwise the drift preflight diffs against a stale baseline and reports false drift on a just-revalidated spec. Leave the stamp untouched when you only add sections without re-validating existing references. If no stamp exists and the repo is git, add one (see [Planning Commit Stamp](#planning-commit-stamp)).
 
 ## Research Before Writing — Required Checklist
 
@@ -98,6 +114,8 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 
 ```markdown
 # {Feature Name}
+
+<!-- spec:planned-at <full-sha> <YYYY-MM-DD> -->
 
 ## Overview
 
@@ -140,6 +158,16 @@ The final sections are always:
 
 ---
 
+## STOP Conditions
+
+Stop and report — do not improvise — if any of these proves false during implementation:
+
+1. **{Load-bearing assumption}** — {why it blocks the phase / what to do instead}.
+
+Use "None." when the spec has no load-bearing assumptions.
+
+---
+
 ## Open Questions
 
 1. **{Question}** {Context and options to consider.}
@@ -161,6 +189,8 @@ For focused changes that don't need multiple phases.
 
 ```markdown
 # {Change Name}
+
+<!-- spec:planned-at <full-sha> <YYYY-MM-DD> -->
 
 ## Overview
 
@@ -191,6 +221,16 @@ For focused changes that don't need multiple phases.
 - [ ] {Task description} — {brief context}
 - [ ] {Task description} — {brief context}
 - [ ] Tests — {what to test}
+
+---
+
+## STOP Conditions
+
+Stop and report — do not improvise — if any of these proves false during implementation:
+
+1. **{Load-bearing assumption}** — {why it blocks the change / what to do instead}.
+
+Use "None." when the change has no load-bearing assumptions.
 
 ---
 
@@ -225,6 +265,8 @@ For focused changes that don't need multiple phases.
 - Always include `- [ ] Tests — {what to test}` per phase.
 
 ## Closing Sections
+
+**STOP Conditions** — Placed immediately before `## Open Questions`. Lists each *load-bearing* assumption — one whose falsity invalidates a phase's approach (not a cosmetic default) — as an "if X proves false, stop and report" line for the implementer. It is **derived from** the load-bearing entries in `## Assumptions`, not a competing record: the `## Assumptions` ledger stays the single source of truth (one-truth-per-topic), and STOP Conditions is the actionable view of its load-bearing subset. Use "None." when there are no load-bearing assumptions. The Assumptions Audit (below) populates this section.
 
 **Open Questions** — Numbered, bold question + context. Must be resolved before implementing the affected section. Use "None." when there are no open questions.
 
@@ -276,6 +318,8 @@ This audit runs even when the requirements came from the `interview` skill — `
 **Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, 1-2 concrete alternatives, "Other / let me clarify". Never batch.
 
 **Step 3 — Record outcomes.** Capture each into a `## Assumptions` section near the top of the spec — the complete audit ledger, one bullet per scanned item regardless of outcome. This is the contract that lets the user sign off by skimming `## Assumptions` alone. Promote anything that became a real decision into `## Resolved Questions`; route anything still undecided to `## Open Questions`.
+
+**Step 4 — Derive STOP Conditions.** Scan the confirmed ledger for *load-bearing* assumptions — those whose falsity would invalidate a phase's approach (not cosmetic defaults like a message string or a TTL). Restate each as an "if X proves false, stop and report" line in the `## STOP Conditions` section. This gives the implementer an in-flight contract without duplicating the ledger — STOP Conditions is the actionable view of the load-bearing subset, while `## Assumptions` remains the source of truth. Use "None." when nothing is load-bearing.
 
 ## Writing Guidelines
 
