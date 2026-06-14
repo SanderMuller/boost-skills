@@ -70,6 +70,9 @@ Read through all files in the resolved scope and check for:
 | **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
+| **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |
+
+**Brevity has a floor.** Shortening code is a win only when nothing required is lost. Never trade away input validation at trust boundaries, error / data-loss handling, security, accessibility, explicitly-requested functionality, or a test for non-trivial logic to make code smaller. Delete the unrequested, not the necessary — and apply these cuts through the Phase 4 fix loop like any other finding.
 
 **DB-driven translation keys** (only when a project translation-key policy is configured):
 

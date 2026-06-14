@@ -59,7 +59,7 @@ Look for:
 
 Look for:
 - **Project convention violations**: Does the code follow established patterns? Check sibling files.
-- **Unnecessary complexity**: Could the same result be achieved more simply?
+- **Over-engineering**: Unrequested abstractions, speculative generality, premature flexibility, or hand-rolled code a stdlib/native/framework feature or installed dependency replaces — could it be simpler or deleted without losing required behavior? Never cut validation, error handling, security, or accessibility to shrink code.
 - **DRY violations**: Duplicated logic that should be extracted
 - **Dead code**: Unused variables, unreachable branches, commented-out code
 - **Type safety**: Missing return types, loose comparisons where strict is needed
