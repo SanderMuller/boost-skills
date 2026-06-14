@@ -31,14 +31,23 @@ The PR's repository is `<owner>/<repo>` where `<owner>` is <!--boost:conv path="
 
 Before creating the PR, verify all of the following:
 
-1. **The current branch matches one of the configured branch patterns above** (if any). Resolve the base per **Base-branch resolution** above.
+1. **An issue is associated with this work** — applies **only when the project's branch patterns include an `{issue_key}` placeholder** (i.e. the project links PRs to a tracker). Resolve the issue **before** naming the branch, because its key feeds the branch name, the PR title, and the template's issue reference. Determine it in this order:
+   - If the current branch already carries an issue key (it matches an `{issue_key}` pattern above), use that key — done.
+   - Else if the issue is already known this session (the user named it, or it is unambiguous from the conversation), use it — confirm it exists with `gh issue view <number> --json number,title,state` (`gh issue view <KEY>` for non-GitHub trackers).
+   - Else **ask the user with `AskUserQuestion`** — "Which issue is this PR for?" — with these options:
+     1. **Name the existing issue** — the user supplies the number/key; verify it with `gh issue view <number>`.
+     2. **Create one now** — `gh issue create --title "<title>" --body "<why>"` (add `--label` / `--assignee` / `--project` per project convention); capture the new number from the URL it prints.
+     3. **Chore — no issue** — only when the project defines a no-`{issue_key}` branch pattern (e.g. `chore/{slug}`). Proceed without an issue key; the title and template issue references are then omitted.
+   - Once resolved, the issue number drives steps 2–3 below.
+   - If the project's branch patterns contain **no** `{issue_key}` placeholder at all, skip this step — the project does not link PRs to issues.
+2. **The current branch matches one of the configured branch patterns above** (if any). Resolve the base per **Base-branch resolution** above.
    - If the current branch is named correctly but the branch has **no upstream** (never pushed): proceed.
    - If the branch is named correctly and **already has an upstream or an open PR**: proceed (PR update flow, see [How to Work on Existing PRs](#how-to-work-on-existing-prs)).
-   - If the branch name does **not** match any pattern AND has no upstream: rename it with `git branch -m <new-name>`, picking a name that matches the most specific pattern that fits the work being done.
+   - If the branch name does **not** match any pattern AND has no upstream: rename it with `git branch -m <new-name>`, picking a name that matches the most specific pattern that fits the work — incorporating the issue key resolved in step 1 when using an `{issue_key}` pattern (e.g. `feature/1234-add-export`).
    - If the branch name does **not** match any pattern AND has an upstream: **STOP** and ask the user to rename it manually — never auto-rename a pushed branch.
-2. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
-3. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
-4. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline" fallback="false"-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
+3. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
+4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
+5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline" fallback="false"-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 
 ---
 
@@ -235,10 +244,10 @@ Order when both are present: risk first, direction second. Render only the quest
 
 Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline" fallback="none configured — ask the user once per session for the desired title format"-->. Recognized placeholders:
 
-- `{issue_key}` — full issue key (e.g. `HPB-1234`). Resolved from the branch name's issue segment when the branch matches a Jira-keyed pattern.
+- `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`HPB-1234`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
 
-If a placeholder resolves empty (e.g. no issue key on this branch), the placeholder and any single adjacent dash are omitted. Example: `[HPB-XXXX] Short title` with no issue → `Short title`.
+If a placeholder resolves empty (e.g. a chore branch with no issue key), the placeholder and any single adjacent dash or `#` are omitted. Examples: `[HPB-XXXX] Short title` with no issue → `Short title`; `[#{issue_key}] {short_title}` → `[#1234] Add export` when resolved, or `Add export` when not.
 
 General guidance regardless of format:
 - Use imperative mood.
