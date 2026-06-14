@@ -33,10 +33,10 @@ Before creating the PR, verify all of the following:
 
 1. **An issue is associated with this work** — applies **only when the project's branch patterns include an `{issue_key}` placeholder** (i.e. the project links PRs to a tracker). Resolve the issue **before** naming the branch, because its key feeds the branch name, the PR title, and the template's issue reference. Determine it in this order:
    - If the current branch already carries an issue key (it matches an `{issue_key}` pattern above), use that key — done.
-   - Else if the issue is already known this session (the user named it, or it is unambiguous from the conversation), use it — confirm it exists with `gh issue view <number> --json number,title,state` (`gh issue view <KEY>` for non-GitHub trackers).
+   - Else if the issue is already known this session (the user named it, or it is unambiguous from the conversation), use it — verify it exists (see **Verifying / creating against the tracker** below).
    - Else **ask the user with `AskUserQuestion`** — "Which issue is this PR for?" — with these options:
-     1. **Name the existing issue** — the user supplies the number/key; verify it with `gh issue view <number>`.
-     2. **Create one now** — `gh issue create --title "<title>" --body "<why>"` (add `--label` / `--assignee` / `--project` per project convention); capture the new number from the URL it prints.
+     1. **Name the existing issue** — the user supplies the number/key; verify it exists (see **Verifying / creating against the tracker** below).
+     2. **Create one now** — create it in the project's tracker (see **Verifying / creating against the tracker** below); capture the new key/number.
      3. **Chore — no issue** — only when the project defines a no-`{issue_key}` branch pattern (e.g. `chore/{slug}`). Proceed without an issue key; the title and template issue references are then omitted.
    - Once resolved, the issue number drives steps 2–3 below.
    - If the project's branch patterns contain **no** `{issue_key}` placeholder at all, skip this step — the project does not link PRs to issues.
@@ -48,6 +48,13 @@ Before creating the PR, verify all of the following:
 3. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline" fallback="false"-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
+
+#### Verifying / creating against the tracker
+
+Which tool resolves the issue depends on the key style the project's `{issue_key}` patterns use — `gh issue` only ever reads or writes **GitHub** issues, so never run it against a non-GitHub key:
+
+- **Bare GitHub issue number** (e.g. `1234`): verify with `gh issue view <number> --json number,title,state`; create with `gh issue create --title "<title>" --body "<why>"` (add `--label` / `--assignee` / `--project` per project convention), capturing the new number from the URL it prints.
+- **Jira-style key** (e.g. `HPB-1234`): verify and create through the project's Jira tooling — the read-only `mcp__<jira>__jira_get_issue` tool (substitute `<jira>` with your Jira MCP namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->) to confirm an existing one, and the `jira-create` skill to open a new one. Do not use `gh issue` for these, nor `jira-updates` — that is a post-PR mutation flow, not a pre-PR lookup.
 
 ---
 
@@ -247,7 +254,7 @@ Follow the configured PR title format: <!--boost:conv path="pr.title_format" mod
 - `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`HPB-1234`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
 
-If a placeholder resolves empty (e.g. a chore branch with no issue key), the placeholder and any single adjacent dash or `#` are omitted. Examples: `[HPB-XXXX] Short title` with no issue → `Short title`; `[#{issue_key}] {short_title}` → `[#1234] Add export` when resolved, or `Add export` when not.
+If a placeholder resolves empty (e.g. a chore branch with no issue key), the placeholder is omitted along with any now-redundant decoration around it — a single adjacent dash or `#`, and any brackets left wrapping nothing. Examples: `[HPB-XXXX] Short title` with no issue → `Short title`; `[#{issue_key}] {short_title}` → `[#1234] Add export` when resolved, or `Add export` when not.
 
 General guidance regardless of format:
 - Use imperative mood.
