@@ -5,6 +5,23 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.10.0 - 2026-06-16
+
+<!-- verified-sha: 14ad8fccd9b04274e4450186e14835246fe12364 -->
+### 2.10.0
+
+The `pr-review-feedback` skill now treats a test as part of fixing a bug, not an afterthought. When review feedback flags a runtime fault or an edge case, the skill writes a failing test that reproduces it *before* applying the fix, then verifies at quality-check time that every fix is covered. Additive under conventions `schema-version 1` — no new convention slot, and pure style/refactor feedback still needs no test.
+
+###### Changed
+
+- **`pr-review-feedback` — a bug or edge-case fix now requires a test.** Phase 3 (Apply Changes) gained a step: when a comment flags a runtime fault (a wrong type, a bad boundary condition, a feature/permission edge, a regression), add a failing test that reproduces it before touching the fix, then make the change so the test passes. Phase 4 (Verify Quality) was reframed from "add a test" to "confirm every fix is covered" — it now verifies the regression/edge-case test exists and passes rather than merely suggesting one. The style/refactor carve-out is preserved: cosmetic feedback needs no new test, only that existing tests still pass.
+
+###### Fixed
+
+- **Corrected a stale `project-boost` slug to `project-boost-php`.** A guideline reference pointed at the old package slug; downstream readers following it would have hit the wrong name.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.9.0...2.10.0
+
 ## 2.9.0 - 2026-06-14
 
 <!-- verified-sha: c54b86703b300d50caa6df796ac30b00a43add4b -->
@@ -284,6 +301,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -304,6 +322,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -370,6 +389,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -396,6 +416,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -472,6 +493,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -499,6 +521,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -582,6 +605,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -641,6 +665,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -649,6 +674,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -722,6 +748,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -739,6 +766,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -815,6 +843,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -930,6 +959,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -948,6 +978,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1128,6 +1159,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
