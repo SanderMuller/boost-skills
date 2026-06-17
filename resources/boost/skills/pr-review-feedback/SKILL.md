@@ -1,6 +1,6 @@
 ---
 name: pr-review-feedback
-description: "Applies PR review feedback with critical evaluation. Activates when: applying review comments, addressing PR feedback, responding to code review, or when user mentions: review feedback, PR comments, apply feedback, address comments, reviewer feedback."
+description: "Applies PR review feedback with critical evaluation, then replies to and resolves the threads. Covers automated reviewers (Copilot, CodeRabbit, etc.). Activates when: applying review comments, addressing PR feedback, responding to code review, resolving review threads, or when user mentions: review feedback, PR comments, apply feedback, address comments, reviewer feedback, copilot comments, coderabbit, resolve threads, resolve comments, mark comments resolved."
 argument-hint: "[PR number]"
 metadata:
   boost-tags: "github"
@@ -21,6 +21,8 @@ A disciplined approach to addressing PR review comments: **evaluate first, apply
 4. Critically evaluate each piece of feedback
 5. **Bots and self**: apply/skip, reply, and resolve automatically
 6. **Other colleagues** (default, `review.colleague_gate: true`): evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve. When the gate is `false`, handle them like bot threads.
+
+**Close the loop.** Applying the code is half the job — an applied-but-unresolved thread reads as ignored to the author and re-surfaces in the next review. The skill is not done until every bot/self thread is **resolved** (replied to where useful) and Phase 7 confirms zero unresolved bot/self threads remain.
 
 ## Author Classification
 
@@ -145,7 +147,7 @@ Apply feedback on top of an up-to-date branch — a branch that has drifted from
 
 **First, split threads into buckets by author** (see Author Classification above):
 
-- **Bot + self bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6). Self comments are your own self-review notes; treat them like bot feedback.
+- **Bot + self bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6). Self comments are your own self-review notes; treat them like bot feedback. Track each thread as one unit by its `id` from Phase 1 (evaluate → apply/skip → reply → resolve); a thread isn't handled until it's resolved.
 - **Colleague bucket** — *other* humans. Handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)). Under the default (`true`): evaluate to form a recommendation, but do **not** apply, reply, or resolve — surface every colleague thread to the user and let them decide (Phase 3b); the user replies/resolves themselves, or explicitly tells you to do it on their behalf. Under `false`: treat the colleague bucket exactly like the bot/self bucket (auto apply/reply/resolve), and skip Phase 3b.
 
 **Handle outdated threads carefully:**
@@ -235,7 +237,7 @@ If no code changes were applied **but Phase 1b created a sync merge commit**, st
 
 Reply/resolve permissions depend on the thread's author bucket from Phase 2.
 
-**Bot and self threads (applied or skipped)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed. (For self threads, a reply is optional — they're your own notes; resolving is usually enough.)
+**Bot and self threads (applied or skipped)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed. **Resolving is mandatory for every bot/self thread; the reply is recommended (and optional for self notes). Resolving without a reply is fine — leaving a thread unresolved is not.** You need each thread's `id` (from Phase 1) here — if those IDs are no longer in context, re-run the Phase 1 query to re-fetch them; never skip resolve because the IDs scrolled off.
 
 ```bash
 # Reply to the thread
@@ -267,9 +269,39 @@ mutation($threadId: ID!) {
 
 Keep replies concise. Do not repeat the reviewer's comment back to them.
 
+### Phase 7: Verify Threads Resolved (Hard Gate)
+
+**The skill is not done until this passes.** Re-run the Phase 1 reviewThreads query and confirm **zero unresolved bot/self threads** remain. Colleague threads under the default gate are excluded — they stay open by design; include them only when `review.colleague_gate` is `false`.
+
+List every still-unresolved thread with its authors, so you can confirm none are bot/self:
+
+```bash
+gh api graphql \
+  -F owner='{owner}' -F repo='{repo}' -F number=<NUMBER> \
+  -f query='
+query ($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100) {
+        nodes { isResolved comments(first: 100) { nodes { author { login } } } }
+      }
+    }
+  }
+}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[]
+  | select(.isResolved | not)
+  | {authors: ([.comments.nodes[].author.login] | unique)}]'
+```
+
+Read the result:
+
+- **Empty list** → gate passes; the loop is closed. Every bot/self thread is resolved.
+- **Non-empty** → each remaining entry must be a **colleague** thread (contains a human who is not you), legitimately left open under the default gate. If any entry is all-bot or all-you (self), that is unresolved bot/self work — resolve it (Phase 6 mutations; re-fetch the `id` if needed) and re-run this query until only colleague threads remain. Under `colleague_gate: false`, the list must be empty.
+
+The one allowed exception: a bot/self thread where `viewerCanResolve` is `false` (you lack permission). Don't loop on it — report it to the user with the reason instead of treating the gate as failed.
+
 ## Response Template
 
-Summarize once Phases 3 + 3b are complete. Bot and self items are already applied and resolved on the PR. Colleague items are presented as proposals — the user decides next steps (unless `review.colleague_gate` is `false`, in which case they're already handled too).
+Summarize once Phases 3 + 3b + the Phase 7 gate are complete. Bot and self items are already applied and resolved on the PR — state the verified count (e.g. "All 3 bot/self threads resolved"). Colleague items are presented as proposals — the user decides next steps (unless `review.colleague_gate` is `false`, in which case they're already handled too).
 
 ```markdown
 ## Bot & Self Feedback — Applied (resolved)
