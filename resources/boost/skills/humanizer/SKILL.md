@@ -20,6 +20,8 @@ When given text to humanize:
 6. **Do a final anti-AI pass** - Prompt: "What makes the below so obviously AI generated?" Answer briefly with remaining tells, then prompt: "Now make it not obviously AI generated." and revise
 
 
+Throughout, fight the **curse of knowledge**: the author always knows more than the page shows. Natural human writing addresses a reader who lacks that context — it names the implicit, where AI prose either over-explains the obvious or skips the thing the reader actually needs.
+
 ## Voice Calibration (Optional)
 
 If the user provides a writing sample (their own previous writing), analyze it before rewriting:

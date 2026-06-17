@@ -7,7 +7,7 @@ metadata:
 
 # Test Writing Guidelines
 
-Conventions for writing tests that are specific, descriptive, and well-structured. The principles are language-agnostic; the examples use PHP/Pest, but the same rules apply to any test framework.
+Conventions for writing tests that are specific, descriptive, and well-structured. Treat every test as an **executable specification**: its name reads as a sentence stating the scenario and expected outcome, so the suite documents intended behaviour while it verifies it. The principles are language-agnostic; the examples use PHP/Pest, but the same rules apply to any test framework.
 
 ## Which framework to write for
 
@@ -37,7 +37,7 @@ it('handles checkout')
 
 ## Name Tests Descriptively
 
-Test names should describe the scenario and the expected outcome:
+**Gate: read the name aloud.** Does it state the scenario and the expected outcome as one executable-specification sentence? If not, rename before you write the assertions. Test names should describe the scenario and the expected outcome:
 
 ```php
 // Good
@@ -69,6 +69,8 @@ it('grants access to a paid account', function () {
     $response->assertSee('Monthly report');
 });
 ```
+
+Test **one behavior per test**. The example above asserts twice (`assertOk` and `assertSee`) — that is fine, because both assertions verify the *same* behaviour (a paid account can reach the report). What to avoid is **assertion roulette**: piling assertions about *unrelated* behaviours into one test, so a failure doesn't reveal which behaviour broke. Split those into separate tests. ("One behaviour per test" is the rule — not the common misreading "one *assertion* per test".)
 
 ## When Tests Aren't Possible
 

@@ -6,7 +6,7 @@ argument-hint: [file path, feature name, or description of changes]
 
 # Code Review
 
-A structured review of recent code changes, evaluating them across multiple quality dimensions and producing a prioritized list of actionable findings.
+A structured review of recent code changes, evaluating them across multiple quality dimensions and producing a prioritized list of actionable findings. The governing principle is **proportionality**: match every finding's weight to its real impact, and review for **code health over time** — net improvement, not perfection.
 
 ## When to Use This Skill
 
@@ -138,7 +138,7 @@ End with a summary table ranking findings by severity:
 
 - **Be concrete**: Every finding must point to a specific line or pattern in the code. No vague suggestions.
 - **Be actionable**: Each finding should make clear what needs to change.
-- **Be proportional**: Don't flag style preferences as security issues. Match severity to actual impact.
+- **Proportionality**: Don't flag style preferences as security issues. Match severity to actual impact, and review for code health over time — approve net improvements rather than blocking on perfection.
 - **Respect existing conventions**: If the codebase uses a pattern consistently, don't flag it as an issue even if you'd do it differently.
-- **Don't pad**: If a category has no findings, skip it entirely. A short review with real findings is better than a long review with filler.
+- **Every finding earns its line**: before writing a finding, ask whether it names a concrete, proportional improvement. If not, cut it. If a category has no findings, skip it entirely — a short review with real findings beats a long one with filler.
 - **Read before reviewing**: Never review code you haven't read in this session. If you need more context, read the relevant files first.

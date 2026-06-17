@@ -6,7 +6,7 @@ argument-hint: "[optional: branch to merge, e.g. main]"
 
 # Resolve Merge Conflicts Without Losing Functionality
 
-The goal is not just to make the conflict markers go away — it is to produce code that preserves **every behavior** from both sides of the merge. A naive resolution that picks one side often silently drops features from the other.
+The goal is not just to make the conflict markers go away — it is to produce code that preserves **every behavior** from both sides of the merge. Markers gone is not the same as resolved: a clean *textual* merge can still carry a **semantic conflict**, where the code compiles but one side's behaviour was silently dropped. A naive resolution that picks one side is the classic way to ship one.
 
 ## When to Use This Skill
 
@@ -17,7 +17,7 @@ The goal is not just to make the conflict markers go away — it is to produce c
 
 ## Core Principle
 
-Every conflict is a collision between two intentions. Before resolving, understand **both** intentions:
+Every conflict is a collision between two intentions, and a good resolution **preserves both intents**. Reason from the **three-way merge** base (ours / theirs / common ancestor) to recover what each side meant to change. Before resolving, understand **both** intentions:
 
 - **HEAD (your branch)** usually contains a focused change — a refactor, feature, or fix.
 - **The other branch** (the base branch you are merging in) contains unrelated work that has landed since you branched — new features, bug fixes, type migrations, schema changes.
@@ -109,7 +109,7 @@ Pick the strategy that preserves both intents:
 
 ### Phase 4: Verify Nothing Was Dropped (Critical)
 
-**This is where most bad merges are caught.** After resolving every conflict, diff the resolved *working tree* against **both** sides. These forms compare the working tree (not `HEAD`, which is still the pre-merge commit until you commit in Phase 6):
+**The gate: markers gone is not resolved — did the result preserve both intents?** This is where the semantic conflict gets caught. After resolving every conflict, diff the resolved *working tree* against **both** sides. These forms compare the working tree (not `HEAD`, which is still the pre-merge commit until you commit in Phase 6):
 
 ```bash
 # Working tree vs the branch we merged in — should show only our refactor/feature.
@@ -170,7 +170,7 @@ Report back with:
 ## Anti-patterns to Avoid
 
 - **Accepting one side wholesale** without checking what the other side did. `git checkout --ours` / `--theirs` is almost always wrong.
-- **Resolving conflicts in the editor without running `git diff origin/<base-branch>` afterwards.** The markers going away doesn't mean the merge is correct.
+- **Resolving conflicts in the editor without running `git diff origin/<base-branch>` afterwards.** The markers going away doesn't mean the merge is correct — that's exactly how a semantic conflict slips through.
 - **Copy-pasting the base branch's code with stale imports or deprecated method calls** that no longer exist after a refactor on HEAD.
 - **Skipping the quality checks** because "it was just a merge". A merge is a code change.
 - **Pushing immediately** after resolving — let the user review the merge commit first.

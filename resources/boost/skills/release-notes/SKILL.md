@@ -94,7 +94,7 @@ Conceptual quality issues — see "What to omit" below for the specific structur
 
 ## What to omit
 
-Aggressively. Release notes are for developers checking what changed; everything else is bloat.
+**Omit needless words** — aggressively. Release notes are for developers checking what changed; everything else is bloat.
 
 **Always omit:**
 

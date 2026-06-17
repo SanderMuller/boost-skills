@@ -6,7 +6,7 @@ argument-hint: "[feature description]"
 
 # UX/UI Expert Review
 
-Before implementing UI changes, evaluate the current state and design an approach that delivers great user experience. Consider multiple options, choose the best, and document the decision.
+Before implementing UI changes, evaluate the current state and design an approach that delivers great user experience. Consider multiple options, choose the best, and document the decision. The lens throughout is the **principle of least astonishment (POLA)**: a component should behave the way users already expect. New patterns are allowed — this skill exists to design them — but novelty is never free; it must be justified against user expectation.
 
 ## When to Use This Skill
 
@@ -111,6 +111,8 @@ Generate 2-4 UX/UI approaches:
 
 ### Phase 4: Recommend & Justify
 
+**The POLA gate: justify, don't reject.** Default to the established pattern. Choosing a novel one is allowed, but it must clear the principle of least astonishment — state explicitly why the surprise is worth it and how users will learn it. An unjustified new pattern doesn't survive this phase; a justified one does.
+
 Choose the best option based on:
 
 1. **Consistency** - Does it match existing patterns?
@@ -213,7 +215,7 @@ When designing, follow these principles:
 Show only what's needed at each step. Advanced options can be hidden until needed.
 
 ### 2. Consistency Over Novelty
-Use existing patterns unless there's a compelling reason not to. Users shouldn't have to learn new interactions for similar tasks.
+Use existing patterns unless there's a compelling reason not to. Users shouldn't have to learn new interactions for similar tasks. This is POLA in practice (Nielsen's "consistency and standards" heuristic): consistency is the default that keeps a UI unsurprising.
 
 ### 3. Immediate Feedback
 Every action should have visible feedback. Loading states, success messages, error handling - nothing should leave users wondering.

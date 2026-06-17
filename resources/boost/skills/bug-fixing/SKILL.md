@@ -8,7 +8,7 @@ metadata:
 
 # Test-Driven Bug Fixing
 
-A disciplined approach to fixing bugs: **reproduce first, fix second**. Write a failing test that captures the bug, then fix the code to make it pass.
+A disciplined approach to fixing bugs: **reproduce first, fix second** — the **red-green-refactor** cycle applied to a defect. Write **the red test** (a failing test that proves the bug exists), then fix the code to turn it green. The red test is the gate: no production edit until you have one — the only exception is a bug that genuinely can't be reproduced in an automated test (see the `test-writing` skill's "When Tests Aren't Possible").
 
 ## Test framework
 
@@ -18,7 +18,7 @@ If the user asks for a test in a framework on the forbidden list (<!--boost:conv
 
 ## Core Principle
 
-**Never start by trying to fix the bug.** Instead:
+**Red before green.** Never start by trying to fix the bug. Instead:
 
 1. Understand the bug
 2. Write a test that reproduces it (fails)
@@ -74,9 +74,9 @@ it('handles edge case with empty array input', function () {
 });
 ```
 
-### Phase 3: Verify Test Fails
+### Phase 3: Verify Test Fails — the Red Gate
 
-Run the test to confirm it fails. Use the project's configured runner (named at the top of this skill):
+**Gate: am I at red?** No production edit until a red test proves the bug — unless the bug genuinely can't be expressed as an automated test, in which case follow the `test-writing` skill's "When Tests Aren't Possible" fallback. Run the test to confirm it fails. Use the project's configured runner (named at the top of this skill):
 
 ```bash
 # pest

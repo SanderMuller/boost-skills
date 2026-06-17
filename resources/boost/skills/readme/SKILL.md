@@ -39,9 +39,11 @@ sections in the same README.
 - Second-person ("Install with Composer", not "Users install via Composer")
 - Present tense for current behavior, future tense only for genuinely unshipped work
 - Avoid marketing language ("blazing fast", "powerful") — show, don't tell
+- Beat the **curse of knowledge**: write for a reader who lacks your context. Spell out the prerequisite, the why, and the gotcha you've internalised — the author always knows more than the page shows.
 
 ## Anti-patterns
 
+- Padding the README with motivation prose — **omit needless words**; every sentence should help a reader install or use the package
 - Burying the install command below ten paragraphs of motivation
 - Examples that don't actually run (always copy-pasteable)
 - Stale "TODO" sections — delete them before publishing

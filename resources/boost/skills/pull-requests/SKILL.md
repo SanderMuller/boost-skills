@@ -274,7 +274,7 @@ If there is no template, write a clear description that covers:
 
 ## Writing the Description: Why, Not What
 
-A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. Lead with the problem solved and the user-visible behaviour change. The diff already says *what* changed; the description must say *why*, and what it enables. AI tends to over-address: list everything, in fancy language, with the most words on the most obvious parts. Don't.
+A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. The anchor is the commit-craft canon **why, not what**: the diff already says *what* changed; the description must say *why*, and what it enables. Lead with the problem solved and the user-visible behaviour change. AI tends to over-address: list everything, in fancy language, with the most words on the most obvious parts. Don't.
 
 ### How much to say about each change
 
@@ -321,7 +321,7 @@ This is the same standard the `humanizer` skill applies to prose — if a descri
 
 ### Keep the rest of the description signal, not noise
 
-Do **not** pad the description with:
+**Omit needless words.** Every sentence that doesn't change what a reviewer does should be cut. Do **not** pad the description with:
 - **An implementation or commit summary** — reviewers can read `git log`; the description is not a changelog.
 - **A `Files changed:` list** — the Files tab and `gh pr view --json files` already show this.
 - **Reviewer-pass choreography** ("Pass 1 found 3 issues, Pass 2 …") — if a specific finding shaped the design, fold it into the risk or security note as a one-line rationale.
