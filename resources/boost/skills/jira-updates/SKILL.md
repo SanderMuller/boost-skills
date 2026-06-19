@@ -10,9 +10,9 @@ metadata:
 
 Appends post-implementation content to an existing Jira issue after its PR is created, or posts a Blocked-by-Question comment during implementation.
 
-**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool references below are written `mcp__<jira>__jira_*` (or a bare `jira_*` for brevity); substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->. The actual call is always the fully-qualified `mcp__<jira>__jira_*` — e.g. with the namespace `mcp-atlassian`, `mcp__mcp-atlassian__jira_get_issue`. A bare `jira_*` name is NOT a callable tool.
+**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool references below are written `mcp__<jira>__jira_*` (or a bare `jira_*` for brevity); substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline"-->mcp-atlassian<!--boost:conv:end-->. The actual call is always the fully-qualified `mcp__<jira>__jira_*` — e.g. with the namespace `mcp-atlassian`, `mcp__mcp-atlassian__jira_get_issue`. A bare `jira_*` name is NOT a callable tool.
 
-**Project scope:** the configured project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — skip the prefix check)"-->; cross-project refusal is <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When refusal is `true` and the issue key's prefix differs from the configured key, refuse the update and tell the user.
+**Project scope:** the configured project key is <!--boost:conv path="jira.project_key" mode="inline"-->(none — skip the prefix check)<!--boost:conv:end-->; cross-project refusal is <!--boost:conv path="jira.refuse_other_projects" mode="inline"-->false<!--boost:conv:end-->. When refusal is `true` and the issue key's prefix differs from the configured key, refuse the update and tell the user.
 
 ## When to Use This Skill
 
@@ -31,7 +31,7 @@ Jira statuses, transition names, and transition IDs vary per project and workflo
 
 ## Description Format
 
-Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline" fallback="none — use the conventions below"-->. If a path is shown, read that file and follow its rules (sections, voice, append/merge); it overrides the conventions below.
+Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline"-->none — use the conventions below<!--boost:conv:end-->. If a path is shown, read that file and follow its rules (sections, voice, append/merge); it overrides the conventions below.
 
 **Voice — non-technical, user-facing.** The description is read by QA, PO, designers, translators, and support. Translate every code change into what a user, admin, QA, or translator sees. Code identifiers (class names, file paths, package names) do not belong in Jira.
 

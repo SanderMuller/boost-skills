@@ -12,9 +12,9 @@ A disciplined approach to fixing bugs: **reproduce first, fix second** — the *
 
 ## Test framework
 
-This project's test runner is <!--boost:conv path="testing.backend_framework" mode="inline" fallback="auto-detected from the project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence; ask the user if ambiguous"-->. Write and run tests with that runner.
+This project's test runner is <!--boost:conv path="testing.backend_framework" mode="inline"-->auto-detected from the project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence; ask the user if ambiguous<!--boost:conv:end-->. Write and run tests with that runner.
 
-If the user asks for a test in a framework on the forbidden list (<!--boost:conv path="testing.forbid" mode="inline" fallback="none — no restriction"-->) — or in a framework a listed category alias expands to — refuse and redirect to the runner named above. Alias expansions: `js-test-frameworks` = vitest/jest/mocha/cypress/playwright; `browser-test-frameworks` = cypress/playwright; `php-browser-tests` = dusk/panther. (So a forbidden `js-test-frameworks` refuses a Cypress test even though `cypress` isn't named.)
+If the user asks for a test in a framework on the forbidden list (<!--boost:conv path="testing.forbid" mode="inline"-->none — no restriction<!--boost:conv:end-->) — or in a framework a listed category alias expands to — refuse and redirect to the runner named above. Alias expansions: `js-test-frameworks` = vitest/jest/mocha/cypress/playwright; `browser-test-frameworks` = cypress/playwright; `php-browser-tests` = dusk/panther. (So a forbidden `js-test-frameworks` refuses a Cypress test even though `cypress` isn't named.)
 
 ## Core Principle
 

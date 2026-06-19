@@ -31,6 +31,14 @@ Always append `|| true` to verification commands so output is captured even on f
 
 **The order is 1 → 2 → 3 → 4 → 5 → commit → push → 6 → 7 (draft notes) → user cuts tag → 8a (pre-tag gate, just before `gh release create`) → 8b (post-tag watch).** Do not jump from step 5 straight to drafting release notes. The release-notes file is written only after the changes have been committed, pushed, and CI is green on that exact SHA (step 6). Writing notes earlier claims facts ("tests pass on CI matrix", "2,092 tests / 2,941 assertions") that are not yet proven. If you find yourself about to `Write` a file under `internal/release-notes-<version>.md` and the last thing you did was a local quality check, stop — you skipped commit/push/CI. And if the tag is cut without step 8a's live-remote + CI re-check, or without waiting on step 8b's tag-ref runs, the release ships on unverified facts even if steps 1-7 all passed.
 
+**Two landing flows — know which you're in BEFORE step 6.** The order above is the **direct-to-release-branch flow**: you push the release commit straight to the release branch (usually `main`), and that branch's HEAD is the release commit. If instead the work lands via a **pull request** — it sits on a feature branch with an open PR — the release commit is the **merge commit on the release branch**, NOT the feature-branch tip. In a PR flow, three things shift and skipping any of them has shipped a broken release:
+
+- **A green feature-branch / open-PR CI is NOT the release gate.** The tag is cut from the release branch, so the SHA that must be green, pinned, and tagged is the release branch's HEAD *after the PR merges*. Step 6's "CI green on the pushed commit" means the **merge commit on the release branch**, re-run after merge — not the branch CI from before.
+- **Do NOT draft release notes (step 7) or hand off a tag (8a) while the PR is still open.** The PR-flow order is: branch CI green → **merge PR → re-run step 6 on the release branch's merge commit** → 7 (notes pinned to that merge SHA) → 8a → tag → 8b.
+- **Tagging before the merge points the tag at the release branch's pre-merge HEAD**, which contains none of the PR's work — a green-but-empty release. This has actually shipped: a `1.2.0` tag cut while its PR was still open pointed at pre-feature `main` and carried zero of the feature; the empty version still resolved on Packagist, so a dependent package pinning `^1.2` would have installed an engine that wasn't there. Recovery was delete-tag + re-tag at the real merge commit. Step 8a check D (content presence) below is the backstop, but the primary rule is: **merge first, then notes, then tag.**
+
+**The concrete commands in steps 6–8 use `main` as the release branch** — the common case. If your release branch is not `main` (a `release/*` line, a maintenance branch, an rc-prep branch), the release branch is wherever the tag will be cut from: substitute it in every `origin/main` / `refs/heads/main` reference below, and pin/verify against *that* branch's post-merge tip. The flow is identical; only the branch name changes.
+
 ### 1. Rector
 
 ```bash
@@ -213,6 +221,10 @@ Draft into `internal/release-notes-<version>.md`. The user reads the draft, crea
 
 The SHA in that line is the exact `git rev-parse HEAD` that step 6 proved green. Step 8's pre-tag gate fails closed if the SHA in the notes file does not match the current HEAD (i.e. someone landed more commits between notes draft and tag).
 
+**The verified-sha MUST be a literal 40-hex commit you just proved green — never a placeholder** (`<sha>`, `TODO`, `REPIN-…`, `xxxx`), and never a SHA recycled from a prior release's notes. A placeholder or stale SHA is not a "draft in progress" — it is a tag aimed at the wrong commit waiting to happen. If you cannot fill in a real green SHA, you are not at step 7 yet.
+
+**If a notes file already exists for this version before CI is green, DELETE it — never edit it in place.** A recycled or carried-over `internal/release-notes-<version>.md` (e.g. copied from the previous version, or a draft with a placeholder SHA) counts as **no notes yet**, not a head start. Editing its body "to fix the content" while CI is not yet green is the exact step-7 violation that has shipped a broken release — the file looks ready, the handoff overstates readiness, and the placeholder SHA silently defeats the 8a gate. Delete first; redraft only once the green-merge-SHA preflight below passes. Treat "a notes file exists" and "the notes step is done" as independent: the step is done only when the file pins the real green SHA produced by step 6 on the actual release commit.
+
 **CI handles `CHANGELOG.md` automatically — do not edit it manually.** `.github/workflows/update-changelog.yml` prepends the release body on release publish. See the `release-automation` guideline for details.
 
 #### Canonical handoff command shape
@@ -243,11 +255,14 @@ The same discipline generalizes to any agent→user handoff involving CLI comman
 
 Step 7 proves CI green at draft time. Step 8 proves CI is *still* green at tag time, and catches failures that only show up on the tag-ref push.
 
-**8a. Pre-tag gate — run immediately before `gh release create` / GitHub release publish.** This is the one-liner the user runs (not the agent) in the same terminal, seconds before cutting the tag. It re-verifies three things: HEAD hasn't drifted since notes draft, the notes file pins this exact SHA, and CI is still all green.
+**8a. Pre-tag gate — runs TWICE: the agent runs it before presenting the handoff, and the user re-runs it seconds before cutting the tag.** It re-verifies four things: HEAD hasn't drifted since notes draft, the notes file pins this exact SHA, CI is still all green, and the target SHA actually contains this release's work.
+
+**The agent MUST run this gate itself before presenting the `gh release create` handoff, and MUST refuse to present that command if any check fails.** The handoff message is a readiness claim; do not make it on an unverified state. The user still owns cutting the tag, but the agent does not get to hand over a tag command until its own checks pass — that removes the "user skipped the gate" failure mode (a release has shipped exactly because the gate was a user-run step that was skipped: the tag was cut while the PR was still open, against pre-feature `main`, and nothing caught it). The user then re-runs the same one-liner immediately before tagging to catch any drift in the interval.
 
 ```bash
 SHA=$(git rev-parse HEAD)
 VERSION="<version>"  # e.g. 1.2.3
+RELEASE_BRANCH="main"  # the branch the tag is cut from — change for release/* etc.
 NOTES="internal/release-notes-${VERSION}.md"
 
 # A. Notes file exists and pins this SHA (anchored regex — tolerant of surrounding blank lines,
@@ -257,16 +272,32 @@ grep -qE "^<!-- verified-sha: $SHA -->$" "$NOTES" || { echo "NOTES SHA DRIFT —
 # B. HEAD matches the LIVE remote tip of main — not the cached tracking ref.
 #    `git rev-parse origin/main` is stale until an explicit fetch and would
 #    let a concurrent push slip through. `ls-remote` always hits the remote.
-LIVE_TIP=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-[ "$SHA" = "$LIVE_TIP" ] || { echo "HEAD DRIFT — HEAD=$SHA live origin/main=$LIVE_TIP"; exit 1; }
+LIVE_TIP=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
+[ "$SHA" = "$LIVE_TIP" ] || { echo "HEAD DRIFT — HEAD=$SHA live origin/$RELEASE_BRANCH=$LIVE_TIP"; exit 1; }
 
 # C. Every CI run for this SHA still terminal + {success, skipped}
 failed=$(gh run list --commit "$SHA" --json conclusion -q '[.[] | select(.conclusion != "success" and .conclusion != "skipped")] | length')
 running=$(gh run list --commit "$SHA" --json status -q '[.[] | select(.status != "completed")] | length')
 [ "$running" -eq 0 ] && [ "$failed" -eq 0 ] || { echo "CI NOT GREEN — running=$running failed=$failed"; gh run list --commit "$SHA"; exit 1; }
 
+# D. RELEASE ACTUALLY LANDED — guard against tagging a commit without the release.
+#    "Green" is not "correct": a tag cut before its PR merged is green on a tree
+#    with NONE of the release (the empty-but-passing release). The direct,
+#    merge-strategy-agnostic catch is the PR's state — a squash, rebase, or merge
+#    commit all set the PR to MERGED and advance the release branch, whereas the
+#    failure (tag while the PR is open) leaves it OPEN:
+PR=<the PR number carrying this release>
+gh pr view "$PR" --json state -q .state | grep -qx MERGED \
+  || { echo "PR #$PR is not MERGED — do not tag a release before its PR lands"; exit 1; }
+#    Direct-to-main flow (no PR): assert there is something to release since the
+#    last tag, so you never re-tag an unchanged tree:
+#    LAST_TAG=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null)
+#    [ -n "$(git rev-list "${LAST_TAG}..$SHA")" ] || { echo "nothing new since $LAST_TAG"; exit 1; }
+
 echo "OK to tag $VERSION at $SHA"
 ```
+
+Check D is the backstop that fails closed even when A–C are individually defeated (a placeholder SHA that happens to align, or a gate run on the wrong branch): if the release's PR is still open, the merged content is not on the branch and the gate refuses the tag. Use the PR MERGED state (or, for a direct push, "commits exist since the last tag") rather than a commit-ancestry or new-symbol check — `--is-ancestor` against the PR head breaks under squash/rebase merges (the head is not an ancestor of the squashed result), and a sentinel grep doesn't generalize to deletion-only/docs-only releases. For an additive release you MAY *additionally* grep a sentinel the release introduces as a second proof, but never as the only check.
 
 The `ls-remote` call is the key difference from the step 7 preflight, which uses the local tracking ref `origin/main`. Step 7 runs right after push when the tracking ref is fresh; step 8a can run minutes or hours later, after the user has context-switched, and the only safe way to prove HEAD is still the tip is to ask the remote directly.
 
@@ -330,8 +361,8 @@ Wait until terminal. If red:
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |
 | 6. CI green-light  | `gh run list --commit "$(git rev-parse HEAD)"` all complete + no failure                       | every run for the SHA in `{success, skipped}` |
-| 7. Release notes   | preflight (clean tree + pushed + CI green) → `Write internal/release-notes-<version>.md`       | first line is `<!-- verified-sha: $SHA -->`   |
-| 8a. Pre-tag gate   | one-liner asserts SHA-drift, push state, CI-still-green immediately before `gh release create` | prints `OK to tag`                            |
+| 7. Release notes   | delete any pre-green/placeholder notes → preflight (clean tree + **merged** + CI green on release commit) → `Write internal/release-notes-<version>.md` | first line is `<!-- verified-sha: $real-green-SHA -->` (never a placeholder) |
+| 8a. Pre-tag gate   | agent runs A–D (SHA-drift, push/merge state, CI-still-green, **content-presence**) before presenting handoff + REFUSES on failure; user re-runs before `gh release create` | prints `OK to tag`                            |
 | 8b. Post-tag watch | `gh run list --commit "$TAG_SHA"` filtered by `headBranch == $TAG`                             | tag-ref + release-event workflows all green   |
 
 ## Important
@@ -341,5 +372,8 @@ Wait until terminal. If red:
 - Step 5a and 5b are the most common source of silent drift — the README and shipped skills are read by downstream users, and bloat accumulates fast. Delete stale content before adding new.
 - Step 6 is the non-skippable gate: CI runs against a clean environment (no ambient env vars, no cached state, fresh composer install) and frequently catches env-shape bugs that local dev never sees. If the push+watch feels slow, that's the point — waiting 2 minutes for CI green is cheaper than tagging a broken release.
 - Step 7 (release notes) is gated by step 6 — **the release-notes file must not exist on disk until CI is green on the pushed commit.** If you catch yourself about to `Write` a release-notes file after running local checks, stop: you are about to fabricate facts that the CI matrix has not yet established. Run the step-7 preflight commands first; if any of the three conditions is not satisfied, the draft is premature.
+- **A pre-existing or placeholder notes file is "no notes," not "draft ready."** If `internal/release-notes-<version>.md` already exists before CI is green (recycled from a prior version, or pinning a placeholder/`TODO`/`REPIN` SHA), DELETE it and redraft against the real green SHA — never edit it in place. Editing a carried-over file "to fix the content" pre-green is the rationalisation that has shipped a broken release: the file looks ready, the handoff overstates readiness, and the placeholder SHA defeats the 8a gate.
+- **In a PR-based release, merge first, then notes, then tag.** A green feature-branch CI is not the release gate; the tag is cut from the release branch, so re-run step 6 on the post-merge commit. Drafting notes or handing off a tag while the PR is open has pointed a tag at pre-feature `main` — a green-but-empty release that still resolved on Packagist for dependents.
+- **The agent runs the 8a gate before presenting the tag handoff and refuses on failure** — it is not solely a user-run step. The handoff message is a readiness claim; an unverified handoff is how the user ends up tagging an unready state. 8a check D (content-presence) is the backstop: a tag whose tree does not contain this release's own commit (a reachability check that holds for any release shape) is rejected even if every other check is somehow satisfied.
 - Step 8 closes the gap that has shipped broken releases before. 8a re-verifies the live remote tip (`git ls-remote`, not the cached `origin/main`) so a concurrent push can't slip a stale commit through. 8b uses `--commit "$TAG_SHA"` + a jq filter on `headBranch == $TAG` (not `--branch "$TAG"`, whose tag-ref semantics are undocumented and unreliable) so the tag-ref `on: push` re-fires and `on: release` decorators are both caught. Run both every time, even for one-commit patch releases.
 - `pest --parallel` on Windows `prefer-lowest` has a known FS race around non-atomic ops like `rename()`. Do not assume local parallel-pest green proves CI-matrix green. Step 6 + 8b are the authoritative test gates.

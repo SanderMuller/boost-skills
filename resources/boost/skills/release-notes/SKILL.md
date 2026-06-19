@@ -125,6 +125,10 @@ Pre-release tooling (`pre-release` skill, step 7) requires the first line of the
 
 HTML comments are stripped by GitHub on render — the line is invisible in the published release body. It's an internal verification anchor for the pre-tag gate, not user-facing content. Keep it as the first line; do not promote it to a visible section.
 
+**The SHA must be a real, green commit — never a placeholder.** Do not write `<!-- verified-sha: TODO -->`, `REPIN-TO-GREEN-SHA`, or a SHA recycled from the previous version's notes. A placeholder is not a "draft in progress" — it is a notes file that defeats the pre-tag gate (which matches this line against live HEAD). If you don't yet have the green SHA from `pre-release` step 6, you are not ready to write this file at all.
+
+**Do not write or edit this file before `pre-release` step 6 is green on the actual release commit.** This skill owns the notes' *content*; `pre-release` owns *when* the file may exist. The two rules that have bitten us: (1) a notes file carried over from the last version is **deleted and redrafted**, never edited in place pre-green — "fixing the content" of a stale file still produces a premature, placeholder-pinned draft; (2) in a PR-based release the green commit is the **post-merge** commit on the release branch, not the feature-branch tip, so the SHA you pin comes from re-running step 6 after the PR merges.
+
 ## Example — good shape
 
 Section order follows the Structure list (Breaking → Added → Changed → Fixed → Internal). Sections without entries are omitted.
