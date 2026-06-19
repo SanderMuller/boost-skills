@@ -37,6 +37,8 @@ Always append `|| true` to verification commands so output is captured even on f
 - **Do NOT draft release notes (step 7) or hand off a tag (8a) while the PR is still open.** The PR-flow order is: branch CI green → **merge PR → re-run step 6 on the release branch's merge commit** → 7 (notes pinned to that merge SHA) → 8a → tag → 8b.
 - **Tagging before the merge points the tag at the release branch's pre-merge HEAD**, which contains none of the PR's work — a green-but-empty release. This has actually shipped: a `1.2.0` tag cut while its PR was still open pointed at pre-feature `main` and carried zero of the feature; the empty version still resolved on Packagist, so a dependent package pinning `^1.2` would have installed an engine that wasn't there. Recovery was delete-tag + re-tag at the real merge commit. Step 8a check D (content presence) below is the backstop, but the primary rule is: **merge first, then notes, then tag.**
 
+**The concrete commands in steps 6–8 use `main` as the release branch** — the common case. If your release branch is not `main` (a `release/*` line, a maintenance branch, an rc-prep branch), the release branch is wherever the tag will be cut from: substitute it in every `origin/main` / `refs/heads/main` reference below, and pin/verify against *that* branch's post-merge tip. The flow is identical; only the branch name changes.
+
 ### 1. Rector
 
 ```bash
@@ -260,6 +262,7 @@ Step 7 proves CI green at draft time. Step 8 proves CI is *still* green at tag t
 ```bash
 SHA=$(git rev-parse HEAD)
 VERSION="<version>"  # e.g. 1.2.3
+RELEASE_BRANCH="main"  # the branch the tag is cut from — change for release/* etc.
 NOTES="internal/release-notes-${VERSION}.md"
 
 # A. Notes file exists and pins this SHA (anchored regex — tolerant of surrounding blank lines,
@@ -269,29 +272,32 @@ grep -qE "^<!-- verified-sha: $SHA -->$" "$NOTES" || { echo "NOTES SHA DRIFT —
 # B. HEAD matches the LIVE remote tip of main — not the cached tracking ref.
 #    `git rev-parse origin/main` is stale until an explicit fetch and would
 #    let a concurrent push slip through. `ls-remote` always hits the remote.
-LIVE_TIP=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-[ "$SHA" = "$LIVE_TIP" ] || { echo "HEAD DRIFT — HEAD=$SHA live origin/main=$LIVE_TIP"; exit 1; }
+LIVE_TIP=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
+[ "$SHA" = "$LIVE_TIP" ] || { echo "HEAD DRIFT — HEAD=$SHA live origin/$RELEASE_BRANCH=$LIVE_TIP"; exit 1; }
 
 # C. Every CI run for this SHA still terminal + {success, skipped}
 failed=$(gh run list --commit "$SHA" --json conclusion -q '[.[] | select(.conclusion != "success" and .conclusion != "skipped")] | length')
 running=$(gh run list --commit "$SHA" --json status -q '[.[] | select(.status != "completed")] | length')
 [ "$running" -eq 0 ] && [ "$failed" -eq 0 ] || { echo "CI NOT GREEN — running=$running failed=$failed"; gh run list --commit "$SHA"; exit 1; }
 
-# D. CONTENT PRESENCE — the SHA actually CONTAINS this release's work.
-#    "Green" is not "correct": a tag cut before its PR merged resolves green on a
-#    commit that has NONE of the feature (empty-but-passing release). Assert a
-#    concrete sentinel THIS release introduces is present at the SHA. Pick a marker
-#    that fits the change — a new symbol, file, or string in a source file the PR
-#    touched — and grep it at the SHA (NOT the working tree):
-SENTINEL="<a string/symbol this release adds, e.g. PAIRED_TOKEN>"
-SENTINEL_FILE="<path the PR changed, e.g. src/Conventions/ConventionsInliner.php>"
-git show "$SHA:$SENTINEL_FILE" 2>/dev/null | grep -q "$SENTINEL" \
-  || { echo "CONTENT MISSING — $SHA lacks this release's work (tagged before the PR merged?)"; exit 1; }
+# D. RELEASE ACTUALLY LANDED — guard against tagging a commit without the release.
+#    "Green" is not "correct": a tag cut before its PR merged is green on a tree
+#    with NONE of the release (the empty-but-passing release). The direct,
+#    merge-strategy-agnostic catch is the PR's state — a squash, rebase, or merge
+#    commit all set the PR to MERGED and advance the release branch, whereas the
+#    failure (tag while the PR is open) leaves it OPEN:
+PR=<the PR number carrying this release>
+gh pr view "$PR" --json state -q .state | grep -qx MERGED \
+  || { echo "PR #$PR is not MERGED — do not tag a release before its PR lands"; exit 1; }
+#    Direct-to-main flow (no PR): assert there is something to release since the
+#    last tag, so you never re-tag an unchanged tree:
+#    LAST_TAG=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null)
+#    [ -n "$(git rev-list "${LAST_TAG}..$SHA")" ] || { echo "nothing new since $LAST_TAG"; exit 1; }
 
 echo "OK to tag $VERSION at $SHA"
 ```
 
-Check D is the backstop that fails closed even when A–C are individually defeated (a placeholder SHA that happens to align, or a gate run on the wrong branch): a tag at pre-merge `main` cannot contain the release's sentinel, so it is rejected. Choose a sentinel that did not exist before this release — a renamed symbol, a new file path, or a new constant — so its presence is unambiguous proof the feature is in the tagged tree.
+Check D is the backstop that fails closed even when A–C are individually defeated (a placeholder SHA that happens to align, or a gate run on the wrong branch): if the release's PR is still open, the merged content is not on the branch and the gate refuses the tag. Use the PR MERGED state (or, for a direct push, "commits exist since the last tag") rather than a commit-ancestry or new-symbol check — `--is-ancestor` against the PR head breaks under squash/rebase merges (the head is not an ancestor of the squashed result), and a sentinel grep doesn't generalize to deletion-only/docs-only releases. For an additive release you MAY *additionally* grep a sentinel the release introduces as a second proof, but never as the only check.
 
 The `ls-remote` call is the key difference from the step 7 preflight, which uses the local tracking ref `origin/main`. Step 7 runs right after push when the tracking ref is fresh; step 8a can run minutes or hours later, after the user has context-switched, and the only safe way to prove HEAD is still the tip is to ask the remote directly.
 
@@ -368,6 +374,6 @@ Wait until terminal. If red:
 - Step 7 (release notes) is gated by step 6 — **the release-notes file must not exist on disk until CI is green on the pushed commit.** If you catch yourself about to `Write` a release-notes file after running local checks, stop: you are about to fabricate facts that the CI matrix has not yet established. Run the step-7 preflight commands first; if any of the three conditions is not satisfied, the draft is premature.
 - **A pre-existing or placeholder notes file is "no notes," not "draft ready."** If `internal/release-notes-<version>.md` already exists before CI is green (recycled from a prior version, or pinning a placeholder/`TODO`/`REPIN` SHA), DELETE it and redraft against the real green SHA — never edit it in place. Editing a carried-over file "to fix the content" pre-green is the rationalisation that has shipped a broken release: the file looks ready, the handoff overstates readiness, and the placeholder SHA defeats the 8a gate.
 - **In a PR-based release, merge first, then notes, then tag.** A green feature-branch CI is not the release gate; the tag is cut from the release branch, so re-run step 6 on the post-merge commit. Drafting notes or handing off a tag while the PR is open has pointed a tag at pre-feature `main` — a green-but-empty release that still resolved on Packagist for dependents.
-- **The agent runs the 8a gate before presenting the tag handoff and refuses on failure** — it is not solely a user-run step. The handoff message is a readiness claim; an unverified handoff is how the user ends up tagging an unready state. 8a check D (content-presence) is the backstop: a tag whose tree lacks this release's sentinel is rejected even if every other check is somehow satisfied.
+- **The agent runs the 8a gate before presenting the tag handoff and refuses on failure** — it is not solely a user-run step. The handoff message is a readiness claim; an unverified handoff is how the user ends up tagging an unready state. 8a check D (content-presence) is the backstop: a tag whose tree does not contain this release's own commit (a reachability check that holds for any release shape) is rejected even if every other check is somehow satisfied.
 - Step 8 closes the gap that has shipped broken releases before. 8a re-verifies the live remote tip (`git ls-remote`, not the cached `origin/main`) so a concurrent push can't slip a stale commit through. 8b uses `--commit "$TAG_SHA"` + a jq filter on `headBranch == $TAG` (not `--branch "$TAG"`, whose tag-ref semantics are undocumented and unreliable) so the tag-ref `on: push` re-fires and `on: release` decorators are both caught. Run both every time, even for one-commit patch releases.
 - `pest --parallel` on Windows `prefer-lowest` has a known FS race around non-atomic ops like `rename()`. Do not assume local parallel-pest green proves CI-matrix green. Step 6 + 8b are the authoritative test gates.
