@@ -12,9 +12,9 @@ A grilling process that gathers requirements for a complex feature. The goal is 
 
 ## Project context
 
-Before interviewing, consult these project reference docs upfront so terminology and architectural references match project canon: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — gather context from the conversation and the codebase only"-->. If paths are shown, read them first.
+Before interviewing, consult these project reference docs upfront so terminology and architectural references match project canon: <!--boost:conv path="spec.research_docs" mode="inline"-->none — gather context from the conversation and the codebase only<!--boost:conv:end-->. If paths are shown, read them first.
 
-If a Jira project key is configured (<!--boost:conv path="jira.project_key" mode="inline" fallback="none — skip the Jira-key question; write-spec treats the resulting spec as not-issue-backed"-->), ask for / verify the issue key during gathering so `write-spec` can resolve it. If the work is tracked in an issue, pull its context first (description, acceptance criteria, comments) and use it to skip questions already answered.
+If a Jira project key is configured (<!--boost:conv path="jira.project_key" mode="inline"-->none — skip the Jira-key question; write-spec treats the resulting spec as not-issue-backed<!--boost:conv:end-->), ask for / verify the issue key during gathering so `write-spec` can resolve it. If the work is tracked in an issue, pull its context first (description, acceptance criteria, comments) and use it to skip questions already answered.
 
 ## When to Use This Skill
 

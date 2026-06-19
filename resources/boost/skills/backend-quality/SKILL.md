@@ -20,7 +20,7 @@ Activate this skill when:
 
 ## Two Tiers of Checks
 
-**Test runner.** Your project's configured runner is <!--boost:conv path="testing.backend_framework" mode="inline" fallback="auto-detect from project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence"-->. Every test command and table cell below substitutes that runner automatically (`vendor/bin/pest` or `vendor/bin/phpunit` — both take a file-path argument and `--filter`). For the full suite, prefer the project's `composer test` script when one is defined — it runs whatever the project configured.
+**Test runner.** Your project's configured runner is <!--boost:conv path="testing.backend_framework" mode="inline"-->auto-detected from the project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence<!--boost:conv:end-->. Every test command and table cell below substitutes that runner automatically (`vendor/bin/pest` or `vendor/bin/phpunit` — both take a file-path argument and `--filter`). For the full suite, prefer the project's `composer test` script when one is defined — it runs whatever the project configured.
 
 ### Tier 1: During Development (after each change)
 
@@ -40,10 +40,10 @@ Run the minimum scope needed:
 
 ```bash boost:conv
 # Specific test file
-vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline" fallback="pest"--> tests/RelevantTest.php
+vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end--> tests/RelevantTest.php
 
 # Filter by test name
-vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline" fallback="pest"--> --filter=testMethodName
+vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end--> --filter=testMethodName
 ```
 
 All related tests must pass.
@@ -54,7 +54,7 @@ Run these checks **only when the feature, bug fix, or spec is fully implemented 
 
 **1. Rector (Automated Refactoring)** — only when the project opts in
 
-Rector enabled for this project: <!--boost:conv path="quality.rector" mode="inline" fallback="false"-->. Run this step only when that value is `true`; otherwise skip it. The step is strictly opt-in via `quality.rector` — it is never triggered by Rector merely being present in the dependency tree or by a stray `rector.php`. When it applies, run Rector to completion before Pint:
+Rector enabled for this project: <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->. Run this step only when that value is `true`; otherwise skip it. The step is strictly opt-in via `quality.rector` — it is never triggered by Rector merely being present in the dependency tree or by a stray `rector.php`. When it applies, run Rector to completion before Pint:
 
 ```bash
 vendor/bin/rector process
@@ -80,7 +80,7 @@ Must show 0 errors. Fix any issues found and re-run Pint after fixes.
 
 ```bash boost:conv
 composer test  # if the project defines a test script
-vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline" fallback="pest"-->  # otherwise the configured runner
+vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end-->  # otherwise the configured runner
 ```
 
 Must show 0 failures. This catches cross-cutting regressions.
@@ -91,9 +91,9 @@ Must show 0 failures. This catches cross-cutting regressions.
 |-------|---------|-------------|---------------|
 | Refactoring | `vendor/bin/rector process` | Completion only, if enabled | No changes |
 | Code style | `vendor/bin/pint --dirty --format agent` | Every change | No changes made |
-| Related tests | vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline" fallback="pest"--> &lt;file&gt; or `--filter` | Every change | 0 failures |
+| Related tests | vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end--> &lt;file&gt; or `--filter` | Every change | 0 failures |
 | Static analysis | `vendor/bin/phpstan analyse --memory-limit=2G` | Completion only | 0 errors |
-| Full test suite | `composer test`, else vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline" fallback="pest"--> | Completion only | 0 failures |
+| Full test suite | `composer test`, else vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end--> | Completion only | 0 failures |
 
 ## Important
 

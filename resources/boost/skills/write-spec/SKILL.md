@@ -12,15 +12,15 @@ Writes structured specification files designed for phased implementation with bu
 
 ## Filename placeholder substitution
 
-The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="inline" fallback="specs/{slug}.md"-->. It accepts these placeholders, which you substitute at spec-creation time:
+The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="inline"-->specs/{slug}.md<!--boost:conv:end-->. It accepts these placeholders, which you substitute at spec-creation time:
 
 - `{issue_key}` — full Jira key (e.g. `HPB-1234`). Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
 
   ```boost:conv
-  <!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch-pattern issue-key detection"-->
+  <!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch-pattern issue-key detection<!--boost:conv:end-->
   ```
 
-  The configured Jira project key is <!--boost:conv path="jira.project_key" mode="inline" fallback="(none — the spec is treated as not-issue-backed)"-->. If no issue is involved (or no project key is configured), the placeholder resolves empty.
+  The configured Jira project key is <!--boost:conv path="jira.project_key" mode="inline"-->(none — the spec is treated as not-issue-backed)<!--boost:conv:end-->. If no issue is involved (or no project key is configured), the placeholder resolves empty.
 - `{slug}` — URL-safe kebab-case from the feature name. Lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary.
 - `{date}` — ISO date (`YYYY-MM-DD`).
 
@@ -98,7 +98,7 @@ Specs are only as good as the research behind them. Before writing the spec body
 
 1. **Read the issue** (if any) — description, acceptance criteria, all comments.
 2. **Locate relevant code** — grep for the primary domain term(s); list the files you'll touch.
-3. **Read the project reference docs**: <!--boost:conv path="spec.research_docs" mode="inline" fallback="none — gather context from the conversation and codebase"-->. If paths are shown, read the ones matching the feature area (architecture, domain glossary, relationship maps, or similar) so terminology + structural references match project canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` catches this at sync time).
+3. **Read the project reference docs**: <!--boost:conv path="spec.research_docs" mode="inline"-->none — gather context from the conversation and codebase<!--boost:conv:end-->. If paths are shown, read the ones matching the feature area (architecture, domain glossary, relationship maps, or similar) so terminology + structural references match project canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` catches this at sync time).
 4. **Verify any stated existing behavior** — if the user said "X currently does Y", read the code and confirm. If they're wrong, surface the contradiction before writing the spec around it.
 5. **Check terminology against the reference docs** — use canonical names. If the user used a different word, flag it in `## Terminology` so the spec doesn't propagate ambiguity.
 

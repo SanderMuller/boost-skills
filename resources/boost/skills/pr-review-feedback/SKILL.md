@@ -41,7 +41,7 @@ A comment author is a **bot** when `author.login` matches any of the built-in se
 - The literal string `codex`
 - A login ending in the literal four-character suffix `[bot]` (regex `\[bot\]$`) — e.g. `dependabot[bot]`, `renovate[bot]`. Note: `[bot]` is a literal suffix here, **not** a regex character class.
 
-Plus any additional logins this project declares as automated reviewers: <!--boost:conv path="review.bot_reviewers" mode="inline" fallback="none — built-in set only"-->.
+Plus any additional logins this project declares as automated reviewers: <!--boost:conv path="review.bot_reviewers" mode="inline"-->none — built-in set only<!--boost:conv:end-->.
 
 These **extend** the built-in set; they do not replace it.
 
@@ -60,7 +60,7 @@ When in doubt (ambiguous login that is neither a clear bot nor a match for your 
 
 ### Colleague gate toggle
 
-This project's colleague-gate setting: <!--boost:conv path="review.colleague_gate" mode="inline" fallback="true (default) — colleague threads are never auto-acted on"-->.
+This project's colleague-gate setting: <!--boost:conv path="review.colleague_gate" mode="inline"-->true (default) — colleague threads are never auto-acted on<!--boost:conv:end-->.
 
 - **`true` (default, and when unset)** — the colleague handling below applies in full: evaluate, present a recommendation, and let the user decide whether to apply, reply, or resolve. Never auto-act on a colleague thread.
 - **`false`** — the project has opted into full automation: handle colleague threads the same way as bot threads (apply/skip, reply, resolve without a confirmation step). The Phase 3b discussion gate is skipped. Bot-thread handling is identical either way.

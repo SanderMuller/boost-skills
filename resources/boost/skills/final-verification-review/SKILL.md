@@ -51,10 +51,10 @@ When the signals conflict, state which flow you picked and why; the user can re-
 This project's branch patterns:
 
 ```boost:conv
-<!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch patterns configured"-->
+<!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch patterns configured<!--boost:conv:end-->
 ```
 
-Scan in declared order; the first pattern matching the current branch name wins, and its `base` field is the base. When no patterns are configured, the base is the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"-->. Same resolution the `pull-requests` and `codex-review` skills use.
+Scan in declared order; the first pattern matching the current branch name wins, and its `base` field is the base. When no patterns are configured, the base is the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->. Same resolution the `pull-requests` and `codex-review` skills use.
 
 When patterns are configured but the current branch matches none, do not fall back silently — mirror the `pull-requests` preflight outcome in the verdict:
 
@@ -63,7 +63,7 @@ When patterns are configured but the current branch matches none, do not fall ba
 
 Report the matched pattern (or the rename situation) and which base the PR will target.
 
-**No-PR flow:** the branch logic inverts — being **on the target branch** is the correct state, not a problem. Confirm the current branch is the one the change ships to (the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"--> or a release branch), not a stale feature branch. There is no feature-branch requirement and no rename concern.
+**No-PR flow:** the branch logic inverts — being **on the target branch** is the correct state, not a problem. Confirm the current branch is the one the change ships to (the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end--> or a release branch), not a stale feature branch. There is no feature-branch requirement and no rename concern.
 
 ### 2b. Work state
 
@@ -77,7 +77,7 @@ Report the matched pattern (or the rename situation) and which base the PR will 
 This project's configured pre-PR gates:
 
 ```boost:conv
-<!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates"-->
+<!--boost:conv path="pr.gates" mode="yaml"-->none — no pre-PR gates<!--boost:conv:end-->
 ```
 
 These gates are flow-agnostic — they gate the PR in a PR flow and the commit/release in a no-PR flow. The gate vocabulary (`skill_invoked` / `shell_command` / `mcp_tool`) and `on_missing` policy are exactly what the `pull-requests` skill defines. Evaluate each in declared order, check-only:

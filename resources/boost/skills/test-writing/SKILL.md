@@ -11,7 +11,7 @@ Conventions for writing tests that are specific, descriptive, and well-structure
 
 ## Which framework to write for
 
-Write tests in <!--boost:conv path="testing.backend_framework" mode="inline" fallback="the test runner your project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present, else follow sibling test files"-->. Never write a test in any framework on the project's forbidden list (<!--boost:conv path="testing.forbid" mode="inline" fallback="none — no restriction"-->), or in any framework a listed **category alias** expands to; if asked to, redirect to the framework named above.
+Write tests in <!--boost:conv path="testing.backend_framework" mode="inline"-->the test runner your project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present, else follow sibling test files<!--boost:conv:end-->. Never write a test in any framework on the project's forbidden list (<!--boost:conv path="testing.forbid" mode="inline"-->none — no restriction<!--boost:conv:end-->), or in any framework a listed **category alias** expands to; if asked to, redirect to the framework named above.
 
 Category alias expansions (a forbidden alias forbids every framework in its set):
 

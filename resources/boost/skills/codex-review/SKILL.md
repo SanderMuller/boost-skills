@@ -22,7 +22,7 @@ If there are uncommitted changes, review those. If the working tree is clean, re
 
 ## Step 2: Run Codex review
 
-This project's Codex invocation mode is <!--boost:conv path="codex.invocation_mode" mode="inline" fallback="plugin"-->. Follow the matching path below: `plugin` (the canonical path, default) or `bare_cli` (the opt-in fallback for environments where the plugin can't be installed).
+This project's Codex invocation mode is <!--boost:conv path="codex.invocation_mode" mode="inline"-->plugin<!--boost:conv:end-->. Follow the matching path below: `plugin` (the canonical path, default) or `bare_cli` (the opt-in fallback for environments where the plugin can't be installed).
 
 ### Plugin path (`invocation_mode: plugin`, default)
 
@@ -82,10 +82,10 @@ Pick one of four shapes depending on review scope and whether the user supplied 
 Substitute `<base>` with the resolved base branch. Scan the configured branch patterns in declared order; the first pattern matching the current branch name wins, and its `base` field is the base:
 
 ```boost:conv
-<!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch patterns configured"-->
+<!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch patterns configured<!--boost:conv:end-->
 ```
 
-If no pattern matches (or none are configured), fall back to the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"-->. Same resolution the `pull-requests` skill uses.
+If no pattern matches (or none are configured), fall back to the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->. Same resolution the `pull-requests` skill uses.
 
 **Always quote** `FOCUS` as a shell variable — never interpolate user input directly into the command line.
 
@@ -149,7 +149,7 @@ Synchronous — review ties up the agent session for the full review window (typ
 
 - **Auth failure** — if `codex` is installed but reports an auth failure (whether surfaced by the plugin's companion script or by bare-CLI directly), leave the review unrun and surface it to the user. Don't try to authenticate on their behalf — `codex login` is interactive and binds to their session.
 - **Capacity / transient failures** — if the review fails on model capacity, rate limiting, or a transient error, retry the same command a few times with the same engine and model. Never substitute a different review engine or fall back to reviewing the code yourself under this skill's name — the whole value here is the independent second opinion. If retries keep failing, leave the review unrun and surface it to the user.
-- **Project-specific overrides doc** — <!--boost:conv path="codex.setup_doc" mode="inline" fallback="none — the path-specific playbooks above are self-contained"-->. If a path is shown, load that file for project-specific overrides (custom auth flow, focus areas, exclusions) regardless of invocation mode. Most consumers leave it unset.
+- **Project-specific overrides doc** — <!--boost:conv path="codex.setup_doc" mode="inline"-->none — the path-specific playbooks above are self-contained<!--boost:conv:end-->. If a path is shown, load that file for project-specific overrides (custom auth flow, focus areas, exclusions) regardless of invocation mode. Most consumers leave it unset.
 - **`pr.gates skill_invoked: codex-review` interaction** — if the codex review can't run (auth failure, plugin missing under `invocation_mode: plugin`, codex CLI missing under `invocation_mode: bare_cli`), the `pr.gates` `on_missing: stop_and_request` policy means the vendor `pull-requests` skill should leave the gate's checklist item unchecked + note the unrun-reason rather than blocking PR creation entirely.
 
 ## Step 3: Critically evaluate findings

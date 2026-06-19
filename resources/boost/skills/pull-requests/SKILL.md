@@ -18,14 +18,14 @@ CRUD-style management of your own pull requests with the GitHub `gh` CLI: create
 This skill resolves the PR base branch from the project's configured branch patterns:
 
 ```boost:conv
-<!--boost:conv path="branches.patterns" mode="yaml" fallback="none — no branch patterns configured"-->
+<!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch patterns configured<!--boost:conv:end-->
 ```
 
-Scan those patterns in declared order against the current branch name; first match wins, and its `base` field is the target base. If no pattern matches (or none are configured), the base is the default base branch <!--boost:conv path="github.default_base_branch" mode="inline" fallback="main"--> (ask the user if neither is available).
+Scan those patterns in declared order against the current branch name; first match wins, and its `base` field is the target base. If no pattern matches (or none are configured), the base is the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end--> (ask the user if neither is available).
 
 ### Repository
 
-The PR's repository is `<owner>/<repo>` where `<owner>` is <!--boost:conv path="github.owner" mode="inline" fallback="inferred from the git remote (`git remote get-url origin`)"--> and `<repo>` is <!--boost:conv path="github.repo" mode="inline" fallback="inferred from the git remote"-->. The `gh pr` commands below auto-detect this from the remote; the raw `gh api repos/<owner>/<repo>/...` calls need it spelled out — substitute the resolved values.
+The PR's repository is `<owner>/<repo>` where `<owner>` is <!--boost:conv path="github.owner" mode="inline"-->inferred from the git remote (`git remote get-url origin`)<!--boost:conv:end--> and `<repo>` is <!--boost:conv path="github.repo" mode="inline"-->inferred from the git remote<!--boost:conv:end-->. The `gh pr` commands below auto-detect this from the remote; the raw `gh api repos/<owner>/<repo>/...` calls need it spelled out — substitute the resolved values.
 
 ### Preflight Checklist
 
@@ -47,14 +47,14 @@ Before creating the PR, verify all of the following:
    - If the branch name does **not** match any pattern AND has an upstream: **STOP** and ask the user to rename it manually — never auto-rename a pushed branch.
 3. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
-5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline" fallback="false"-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
+5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 
 #### Verifying / creating against the tracker
 
 Which tool resolves the issue depends on the key style the project's `{issue_key}` patterns use — `gh issue` only ever reads or writes **GitHub** issues, so never run it against a non-GitHub key:
 
 - **Bare GitHub issue number** (e.g. `1234`): verify with `gh issue view <number> --json number,title,state`; create with `gh issue create --title "<title>" --body "<why>"` (add `--label` / `--assignee` / `--project` per project convention), capturing the new number from the URL it prints.
-- **Jira-style key** (e.g. `HPB-1234`): verify and create through the project's Jira tooling — the read-only `mcp__<jira>__jira_get_issue` tool (substitute `<jira>` with your Jira MCP namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->) to confirm an existing one, and the `jira-create` skill to open a new one. Do not use `gh issue` for these, nor `jira-updates` — that is a post-PR mutation flow, not a pre-PR lookup.
+- **Jira-style key** (e.g. `HPB-1234`): verify and create through the project's Jira tooling — the read-only `mcp__<jira>__jira_get_issue` tool (substitute `<jira>` with your Jira MCP namespace <!--boost:conv path="mcp.jira" mode="inline"-->mcp-atlassian<!--boost:conv:end-->) to confirm an existing one, and the `jira-create` skill to open a new one. Do not use `gh issue` for these, nor `jira-updates` — that is a post-PR mutation flow, not a pre-PR lookup.
 
 ---
 
@@ -92,7 +92,7 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 This project's configured pre-PR gates:
 
 ```boost:conv
-<!--boost:conv path="pr.gates" mode="yaml" fallback="none — no pre-PR gates"-->
+<!--boost:conv path="pr.gates" mode="yaml"-->none — no pre-PR gates<!--boost:conv:end-->
 ```
 
 The gates are a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Enforce each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`. The gate-type reference below explains each `type`.
@@ -140,7 +140,7 @@ Vendor invokes the named MCP tool with the declared args. Used for policy that d
 Vendor invokes `mcp__<tool>__<...>`. If the tool needs a server-name prefix, resolve it from the project's MCP server-name mappings:
 
 ```boost:conv
-<!--boost:conv path="mcp" mode="yaml" fallback="none — gate tools are already fully qualified"-->
+<!--boost:conv path="mcp" mode="yaml"-->none — gate tools are already fully qualified<!--boost:conv:end-->
 ```
 
 (e.g. a gate `tool: jira-status-check` keyed to the `jira` mapping above invokes `mcp__<jira-value>__jira-status-check`.) Gate passes when the MCP tool returns a success-shape response (no exception, no error field). Gate fails when: the tool throws an exception; the tool returns a structured error response; the tool is not available in the consumer's MCP namespace; or the args fail the tool's own validation.
@@ -229,7 +229,7 @@ Order when both are present: risk first, direction second. Render only the quest
 
 **Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with the description-direction question in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
 
-<!--boost:conv path="pr.risk" mode="yaml" fallback="No project risk tiers configured."-->
+<!--boost:conv path="pr.risk" mode="yaml"-->No project risk tiers configured.<!--boost:conv:end-->
 
 **If risk tiers are configured above**, score the PR against them — invoke the project's `assessment_skill` if set (consulting its `matrix_doc`) — then apply the matched tier's `label`, request its `human_reviewers` / `require_codeowners` and `ai_reviewers`, surface any `extra` required actions, and route per that tier. This replaces the generic question below.
 
@@ -249,7 +249,7 @@ Order when both are present: risk first, direction second. Render only the quest
 
 ## PR Title
 
-Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline" fallback="none configured — ask the user once per session for the desired title format"-->. Recognized placeholders:
+Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline"-->none configured — ask the user once per session for the desired title format<!--boost:conv:end-->. Recognized placeholders:
 
 - `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`HPB-1234`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
@@ -262,7 +262,7 @@ General guidance regardless of format:
 
 ## PR template
 
-The project's PR template path is <!--boost:conv path="pr.template_path" mode="inline" fallback=".github/pull_request_template.md"-->. If that file exists, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
+The project's PR template path is <!--boost:conv path="pr.template_path" mode="inline"-->.github/pull_request_template.md<!--boost:conv:end-->. If that file exists, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
 
 ## PR Description
 

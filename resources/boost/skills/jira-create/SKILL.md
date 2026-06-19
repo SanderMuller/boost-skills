@@ -10,7 +10,7 @@ metadata:
 
 Creates a new Jira issue with a properly formatted description, via the project's configured MCP server.
 
-**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool-call examples below are written `mcp__<jira>__jira_*`; substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline" fallback="mcp-atlassian"-->. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with the namespace `mcp-atlassian`, call `mcp__mcp-atlassian__jira_create_issue`. A bare `jira_*` name is NOT a callable tool.
+**Jira MCP tool calls** in this skill use your project's configured Jira MCP server namespace. The tool-call examples below are written `mcp__<jira>__jira_*`; substitute `<jira>` with the namespace <!--boost:conv path="mcp.jira" mode="inline"-->mcp-atlassian<!--boost:conv:end-->. **The callable tool is always the fully-qualified `mcp__<jira>__jira_*`** — e.g. with the namespace `mcp-atlassian`, call `mcp__mcp-atlassian__jira_create_issue`. A bare `jira_*` name is NOT a callable tool.
 
 ## When to Use This Skill
 
@@ -30,16 +30,16 @@ Do **NOT** use this skill for:
 Resolve the target project in this order:
 
 1. If the user names a project or gives an existing issue key (`PROJ-1234` → project `PROJ`), use that project.
-2. Otherwise, use the configured project key: <!--boost:conv path="jira.project_key" mode="inline" fallback="(none configured)"-->.
+2. Otherwise, use the configured project key: <!--boost:conv path="jira.project_key" mode="inline"-->(none configured)<!--boost:conv:end-->.
 3. If no project key is configured and the user didn't name one, ask: "What Jira project key should new issues land in?" Use the answer for the rest of this session.
 
-**Cross-project refusal:** cross-project mutation refusal is set to <!--boost:conv path="jira.refuse_other_projects" mode="inline" fallback="false"-->. When that is `true` and the resolved project differs from the configured key, refuse: "This project only creates issues in the configured key. To create elsewhere, set `jira.refuse_other_projects: false` in your `boost.php` conventions or use a different project's tooling."
+**Cross-project refusal:** cross-project mutation refusal is set to <!--boost:conv path="jira.refuse_other_projects" mode="inline"-->false<!--boost:conv:end-->. When that is `true` and the resolved project differs from the configured key, refuse: "This project only creates issues in the configured key. To create elsewhere, set `jira.refuse_other_projects: false` in your `boost.php` conventions or use a different project's tooling."
 
 Cross-project linking and mentions remain allowed regardless — the refusal scopes to **mutation** (create/edit) only.
 
 ## Description Format
 
-Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline" fallback="none — use the Generic description format below"-->. If a path is shown, read that file and follow its rules (voice, sections, templates) — it overrides the generic structure below.
+Project-specific Jira description format doc: <!--boost:conv path="jira.description_format_doc" mode="inline"-->none — use the Generic description format below<!--boost:conv:end-->. If a path is shown, read that file and follow its rules (voice, sections, templates) — it overrides the generic structure below.
 
 Otherwise, use the **Generic description format**:
 
