@@ -1,6 +1,6 @@
 ---
 name: humanizer
-description: "Removes signs of AI-generated writing — inflated significance, promotional language, em-dash overuse, rule-of-three, AI-vocabulary words, hedging, sycophancy — so text reads as natural and human. Activates when: editing or reviewing prose, humanizing text, removing AI tells, polishing a README or release notes, or when user mentions: humanize, AI writing, sounds like AI, de-slop, writing review."
+description: "Removes signs of AI-generated writing — inflated significance, promotional language, em-dash overuse, rule-of-three, AI-vocabulary words, false agency, business jargon, throat-clearing, hedging, sycophancy — so text reads as natural and human. Activates when: editing or reviewing prose, humanizing text, removing AI tells, polishing a README or release notes, or when user mentions: humanize, AI writing, sounds like AI, de-slop, writing review."
 license: MIT
 ---
 
@@ -199,6 +199,14 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 **After:**
 > The options come from the selected item without forcing the user to guess.
+
+A related form is the **negative-listing striptease** — stacking what something *isn't* to build drama before the reveal ("Not a tool. Not a framework. A philosophy." / "It wasn't luck. It wasn't timing. It was preparation."). State the final term directly; the reader does not need the runway.
+
+**Before (striptease):**
+> It wasn't luck. It wasn't timing. It was preparation.
+
+**After:**
+> They had prepared for exactly this.
 
 
 ### 10. Rule of Three Overuse
@@ -448,6 +456,138 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 >
 > When users hit a slow page, they leave.
 
+
+## RHETORICAL AND STRUCTURAL PATTERNS
+
+These are the patterns that survive a vocabulary cleanup. The words look fine; the *moves* are the tell. They lean toward "punchy LinkedIn essay" rather than the encyclopedic slop above, so they show up most in blog posts, release notes, and marketing copy.
+
+### 30. False Agency (Inanimate Actors)
+
+**Problem:** AI gives abstractions human verbs to dramatize a point and dodge naming who actually did something. Complaints don't "become" fixes, markets don't "reward," cultures don't "shift" on their own — a person acted.
+
+**Watch for:** the complaint becomes a fix, the decision emerges, the culture shifts, the conversation moves toward, the market rewards, the code wants to, the bet lives or dies
+
+**Before:**
+> When a customer complaint becomes a fix within a week, the culture shifts and trust starts building.
+
+**After:**
+> The support team shipped a fix within a week of the complaint. After a few rounds of that, customers started filing bugs instead of churning.
+
+Name the closest real actor — the team, the author, the buyer. Use "you" only when the action is genuinely the reader's; don't recast a third party as "you," since that changes who did what. If no actor is recoverable from the source, keep it impersonal rather than inventing one.
+
+**Not this pattern:** standard evidentiary and analytical phrasing — "the benchmark shows," "the data indicate," "the test fails," "the function returns" — is precise, not false agency. The tell is figurative agency that *hides a human decision* ("the market rewards discipline"), not a measurement or a program described doing what it does. Leave the legitimate cases alone.
+
+
+### 31. Narrator-from-a-Distance
+
+**Problem:** In opinion and narrative writing, AI floats above the scene as a lecturer or armchair sociologist instead of putting the reader in it. "People" and "nobody" keep the reader at arm's length; "you" and a concrete scene pull them in.
+
+**Watch for:** Nobody designed this, People tend to, This happens because, This is why, We as a society
+
+**Before:**
+> Nobody sets out to build a mess. People tend to accumulate complexity one reasonable decision at a time.
+
+**After:**
+> You never decide to build a mess. You add one reasonable workaround, then another, and six months later nothing fits.
+
+**Register matters:** this applies to essays, blog posts, and marketing copy. Reference documentation — READMEs, API docs, release notes — is conventionally neutral and third-person; don't mechanically rewrite "the command installs the package" into "you install the package" where the impersonal voice is correct. Reach for "you" when the prose is making a human point at a distance, not for every neutral statement.
+
+
+### 32. Throat-Clearing Openers
+
+**Problem:** AI announces that a point is coming instead of making it. This is the sentence-level cousin of signposting (#28).
+
+**Watch for:** Here's the thing, Here's what's interesting, The uncomfortable truth is, It turns out, The real question is, Let me be clear, Make no mistake, The truth is, Can we talk about
+
+**Before:**
+> Here's the thing: the uncomfortable truth is that most retros change nothing.
+
+**After:**
+> Most retros change nothing.
+
+
+### 33. Dramatic Fragmentation
+
+**Problem:** Sentence fragments staged for emphasis read as manufactured profundity. One or two land; stacked, they become a tic. (Contrast the soul section's *varied* rhythm — the fault here is the staged one-liner reveal, not short sentences as such.)
+
+**Watch for:** "[Noun]. That's it. That's the [thing].", "X. And Y. And Z.", "This changes everything. Everything.", a punchy one-liner closing every paragraph
+
+**Before:**
+> Speed. Quality. Cost. You can only pick two. That's it. That's the tradeoff.
+
+**After:**
+> You can pick two of speed, quality, and cost. The third one gives.
+
+
+### 34. Lazy Extremes and False Authority
+
+**Problem:** Sweeping absolutes (every, always, never, everyone, nobody) claim authority the writer hasn't earned. They usually overstate a real but bounded point. Replace with the specific scope.
+
+**Before:**
+> Every engineer knows that documentation is always out of date and nobody ever reads it.
+
+**After:**
+> On our team, the docs lagged the code by about a release, and most people grepped the source instead.
+
+
+### 35. Performative Emphasis and False Intimacy
+
+**Problem:** Manufactured sincerity and "let me lean in close" gestures that add no information. They tell the reader to feel something instead of giving them a reason to.
+
+**Watch for:** let that sink in, I promise, trust me, believe me, it creeps in, this matters because, full stop, period.
+
+**Before:**
+> This compounds over time. Let that sink in. It creeps in slowly, I promise.
+
+**After:**
+> The interest compounds: a 1% weekly slowdown is a third of your throughput gone by year's end.
+
+
+### 36. Business Jargon
+
+**Problem:** Corporate verbs and nouns that sound active but mean little. Swap for plain words.
+
+| Avoid | Use instead |
+|-------|-------------|
+| navigate (challenges) | handle, work through |
+| unpack (an idea) | explain, break down |
+| lean into | commit to, embrace |
+| deep dive | look closely, examine |
+| circle back | return to, revisit |
+| double down | do more of, commit harder |
+| move the needle | make a difference |
+| game-changer | turning point (if it's real) |
+| on the same page | in agreement |
+| moving forward | from now on, next |
+
+**Before:**
+> Moving forward, we'll lean into the data, unpack the blockers, and double down on what moves the needle.
+
+**After:**
+> Next sprint we'll cut the two slowest queries and drop the feature nobody used.
+
+
+### 37. Wh- Openers as a Crutch
+
+**Problem:** AI leans on "What/Why/How [...] is [...]" frames to dress up an ordinary statement. Lead with the subject instead.
+
+**Before:**
+> What makes this hard is the lack of ownership. Why it matters is that no one fixes flaky tests.
+
+**After:**
+> Nobody owns the test suite, so the flaky tests stay flaky.
+
+
+### 38. Cut the Quotables
+
+**Problem:** AI writes lines engineered to be screenshotted — aphorisms that sound deep and say little. If a sentence reads like a pull-quote begging to be highlighted, it is usually decoration. Cut it or replace it with the concrete claim it is standing in for.
+
+**Before:**
+> Culture isn't what you say. It's what you tolerate. And tolerance is a choice.
+
+**After:**
+> When we let the on-call rotation slip for three months, people learned that the schedule was optional.
+
 ---
 
 ## Process
@@ -474,6 +614,38 @@ Provide:
 2. "What makes the below so obviously AI generated?" (brief bullets)
 3. Final rewrite
 4. A brief summary of changes made (optional, if helpful)
+
+
+## Quick Checks
+
+A fast pre-delivery pass. Run it over the draft before the final anti-AI audit — it catches the structural tells that survive a vocabulary cleanup.
+
+- Em dash anywhere? Recheck whether a comma, period, or parenthesis reads cleaner (#14).
+- Abstraction doing a human verb to hide a decision — "the market rewards," "the culture shifts," "the decision emerges"? Name the person (#30). (Leave measurements like "the benchmark shows" alone.)
+- Narrator-from-a-distance in opinion prose — "Nobody designed this," "People tend to"? Put the reader in the scene with "you" (#31). (Neutral reference docs stay third-person.)
+- Throat-clearing opener — "Here's the thing," "It turns out," "The real question is"? Cut to the point (#32).
+- Stacked fragments staged for drama — "X. That's it. That's the thing."? Use complete sentences (#33).
+- Lazy extreme — "every," "always," "never," "nobody"? Replace with the specific scope (#34).
+- Performative emphasis — "let that sink in," "I promise," "this matters because"? Delete it (#35).
+- Business jargon — "lean into," "deep dive," "circle back," "move the needle"? Swap for plain words (#36).
+- Sentence built on a Wh- frame — "What makes this hard is..."? Lead with the subject (#37).
+- A line that reads like a pull-quote? Cut it or replace it with the concrete claim (#38).
+- "Not X, it's Y" contrast or negative-listing buildup? State Y directly (#9).
+- Three consecutive sentences the same length? Break one (soul section).
+
+## Scoring (Optional)
+
+For a longer piece, rate the draft 1-10 on each dimension. The point is to find the weakest axis and revise toward it, not to chase a number.
+
+| Dimension | Question |
+|-----------|----------|
+| Directness | Does it state things, or announce that it's about to? |
+| Rhythm | Varied sentence lengths, or metronomic? |
+| Trust | Does it respect the reader, or over-explain and soften? |
+| Authenticity | Does a human voice come through, or is it assembled? |
+| Density | Is anything cuttable without losing meaning? |
+
+Below ~35/50, revise before delivering. For voice-driven prose — essays, posts, opinion pieces — a high score with no soul still fails, so re-read the PERSONALITY AND SOUL section. For reference documentation — READMEs, API docs, release notes — clarity and accuracy are the goal; don't inject personality where plain, neutral prose is the convention.
 
 
 ## Full Example
@@ -541,6 +713,11 @@ Provide:
 
 ## Reference
 
-This skill is based on [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. The patterns documented there come from observations of thousands of instances of AI-generated text on Wikipedia.
+The encyclopedic patterns (significance inflation, copula avoidance, AI vocabulary, formulaic sections) come from [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup, drawn from thousands of instances of AI-generated text on Wikipedia.
 
-Key insight from Wikipedia: "LLMs use statistical algorithms to guess what should come next. The result tends toward the most statistically likely result that applies to the widest variety of cases."
+The rhetorical and structural patterns (#30–#38), the Quick Checks pass, and the scoring rubric adapt [stop-slop](https://github.com/hardikpandya/stop-slop) by Hardik Pandya (MIT), which targets the punchier "AI blog post" register the Wikipedia list does not.
+
+Two complementary insights:
+
+- Wikipedia: "LLMs use statistical algorithms to guess what should come next. The result tends toward the most statistically likely result that applies to the widest variety of cases."
+- stop-slop: the worst tells survive a vocabulary swap. The words look fine; the *moves* — false agency, throat-clearing, staged contrast — give it away. Removing them is necessary but not sufficient: a clean draft with no voice still fails, which is why the PERSONALITY AND SOUL section matters as much as the cuts.
