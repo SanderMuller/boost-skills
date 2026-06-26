@@ -1,6 +1,6 @@
 ---
 name: pr-review-feedback
-description: "Applies PR review feedback with critical evaluation, then replies to and resolves the threads. Covers automated reviewers (Copilot, CodeRabbit, etc.). Activates when: applying review comments, addressing PR feedback, responding to code review, resolving review threads, or when user asks to fix/handle/process the comments on a PR or issue — including terse phrasings like 'fix comments issue 1234', 'fix the comments', 'fix PR comments', 'fix review comments', 'verwerk de comments', 'comments fixen'. Trigger words: review feedback, PR comments, apply feedback, address comments, reviewer feedback, copilot comments, coderabbit, resolve threads, resolve comments, mark comments resolved, fix comments, fix the comments, fix PR comments, fix review comments, fix comments on issue/PR."
+description: "Applies PR review feedback with critical evaluation, then replies to and resolves the threads. Covers automated reviewers (Copilot, CodeRabbit, etc.). Activates when applying review comments, addressing PR feedback, responding to code review, or resolving review threads — including terse and Dutch phrasings: fix comments, fix the comments, fix PR comments, fix review comments, fix comments issue 1234, resolve/mark comments resolved, verwerk de comments, comments fixen. A bare number is resolved to the PR or its linked issue (Phase 0)."
 argument-hint: "[PR number]"
 metadata:
   boost-tags: "github"
