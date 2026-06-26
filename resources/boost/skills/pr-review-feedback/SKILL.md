@@ -86,18 +86,20 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
    ```bash
    gh pr view --json number,title --jq '{number, title}'
    ```
-2. **A number `<N>` was given** — disambiguate, don't assume. Ask GitHub what `<N>` is:
+2. **A number `<N>` was given** — disambiguate, don't assume. Ask GitHub what `<N>` is (note the `if/elif`: a bare `A && echo PR || B && echo ISSUE` chain prints **both** when `<N>` is a PR):
    ```bash
-   gh pr view <N> --json number,title,state >/dev/null 2>&1 && echo "PR" || \
-   gh issue view <N> --json number,title,state >/dev/null 2>&1 && echo "ISSUE"
+   if   gh pr view    <N> --json number >/dev/null 2>&1; then echo "PR"
+   elif gh issue view <N> --json number >/dev/null 2>&1; then echo "ISSUE"
+   fi
    ```
    - **`<N>` is a PR** — use it directly.
    - **`<N>` is an issue** (this repo links every PR to an issue) — find the open PR for it. Prefer the one whose branch starts with the issue number, then fall back to an **explicit** issue reference in the body — never a bare-digit substring (a raw `<N>` matches version strings, dates, and stack traces, selecting the wrong PR):
      ```bash
      gh pr list --state open --json number,title,headRefName \
        --jq '[.[] | select(.headRefName | test("(^|/)'<N>'-"))]'      # branch like feature/1234-...
-     # body link: match "#<N>" or a closing keyword, then confirm it points at issue <N>
-     gh pr list --search 'in:body "#<N>"' --state open --json number,title,headRefName,body \
+     # body link: server-side prefilter on the number, then keep only PRs whose body
+     # carries an *explicit* reference ("#<N>" or a closing keyword, with or without "#")
+     gh pr list --search 'in:body <N>' --state open --json number,title,headRefName,body \
        --jq '[.[] | select(.body | test("(#|[Cc]los(e|es|ed)|[Ff]ix(es|ed)?|[Rr]esolv(e|es|ed)) *#?'<N>'\\b"))]'
      ```
 3. **Resolution check** — if exactly one PR matches, use it. If several match, or none, list the candidates and ask the user which PR to apply feedback on rather than guessing. A body-link match is weaker than a branch match — when only the body matches, confirm the PR actually targets issue `<N>` before acting.
