@@ -28,21 +28,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 **Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.15.0...2.16.0
 
-## Unreleased
-
-### Added
-
-- **Eye-verification (browser self-verify) wired through the frontend skills + guideline.** A UI change is best confirmed by *seeing it run* in a real browser — type-check and lint can't catch runtime/visual bugs (stale state, dead toggles, broken scroll/sticky behaviour, z-index show-through, async races, untranslated keys). The `javascript` guideline gains an always-on "Eye-verify frontend changes" section; `frontend-quality` gains a suggested eye-verify step; `pull-requests` flags it as an advisory pre-PR gate (item 6) plus a screenshot note; and `bug-fixing` / `write-spec` reference it for visual fixes and UI-feature success measures. All generic — a project supplies its own browser harness (commonly `tools/verify/`) or uses a Playwright MCP server.
-- **New `migration-squash` skill** (`laravel` tag). Create or review a Laravel migration squash (`schema:dump --prune` into a single schema baseline) with a 7-step verification checklist that catches the defects squash PRs actually ship with: an incomplete dump (DB behind the target), a contaminated dump (DB ahead / on a dev branch), and a pruned data-migration whose seeded rows vanish on a fresh DB. Defaults to the standard `mysql-schema.sql`, treats the `.dump` rename as an optional project variant, and nods to `database-safety` so the throwaway-DB and `--recreate-databases` steps aren't read as license to wipe a real DB.
-- **New `ask-user-question` guideline** (always-on). In `AskUserQuestion` the roles are inverted, so first/second-person pronouns are ambiguous — name the actor explicitly ("the assistant" / "the user") or drop the pronoun, across the question text, every option label, and every option description.
-
-### Changed
-
-- **Sync the base into the branch before every push.** `pull-requests` (new preflight item + a sync step in the work-on-existing-PR flow) and `jira-rework` now merge the resolved base in before pushing, so CI tests the branch against the latest target rather than a stale base — closing the conflict/break class that a green CI run can otherwise hide. `pr-review-feedback` already did this.
-- **Sharper code-comment bar in `evaluate`.** Phase 3 now keeps a comment only when, without it, a competent reader would draw the wrong conclusion or break the code on edit — a real-but-inferable why belongs in the tracker. Adds a density signal: more than one surviving comment in a function is a smell that the code wants splitting/renaming.
-- **Deeper eye-verify guidance.** Adds per-element / per-attribute design verification (don't eyeball the whole image), ~15px padding around single-element screenshot crops, ephemeral-clone host targeting (a worktree may be served elsewhere — a hard 404 means the wrong host), and screenshot mechanics in `pull-requests` (embed in the PR body, commit a file rather than a base64 `data:` URI, include the approved design alongside; harness-unavailable is a tracked deferral, not a silent skip).
-- **Generic PR risk framed as residual risk.** The `pull-requests` Low/Medium/High block now weighs risk *after* the checks that run on every change (tests, CI, QA, reviewers): a loud, reversible failure ranks below a silent or irreversible one, and a narrow well-tested change on a shared path isn't automatically high risk. Projects with `pr.risk` tiers still delegate scoring to their own matrix.
-
 ## 2.15.0 - 2026-06-26
 
 <!-- verified-sha: cb6caafe42313ce90798ad2e4c2e8eb0ed7856f3 -->
