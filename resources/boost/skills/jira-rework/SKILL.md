@@ -113,7 +113,7 @@ For a straightforward fix with one obvious solution, a single recommendation is 
 2. **Implement the fix** following the chosen approach.
 3. **Update or add tests** covering the rework scenario.
 4. **Run the project's code-style and quality checks** (see the `backend-quality` / `frontend-quality` skills for the relevant stack).
-5. **Commit and push.**
+5. **Commit, then sync the base in before pushing.** `git fetch origin <base> && git merge origin/<base>`, where `<base>` is the base determined in step 1 (the base the original PR targeted if it was merged, or the open PR's base — read it with `gh pr view <pr-number> --json baseRefName --jq '.baseRefName'`). The branch may have drifted behind its base during the fix; syncing first means CI re-runs on the latest target plus this rework, not a stale base. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the quality checks before pushing.
 6. If the original PR was merged, **open a new PR** referencing the Jira issue.
 7. **Update Jira** if the fix changes user-facing behaviour (use the `jira-updates` skill).
 8. **Transition the issue** to the appropriate review status — discover the transition via `jira_get_transitions`; never hardcode transition IDs.

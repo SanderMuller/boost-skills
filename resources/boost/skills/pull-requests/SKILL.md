@@ -49,6 +49,7 @@ Before creating the PR, verify all of the following:
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first).
+7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then run `git fetch origin <resolved-base> && git merge origin/<resolved-base>`. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks (a clean auto-merge can still pull in a breaking target change), then push the merge before creating the PR.
 
 #### Verifying / creating against the tracker
 
@@ -160,15 +161,17 @@ If no pre-PR gates are configured (the gates list above resolves to "none"), the
 
 When making changes to an existing PR you authored:
 
-1. **Get the branch name only** — fetch just the field needed, no full payload:
+1. **Get the branch and its base** — fetch just the fields needed, no full payload:
    ```bash
-   gh pr view <pr-number> --json headRefName --jq '.headRefName'
+   gh pr view <pr-number> --json headRefName,baseRefName
    ```
+   `headRefName` is the branch to check out; `baseRefName` is the target to sync from before pushing — it is this PR's resolved base, so use it directly rather than re-deriving one.
 2. **Switch to the branch**: `git checkout <branch-name>`.
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
 5. **Commit changes**: create meaningful commits following the project's commit conventions.
-6. **Push to remote**: `git push origin <branch-name>`.
+6. **Sync the base in before pushing**: `git fetch origin <base> && git merge origin/<base>`, where `<base>` is the `baseRefName` from step 1. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks before pushing.
+7. **Push to remote**: `git push origin <branch-name>`.
 
 ### Finding the PR
 
