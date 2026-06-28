@@ -91,8 +91,10 @@ If a policy is shown above, scan the files **in the resolved evaluation scope** 
 Within the **same evaluation scope resolved in Phase 2** (do not re-derive or broaden it), find every comment **added or changed** in this work. This covers **all** comment syntaxes in the changed languages, not only the obvious ones: docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Do not skip template comments. Never judge pre-existing comments outside that scope.
 
 A comment earns its place **only when both** are true:
-1. It explains a non-obvious WHY — a hidden constraint, edge case, or external workaround a reader cannot derive from the code itself.
+1. **Without it, a competent teammate reading the code (and any linked issue / PR) would draw the wrong conclusion or break it on edit** — not merely be curious. "Is there a real WHY?" is the wrong test; almost every line has one. A real-but-inferable why — the reader would understand it, just a little slower — is not enough to keep inline; that belongs in the tracker (a tracking link), not the source.
 2. There is no better way to write the code that would make the comment unnecessary.
+
+**Density is itself a signal.** After judging comments individually, look across the scope: if one function or method accrued more than a single surviving comment, treat that as a smell that the code wants splitting or renaming, not annotating — revisit those comments with a bias to Remove/Replace.
 
 For each added/changed comment, apply this decision ladder **in order** and stop at the first that fits:
 
@@ -101,7 +103,7 @@ For each added/changed comment, apply this decision ladder **in order** and stop
 | **Remove** | Comment restates what the code already says, narrates the obvious, or is a leftover (commented-out code, "TODO" with no tracking link, scaffolding chatter) | Delete it |
 | **Replace with better code** | The need for the comment disappears if the code is rewritten — rename a variable/method/class, extract a well-named private method, or split a long function | Rewrite the code, drop the comment, re-run affected tests |
 | **Trim / compact** | The WHY is genuinely needed but the comment is verbose, repeats itself, or buries the point | Reduce to the minimal sentence(s) that carry the constraint |
-| **Keep as-is** | Already minimal and explains a real non-obvious WHY | Leave it |
+| **Keep as-is** | Already minimal, and without it a reader (with any linked issue) would get the code **wrong** — not just be curious | Leave it |
 
 Prefer **Remove** and **Replace** over **Trim** — a comment that can be designed away is better than a shorter comment. Default to no comment; the bar to keep one is high.
 

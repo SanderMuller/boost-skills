@@ -48,7 +48,8 @@ Before creating the PR, verify all of the following:
 3. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
-6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first).
+6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first; see [PR Description](#pr-description) for how to embed it). If the eye-verify or screenshot harness can't run this session, don't silently drop it — note the deferral in the PR (why it was skipped) and recommend the author capture it before the PR reaches a human reviewer.
+7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then run `git fetch origin <resolved-base> && git merge origin/<resolved-base>`. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks (a clean auto-merge can still pull in a breaking target change), then push the merge before creating the PR.
 
 #### Verifying / creating against the tracker
 
@@ -63,8 +64,10 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
 1. Get the current branch name from git.
 2. Resolve the base branch (see **Base-branch resolution** above).
-3. Analyze the commits with `git log <base>..HEAD --oneline`.
-4. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
+3. Analyze the commits with `git log origin/<base>..HEAD --oneline`.
+4. Get the diff summary with `git diff origin/<base>...HEAD --stat` (and the full diff where more context is needed).
+
+   Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
 6. **Resolve risk + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask (tier-scored or no risk question, plus pre-supplied direction), skip the call entirely.
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
@@ -160,15 +163,17 @@ If no pre-PR gates are configured (the gates list above resolves to "none"), the
 
 When making changes to an existing PR you authored:
 
-1. **Get the branch name only** — fetch just the field needed, no full payload:
+1. **Get the branch and its base** — fetch just the fields needed, no full payload:
    ```bash
-   gh pr view <pr-number> --json headRefName --jq '.headRefName'
+   gh pr view <pr-number> --json headRefName,baseRefName
    ```
+   `headRefName` is the branch to check out; `baseRefName` is the target to sync from before pushing — it is this PR's resolved base, so use it directly rather than re-deriving one.
 2. **Switch to the branch**: `git checkout <branch-name>`.
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
 5. **Commit changes**: create meaningful commits following the project's commit conventions.
-6. **Push to remote**: `git push origin <branch-name>`.
+6. **Sync the base in before pushing**: `git fetch origin <base> && git merge origin/<base>`, where `<base>` is the `baseRefName` from step 1. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks before pushing.
+7. **Push to remote**: `git push origin <branch-name>`.
 
 ### Finding the PR
 
@@ -204,7 +209,7 @@ The author knows the PR's intent in a way the diff cannot reveal — which user 
 
 Ask the direction as a single open-ended question with a small set of pre-filled starter options the user can pick or override with free text. Phrase it like a smart colleague asking before they start writing:
 
-> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (You can also say 'use the diff' to let me decide.)"*
+> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (Reply 'use the diff' to leave the angle to the assistant.)"*
 
 Offer 2–3 short starter options derived from the analysis you already did in steps 1–4 (commits, diff, any linked issue), each phrased as a candidate angle the description could take — e.g. "Frame around the new viewer-facing capability (X)", "Frame around the migration safety / rollout plan", "Frame around the performance win (~Nx faster)", "Use the diff — no specific angle". The user picks one, edits one, or types free text; the "Other" escape hatch is always present.
 
@@ -244,9 +249,11 @@ Order when both are present: risk first, direction second. Render only the quest
 | **Data migrations** | Existing data transformations, backfills, data format changes |
 | **Non-reversible actions** | Destructive operations, external API calls, sent notifications |
 
-- **Low**: Purely additive, isolated, no security or data impact. Author plus any automated review is sufficient.
+Weigh each factor as **residual** risk — what remains after the checks that run on every change (the test suite, CI, any staging/QA verification, and reviewers) — not raw impact in isolation. A failure that is loud, reproducible, and instantly reversible (a broken button, a failed build, a wrong label) is caught and rolled back, so it ranks lower than one the checks can't see: silent data corruption, a confidentiality leak, or an irreversible action (sent emails, charged cards, destroyed data). Score the change's actual behaviour, not the sensitivity of the file it sits in — a narrow, well-tested change on a shared path is not automatically high risk.
+
+- **Low**: Purely additive, isolated, no security or data impact — and any failure would be loud and reversible, caught by tests / CI / QA. Author plus any automated review is sufficient.
 - **Medium**: Touches existing behavior, adds migrations, or affects integrations. A human reviewer should review.
-- **High**: Security-sensitive, data migrations, or non-reversible actions. A human reviewer **must** review.
+- **High**: Security-sensitive, silent or hard-to-detect, data-migrating, or non-reversible. A human reviewer **must** review.
 
 ## PR Title
 
@@ -269,7 +276,7 @@ The project's PR template path is <!--boost:conv path="pr.template_path" mode="i
 
 If there is no template, write a clear description that covers:
 - **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
-- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and attach a screenshot (redact sensitive or personal data before attaching).
+- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and embed a screenshot in the PR **body** (not a comment), redacting sensitive or personal data first. Commit the image as a file rather than inlining a base64 `data:` URI — common hosts (GitHub among them) strip those, so the image renders blank. When an approved design exists, include it alongside — design above implementation — so reviewers compare the two and a missing design is visible rather than silently skipped.
 - **Security & privacy** — describe any security considerations, or state "No security implications".
 - **Risk assessment** — record the agreed risk level, e.g. `**Risk assessment**: Medium`, with a short explanation of the contributing factors.
 
