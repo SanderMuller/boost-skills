@@ -66,12 +66,17 @@ app running with realistic data.
 
 - Drive the change in a real browser: the project's eye-verify harness if it ships one
   (commonly `tools/verify/` + a load-on-demand setup doc), else a browser-automation tool
-  (Playwright / a Playwright MCP server).
+  (Playwright / a Playwright MCP server). In an ephemeral clone or git worktree the app may
+  be served on a different host/port — point the harness at *this* checkout and confirm it
+  serves a real page (a hard 404 means the wrong host).
 - Make the fixture sufficient first (enough data to exercise the behaviour — e.g. enough rows
   and columns to overflow a scrollable table), then probe DOM/console first and screenshot to
   back up visual claims (redact sensitive data before attaching to a PR). Verify behaviour, not just geometry.
+- When the change has an approved design, verify it **per element** (alignment, size, colour
+  incl. gradients, border, radius, icon, typography, spacing) rather than glancing at the whole
+  image — and keep ~15px around any single-element crop so edge misalignment stays visible.
 
-See the `javascript` guideline ("Eye-verify frontend changes") for the why.
+See the `javascript` guideline ("Eye-verify frontend changes" and "Verify against the design, per element") for the why.
 
 
 ## Quick Reference

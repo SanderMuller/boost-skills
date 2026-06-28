@@ -40,8 +40,28 @@ behaviour, z-index show-through, async races, untranslated-key leaks.
   screenshots back up visual claims.
 - **Verify behaviour, not just geometry** — a fixed/sticky element must also not be painted
   over, and pop-out content (dropdowns / tooltips / modals) must still escape.
+- **In an ephemeral clone or git worktree**, the app may be served at a different host/port
+  than the canonical checkout, so the harness can silently verify the *wrong* tree — confirm
+  it targets *this* checkout, and sanity-check the host serves a real page before trusting a
+  green. A hard 404 on the expected page is the signature of hitting the wrong host.
 - If the harness can't run (no seeded data, wrong host served, no login), **stop and ask** —
   don't substitute reasoning for the browser.
+
+### Verify against the design, per element
+
+When the change has an approved design (a mockup, a Figma frame, a ticket attachment), don't
+eyeball the whole image and call it close — *"looks about right"* is how visual regressions
+ship. Verify it **element by element**:
+
+- List each changed element, plus the element as a whole; exclude anything documented as
+  out of scope.
+- Check each against the design attribute by attribute: alignment (horizontal and vertical),
+  size, text and background colour (including gradients), border presence / colour / width,
+  border-radius, icon, typography (family, weight, size), and spacing.
+- Record the deltas. Each mismatch is either a fix or a question for the designer — a
+  whole-image glance misses a 4px-vs-8px radius or a lost gradient.
+- When you crop a screenshot to a single element, keep a small margin (~15px) around it — a
+  flush crop hides the alignment and spacing errors at the element's own edges.
 
 The `frontend-quality` skill walks this as a suggested step; the `pull-requests` skill flags
 it before a PR.
