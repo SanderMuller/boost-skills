@@ -5,6 +5,12 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Eye-verification (browser self-verify) wired through the frontend skills + guideline.** A UI change is best confirmed by *seeing it run* in a real browser — type-check and lint can't catch runtime/visual bugs (stale state, dead toggles, broken scroll/sticky behaviour, z-index show-through, async races, untranslated keys). The `javascript` guideline gains an always-on "Eye-verify frontend changes" section; `frontend-quality` gains a suggested eye-verify step; `pull-requests` flags it as an advisory pre-PR gate (item 6) plus a screenshot note; and `bug-fixing` / `write-spec` reference it for visual fixes and UI-feature success measures. All generic — a project supplies its own browser harness (commonly `tools/verify/`) or uses a Playwright MCP server.
+
 ## 2.15.0 - 2026-06-26
 
 <!-- verified-sha: cb6caafe42313ce90798ad2e4c2e8eb0ed7856f3 -->
