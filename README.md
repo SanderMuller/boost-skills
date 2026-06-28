@@ -234,6 +234,7 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
+| `ask-user-question`               | Avoid first/second-person pronouns in AskUserQuestion payloads — name the actor instead. | —          |
 | `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.   | `database` |
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |

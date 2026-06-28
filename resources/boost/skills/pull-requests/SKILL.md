@@ -204,7 +204,7 @@ The author knows the PR's intent in a way the diff cannot reveal — which user 
 
 Ask the direction as a single open-ended question with a small set of pre-filled starter options the user can pick or override with free text. Phrase it like a smart colleague asking before they start writing:
 
-> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (You can also say 'use the diff' to let me decide.)"*
+> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (Reply 'use the diff' to leave the angle to the assistant.)"*
 
 Offer 2–3 short starter options derived from the analysis you already did in steps 1–4 (commits, diff, any linked issue), each phrased as a candidate angle the description could take — e.g. "Frame around the new viewer-facing capability (X)", "Frame around the migration safety / rollout plan", "Frame around the performance win (~Nx faster)", "Use the diff — no specific angle". The user picks one, edits one, or types free text; the "Other" escape hatch is always present.
 
