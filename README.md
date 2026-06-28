@@ -97,6 +97,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `jira-create`          | Create a Jira issue with a well-formed, user-facing description.                                     | `jira`          |
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira` `github` |
+| `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github`  |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
