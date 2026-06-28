@@ -5,6 +5,29 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.16.0 - 2026-06-28
+
+<!-- verified-sha: b00295ec8a047b763ec3c3ab532f0df00eb38505 -->
+A frontend-quality release: first-class frontend testing and browser eye-verification join the catalog, a new Laravel migration-squash skill and an always-on AskUserQuestion guideline ship, and `codex-review` is hardened against the plugin hangs that have stalled reviews. Everything here is **additive** — no skill or guideline was removed or renamed, no conventions slot or `schema-version` changed, so a consumer upgrading from 2.15.0 keeps every existing behavior and simply gains the new content (tag-gated where noted).
+
+### Added
+
+- **First-class frontend tests.** `frontend-quality` now runs the project's JS/TS test suite (Vitest / Jest / …) as a third check alongside type-checking and linting — scope to the changed area during development, full suite at completion, and cover changed logic with a test. `test-writing` and `bug-fixing` gained framework selection for JS/TS runners (auto-detected from `package.json`), so a frontend bug is reproduced with a failing JS test the same way a backend one is. (`frontend` tag.)
+- **Eye-verification (browser self-verify).** A UI change is best confirmed by *seeing it run* in a real browser — type-check and lint can't catch runtime/visual bugs (stale state, dead toggles, broken scroll / sticky behaviour, z-index show-through, async races, untranslated-key leaks). Woven through the lifecycle as advisory guidance: the `javascript` guideline gains an "Eye-verify frontend changes" section, `frontend-quality` a suggested eye-verify step, `pull-requests` an advisory pre-PR gate, and `bug-fixing` / `write-spec` reference it for visual fixes and UI-feature success measures. Includes per-element / per-attribute design verification (don't eyeball the whole image), ~15px padding around single-element screenshot crops, ephemeral-clone host targeting (a worktree may be served elsewhere — a hard 404 means the wrong host), and PR screenshot mechanics (embed in the PR body, commit a file rather than a base64 `data:` URI that hosts strip, include the approved design alongside; a harness that can't run this session is a tracked deferral, not a silent skip). Generic — a project supplies its own browser harness (commonly `tools/verify/`) or a Playwright MCP server.
+- **New `migration-squash` skill** (`laravel` tag). Create or review a Laravel migration squash (`schema:dump --prune` into a single schema baseline) with a verification checklist that catches the defects squash PRs actually ship with: an incomplete dump (DB behind the target), a contaminated dump (a migration applied from an abandoned/local/renamed branch), and a pruned data-migration whose seeded rows vanish on a fresh DB because `schema:dump` captures structure, not rows. The completeness and contamination checks compare the dump's records against the target's *baseline records ∪ migration files* — so legitimate history whose files earlier squashes pruned isn't false-flagged. Defaults to the standard `mysql-schema.sql` (the `.dump` rename is an optional project variant), keeps the review steps host-neutral, and defers destructive operations to the `database-safety` guideline.
+- **New `ask-user-question` guideline** (always-on). In `AskUserQuestion` the user reads a question *from* the assistant, so first/second-person pronouns are ambiguous — the guideline says to name the actor explicitly ("the assistant" / "the user") or drop the pronoun, across the question text, every option label, and every option description.
+
+### Changed
+
+- **`codex-review` hardened against Codex plugin hangs.** The companion awaits a `turn/completed` notification with no timeout, so a dropped event (broker/version skew, an untrusted ephemeral clone path) could hang a review forever. The skill now clears stale brokers in a preflight before every launch, treats a poll-loop timeout as a hang and recovers via the synchronous bare-CLI path (immune to the hang) rather than reading a stale result, and calls out that ephemeral clone paths (e.g. polyscope) aren't auto-trusted — trust the dir first.
+- **Sync the base into the branch before every push.** `pull-requests` (a new preflight item plus a sync step in the work-on-existing-PR flow) and `jira-rework` now merge the resolved base in before pushing, so CI tests the branch against the latest target rather than a stale base — closing a conflict/break class that a green CI run can otherwise hide. The PR analysis compares against the just-fetched `origin/<base>`. `pr-review-feedback` already did this.
+- **Sharper code-comment bar in `evaluate`.** Phase 3 keeps a comment only when, without it, a competent reader would draw the wrong conclusion or break the code on edit — a real-but-inferable why belongs in the tracker, not inline. Adds a density signal: more than one surviving comment in a single function is a smell that the code wants splitting or renaming.
+- **Generic PR risk framed as residual risk.** The `pull-requests` Low/Medium/High block now weighs risk *after* the checks that run on every change (tests, CI, QA, reviewers): a loud, reversible failure ranks below a silent or irreversible one, and a narrow, well-tested change on a shared path isn't automatically high risk. Projects with `pr.risk` tiers still delegate scoring to their own matrix.
+
+The frontend-testing and eye-verification work and the skill refinements were sourced from upstream and production adoption feedback, then dogfooded through this repository's own evaluate, codex-review, and release flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.15.0...2.16.0
+
 ## Unreleased
 
 ### Added
@@ -379,6 +402,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -399,6 +423,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -477,6 +502,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -503,6 +529,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -591,6 +618,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -618,6 +646,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -713,6 +742,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -778,6 +808,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -786,6 +817,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -871,6 +903,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -888,6 +921,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -970,6 +1004,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1097,6 +1132,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1115,6 +1151,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1301,6 +1338,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
