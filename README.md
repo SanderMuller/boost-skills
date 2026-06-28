@@ -121,7 +121,7 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 |----------------------|-------------------------------------------------------------|---------------------|
 | `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
 | `database`           | project has a database                                      | `boost-skills`      |
-| `frontend`           | frontend toolchain — type-checking, linting                 | `boost-skills`      |
+| `frontend`           | frontend toolchain — type-checking, linting, JS tests       | `boost-skills`      |
 | `github`             | hosted on GitHub                                            | `boost-skills`      |
 | `github-issues`      | issue tracking in GitHub Issues                             | `boost-skills`      |
 | `hosting`            | project deploys to a hosted platform (parent of platform-specific tags) | `boost-skills` |
