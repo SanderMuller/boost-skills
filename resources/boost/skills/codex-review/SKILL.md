@@ -68,6 +68,19 @@ COMPANION=$(ls ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-compan
 
 If the resolution returns nothing, the plugin is not installed — fall back to the **Plugin install** steps earlier in this skill.
 
+#### Preflight — clear stale brokers before every launch
+
+Codex jobs share a per-cwd `codex app-server` "broker" that is reused whenever its socket merely responds, and the companion has **no completion timeout** — so a wedged broker left by an earlier run makes the *next* review hang forever. Before launching, clear stale brokers:
+
+```bash
+[ -n "$COMPANION" ] && node "$COMPANION" cancel 2>/dev/null || true   # release any stuck job (no-op if companion missing)
+pkill -U "$(id -u)" -f "codex app-server" 2>/dev/null || true        # drop your wedged brokers (they respawn cleanly)
+```
+
+- The `pkill` is scoped to your user but drops **all** your `codex app-server` brokers — including any other in-flight Codex job you are running — so don't run it while a separate review you care about is mid-flight.
+- **Trust the working dir.** Codex stalls on the project-trust gate *before the turn runs* if the working directory is not a trusted project in `~/.codex/config.toml`. Ephemeral clone paths (e.g. Polyscope clones, whose dirs are throwaway hashes) are **not** auto-trusted — trust the dir (or run from a trusted checkout) first, or the job hangs before it starts.
+- **Watch version skew.** A new `codex` CLI talking to an old lingering broker drops `turn/completed` events. If `codex --version` lags the published release (`npm view @openai/codex version`), upgrade with `npm install -g @openai/codex`; the `pkill` above then forces a fresh broker on the current version.
+
 #### Invocation patterns
 
 Pick one of four shapes depending on review scope and whether the user supplied a focus argument:
@@ -110,7 +123,17 @@ done
 
 15 iterations × 20 seconds = 5-minute ceiling. If the loop exits with `CODEX_TIMED_OUT=true`, the review has not completed.
 
-**Critical:** if `CODEX_TIMED_OUT=true`, do **NOT** call `result` afterwards. The `result` subcommand returns the most recent *finished* job, which can be a stale unrelated review — applying that as if it were the current job will mix unrelated feedback into the conversation. Tell the user the review is still running and stop.
+**Critical:** if `CODEX_TIMED_OUT=true`, the plugin hung (see "Why the plugin can hang" below). Do **NOT** call `result` afterwards — it returns the most recent *finished* job, which can be a stale unrelated review, and applying that as the current job mixes unrelated feedback into the conversation. Instead, clean up so the wedged broker does not poison the next run, then fall back — never leave the user blocked on a hung job:
+
+```bash
+[ -n "$COMPANION" ] && node "$COMPANION" cancel 2>/dev/null || true
+pkill -U "$(id -u)" -f "codex app-server" 2>/dev/null || true
+```
+
+Then get the second opinion another way, in order of preference:
+
+1. **Re-run via the Bare-CLI path** (`codex exec review --base <base>`, below). It is synchronous with no broker / `turn/completed` dependency, so it is immune to this hang — it is the preferred recovery and usually just works.
+2. If the CLI itself cannot run (auth failure, capacity, not installed), **fall back to the in-house `code-review` skill** for second-opinion coverage and tell the user Codex was unavailable.
 
 #### Retrieving results
 
@@ -121,6 +144,10 @@ node "$COMPANION" result 2>&1 || true
 ```
 
 If the output mentions a file path (long reviews truncate in stdout), load the full content via the `Read` tool — don't try to scroll the truncated output.
+
+#### Why the plugin can hang
+
+The companion ends a review by awaiting a root-thread `turn/completed` notification with **no wall-clock or idle timeout**. The codex app-server protocol has no at-least-once delivery or replay, so a single dropped `turn/completed` — from a broker/proxy disconnect, client/broker version skew, or an untrusted-dir trust-gate stall — leaves the companion waiting **forever** (on `cancel` it logs `thread not found` because the turn actually finished server-side). Large diffs lengthen the turn and widen the window for a dropped event. This is an upstream `codex-plugin-cc` limitation we cannot fix from here — the **Preflight** (fresh broker, trusted dir, current version) and the **Polling-step fallback** (cancel + clear brokers + switch to the Bare-CLI path) are the guards.
 
 ### Bare-CLI path (`invocation_mode: bare_cli`, opt-in fallback)
 
@@ -143,7 +170,7 @@ codex exec review --full-auto --commit HEAD
 codex exec review --full-auto --base <base>
 ```
 
-Synchronous — review ties up the agent session for the full review window (typically 2-5 min). No background queueing or polling loop (those are plugin-only features). Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
+Synchronous — review ties up the agent session for the full review window (typically 2-5 min). No background queueing or polling loop (those are plugin-only features). Because it has no broker or `turn/completed` dependency, this path is **immune to the plugin hang** — it is the recommended recovery when a `plugin`-mode review times out. Stdout output can truncate on very long reviews; redirect to a file (`> codex-review.out`) if needed.
 
 ### Cross-cutting concerns (apply identically under both invocation modes)
 
