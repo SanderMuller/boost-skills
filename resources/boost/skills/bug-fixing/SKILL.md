@@ -112,7 +112,7 @@ Run the test after each change to verify progress.
 Run quality checks based on which files were changed:
 
 - Use the `backend-quality` skill (Tier 1 only: Pint + related tests). PHPStan and the full test suite run at completion — see the `backend-quality` skill for details.
-- For a fix that renders UI, also **eye-verify it in a real browser** (see the `frontend-quality` skill and the `javascript` guideline). When the buggy behaviour can't be isolated into a unit test, document the manual reproduction + check as a QA testable in the PR.
+- For a fix that renders UI, also **eye-verify it in a real browser** where feasible (see the `frontend-quality` skill and the `javascript` guideline). When the buggy behaviour can't be isolated into a unit test, document the manual reproduction + check as a QA testable in the PR.
 
 ### Phase 6: Document the Fix
 

@@ -7,7 +7,7 @@ metadata:
 
 # Frontend Code Quality
 
-Run all frontend quality checks after making changes to JavaScript or TypeScript files. These checks must all pass before work can be considered complete.
+Run all frontend quality checks after making changes to JavaScript or TypeScript files. The static checks (type-check, lint) must all pass before work is complete; eye-verify is advisory for UI changes that need the app running.
 
 ## When to Use This Skill
 
@@ -59,7 +59,7 @@ app running with realistic data.
   (Playwright / a Playwright MCP server).
 - Make the fixture sufficient first (enough data to exercise the behaviour — e.g. enough rows
   and columns to overflow a scrollable table), then probe DOM/console first and screenshot to
-  back up visual claims. Verify behaviour, not just geometry.
+  back up visual claims (redact sensitive data before attaching to a PR). Verify behaviour, not just geometry.
 
 See the `javascript` guideline ("Eye-verify frontend changes") for the why.
 

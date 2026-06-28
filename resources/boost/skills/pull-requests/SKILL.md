@@ -48,7 +48,7 @@ Before creating the PR, verify all of the following:
 3. **The PR title will follow the configured title format** (see [PR Title](#pr-title) below).
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
-6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description.
+6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first).
 
 #### Verifying / creating against the tracker
 
@@ -269,7 +269,7 @@ The project's PR template path is <!--boost:conv path="pr.template_path" mode="i
 
 If there is no template, write a clear description that covers:
 - **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
-- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and attach a screenshot.
+- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and attach a screenshot (redact sensitive or personal data before attaching).
 - **Security & privacy** — describe any security considerations, or state "No security implications".
 - **Risk assessment** — record the agreed risk level, e.g. `**Risk assessment**: Medium`, with a short explanation of the contributing factors.
 

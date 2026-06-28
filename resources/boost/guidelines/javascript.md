@@ -28,9 +28,9 @@ if (query === '') {
 
 ## Eye-verify frontend changes (browser/runtime)
 
-A change that renders UI isn't done until you've **seen it run in a real browser**.
-Type-check and linting can't see runtime/visual bugs — stale state, dead toggles, broken
-scroll / sticky / fixed behaviour, z-index show-through, async races, untranslated-key leaks.
+A change that renders UI calls for **seeing it run in a real browser** — type-check and linting
+can't see runtime/visual bugs: stale state, dead toggles, broken scroll / sticky / fixed
+behaviour, z-index show-through, async races, untranslated-key leaks.
 
 - **When:** the diff touches code that renders to users — JS/TS that drives the DOM, or a
   server-rendered template/component.
