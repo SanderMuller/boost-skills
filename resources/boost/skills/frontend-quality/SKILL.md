@@ -1,6 +1,6 @@
 ---
 name: frontend-quality
-description: "Frontend quality checks: TypeScript type check + linting. Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, frontend checks."
+description: "Frontend quality checks: TypeScript type check, linting, and the JS test suite (Vitest/Jest). Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, vitest, jest, test:js, frontend tests, frontend checks."
 metadata:
   boost-tags: "frontend"
 ---
@@ -46,15 +46,27 @@ eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
 
 Must show 0 errors. Fix any linting issues found.
 
+### 3. Tests
+
+Run the project's JS/TS test suite — its script is in `package.json` (commonly `test`, or a dedicated script such as `test:js`; the underlying runner is Vitest, Jest, etc.):
+
+```bash
+npm test        # or the project's script, e.g. `npm run test:js` — match the package manager/lockfile
+```
+
+Must show 0 failures. Fix any failing tests. When the change added or altered testable logic, **add or update a test for it** before the work is done — the `test-writing` skill covers what to write and where. During development you can scope to the changed area (e.g. `vitest run <path>`) and run the full suite at completion. Skip only when the project has no JS test setup.
+
 ## Quick Reference
 
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
 | Type checking | `npm run type-check` (TypeScript projects) | 0 errors |
 | Linting | `npm run lint` (the project's lint script) | 0 errors |
+| Tests | `npm test` (the project's JS test script) | 0 failures |
 
 ## Important
 
 - Type-checking is project-wide — a change in one file can surface type errors in another, so a clean run matters beyond the files you edited.
 - Know what your project's type-checker covers. Some setups leave certain component file formats (e.g. framework single-file components) out of the static check — those surface errors only at build or runtime.
+- Type-check and lint prove the code is well-formed, not that it behaves — run the test suite too, and cover changed logic with a test (see the `test-writing` skill).
 - Run every applicable check before the work is considered done — all must pass.
