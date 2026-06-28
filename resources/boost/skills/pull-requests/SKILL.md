@@ -247,9 +247,11 @@ Order when both are present: risk first, direction second. Render only the quest
 | **Data migrations** | Existing data transformations, backfills, data format changes |
 | **Non-reversible actions** | Destructive operations, external API calls, sent notifications |
 
-- **Low**: Purely additive, isolated, no security or data impact. Author plus any automated review is sufficient.
+Weigh each factor as **residual** risk — what remains after the checks that run on every change (the test suite, CI, any staging/QA verification, and reviewers) — not raw impact in isolation. A failure that is loud, reproducible, and instantly reversible (a broken button, a failed build, a wrong label) is caught and rolled back, so it ranks lower than one the checks can't see: silent data corruption, a confidentiality leak, or an irreversible action (sent emails, charged cards, destroyed data). Score the change's actual behaviour, not the sensitivity of the file it sits in — a narrow, well-tested change on a shared path is not automatically high risk.
+
+- **Low**: Purely additive, isolated, no security or data impact — and any failure would be loud and reversible, caught by tests / CI / QA. Author plus any automated review is sufficient.
 - **Medium**: Touches existing behavior, adds migrations, or affects integrations. A human reviewer should review.
-- **High**: Security-sensitive, data migrations, or non-reversible actions. A human reviewer **must** review.
+- **High**: Security-sensitive, silent or hard-to-detect, data-migrating, or non-reversible. A human reviewer **must** review.
 
 ## PR Title
 
