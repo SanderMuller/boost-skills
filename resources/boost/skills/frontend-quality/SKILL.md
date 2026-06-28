@@ -51,10 +51,10 @@ Must show 0 errors. Fix any linting issues found.
 Run the project's JS/TS test suite — its script is in `package.json` (commonly `test`, or a dedicated script such as `test:js`; the underlying runner is Vitest, Jest, etc.):
 
 ```bash
-npm test        # or the project's script, e.g. `npm run test:js` — match the package manager/lockfile
+npm test        # or: yarn / pnpm / bun — match the project's lockfile
 ```
 
-Must show 0 failures. Fix any failing tests. When the change added or altered testable logic, **add or update a test for it** before the work is done — the `test-writing` skill covers what to write and where. During development you can scope to the changed area (e.g. `vitest run <path>`) and run the full suite at completion. Skip only when the project has no JS test setup.
+Must show 0 failures. Fix any failing tests. When the change added or altered testable logic, **add or update a test for it** before the work is done — the `test-writing` skill covers what to write and where. During development you can scope to the changed area (e.g. `vitest run <path>` for Vitest, `jest <path>` for Jest) and run the full suite at completion. Skip only when the project has no JS test setup.
 
 ## Quick Reference
 
