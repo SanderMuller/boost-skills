@@ -17,7 +17,7 @@ A squash folds every migration file into one schema baseline and **deletes the m
 
 ## Conventions (non-obvious — get these wrong and it breaks)
 
-- **Squash at a sync point.** A squash rewrites the baseline that *every* branch builds from, so do it when the target branch and the active development branch are aligned — not mid-flight while feature branches carry migrations the baseline won't include. The target branch is whichever branch the baseline represents (commonly the default/release branch — base-branch resolution is the same one the `pull-requests` skill uses).
+- **Squash at a sync point.** A squash rewrites the baseline that *every* branch builds from, so do it when the target branch and the active development branch are aligned — not mid-flight while feature branches carry migrations the baseline won't include. The target branch is whichever branch the baseline represents (commonly the default/release branch — Base-branch resolution is the same one the `pull-requests` skill uses).
 - **Know which file is tracked, and how it's loaded.** Laravel's `schema:dump` writes `database/schema/<connection>-schema.sql` (e.g. `mysql-schema.sql`) and `MigrateCommand::schemaPath()` loads that file on a fresh `migrate`. That standard `.sql` file is the tracked baseline for most projects — verify which path your project commits before you start.
   - **Optional project variant:** some projects track a non-default filename (e.g. `mysql-schema.dump`) because `schemaPath()` prefers a `.dump` over a `.sql`. If yours does, the process gains a rename step: dump → **rename the written `.sql` to the tracked name**. Skipping the rename leaves an untracked `.sql` plus a stale tracked file. If your project tracks the standard `.sql`, there is no rename.
 - **CI may not load the schema on a squash PR.** Confirm which of your checks actually rebuild a DB from the baseline. If a squash PR targets a branch your test workflows skip (or only external scanners like Snyk report), then *none* of them load the schema — an incomplete or contaminated dump passes green and the checks below are the **only** gate.
@@ -41,13 +41,17 @@ git checkout <target-branch> && git pull
 php artisan migrate:status | grep -iq pending && echo "BEHIND: run php artisan migrate" || echo "not behind"
 php artisan migrate
 
-# 2. Not AHEAD — your DB must not have applied any migration the target lacks (e.g. a dev branch's).
-#    Empty output = clean; any line = contamination, do NOT dump from this DB.
-comm -13 <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##' | sort) \
-         <(git ls-tree -r --name-only origin/<dev-branch>    database/migrations/ | sed 's#.*/##;s#\.php$##' | sort) \
-| while read -r m; do
-    php artisan tinker --execute "echo DB::table('migrations')->where('migration','$m')->exists() ? 'AHEAD/contaminated: $m'.PHP_EOL : '';"
-  done
+# 2. Not AHEAD — the DB must carry nothing beyond the target's legitimate migration set.
+#    Legitimate = (records already in the target's baseline dump, whose files earlier squashes
+#    pruned) ∪ (the target's current migration files). Compare the DB's *applied* migrations
+#    against that union — querying the migrations table catches a migration applied from an
+#    abandoned/local/renamed branch that a dev-branch diff would miss, while the baseline union
+#    avoids false-flagging legitimate pruned-but-recorded history. Any line = applied-but-not-
+#    legitimate → contamination, do NOT dump from this DB.
+comm -13 \
+  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+') \
+            <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##')) \
+  <(php artisan tinker --execute="echo DB::table('migrations')->orderBy('migration')->pluck('migration')->implode(PHP_EOL);" | sort -u)
 ```
 
 ### Dump, (rename,) clean up
@@ -67,9 +71,12 @@ Then remove any test that `require`s a now-deleted migration file by path, creat
 Capture the candidate schema dump's **contents** in `DUMP` (the checks below pipe `$DUMP`, not a path). Substitute `<PR>` with the PR number and `<schema-path>` with your tracked baseline file. The fetch and base-check commands below assume the change is a **GitHub** PR (`gh` + the `pull/<PR>/head` ref); on another host, check out the candidate branch however that host exposes it and substitute its ref for `pr-<PR>` (and read the target from the host's PR view) — or just review your **local working tree** with the alternative shown:
 
 ```bash
+git fetch origin <target-branch>                                                       # refresh the base ref the checks below compare against
 git fetch origin "pull/<PR>/head:pr-<PR>" && DUMP=$(git show "pr-<PR>:<schema-path>")   # GitHub
 # or local working tree:  DUMP=$(cat <schema-path>)
 ```
+
+Fetch the target first — the completeness and contamination checks compare against `origin/<target-branch>`, so a stale local copy would let a squash that's missing a recently-added target migration pass.
 
 **1. Target branch is correct** — confirm the candidate targets the baseline's branch. On GitHub:
 
@@ -98,14 +105,17 @@ echo "+ files:    $(git ls-tree -r --name-only origin/<target-branch> database/m
 printf '%s' "$DUMP" | grep -c "<a_column_added_by_the_latest_migration>"   # expect > 0
 ```
 
-**4. Contamination — no other-branch migrations leaked in.** The dump must not contain migrations the target doesn't have (e.g. dev-branch-only ones).
+**4. Contamination — no migration the target lacks leaked in.** Every migration *recorded in the dump* must have a file on the target branch. Compare the dump's recorded migration names against the target's files directly — not against a dev branch, which would miss a migration that leaked in from an abandoned/local/renamed branch.
 
 ```bash
-# migrations present on the dev branch but absent on the target:
-comm -13 <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##' | sort) \
-         <(git ls-tree -r --name-only origin/<dev-branch>    database/migrations/ | sed 's#.*/##;s#\.php$##' | sort)
-# each such migration's name AND its columns must NOT appear in the dump:
-printf '%s' "$DUMP" | grep -c "<a_dev_only_migration_name_or_column>"   # expect 0
+# A correct squash records exactly: the target's existing baseline records ∪ the target's
+# migration files. Anything the new dump records beyond that union is contamination. Subtracting
+# the baseline records avoids false-flagging legitimate history whose files earlier squashes pruned.
+comm -13 \
+  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+') \
+            <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##')) \
+  <(printf '%s' "$DUMP" | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+' | sort -u)
+# Empty output = clean. Spot-check any flagged name's columns are likewise absent from the dump.
 ```
 
 **5. Data migrations — seeded rows preserved.** `schema:dump` captures table *structure* and the `migrations` table, but **not** the data rows any other table holds. So a pruned *data-migration* (one that `INSERT`s/`UPDATE`s rows) loses its rows on a fresh DB unless they are also carried into whatever seeds that table. Find the data-migrations among the pruned files and confirm their rows still land on a fresh DB:
