@@ -64,8 +64,10 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
 1. Get the current branch name from git.
 2. Resolve the base branch (see **Base-branch resolution** above).
-3. Analyze the commits with `git log <base>..HEAD --oneline`.
-4. Get the diff summary with `git diff <base>...HEAD --stat` (and the full diff where more context is needed).
+3. Analyze the commits with `git log origin/<base>..HEAD --oneline`.
+4. Get the diff summary with `git diff origin/<base>...HEAD --stat` (and the full diff where more context is needed).
+
+   Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
 6. **Resolve risk + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask (tier-scored or no risk question, plus pre-supplied direction), skip the call entirely.
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:

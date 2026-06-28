@@ -64,18 +64,20 @@ Then remove any test that `require`s a now-deleted migration file by path, creat
 
 ## Reviewing / verifying a squash — run EVERY check
 
-Capture the candidate schema dump's **contents** in `DUMP` (the checks below pipe `$DUMP`, not a path). Substitute `<PR>` with the PR number and `<schema-path>` with your tracked baseline file:
+Capture the candidate schema dump's **contents** in `DUMP` (the checks below pipe `$DUMP`, not a path). Substitute `<PR>` with the PR number and `<schema-path>` with your tracked baseline file. The fetch and base-check commands below assume the change is a **GitHub** PR (`gh` + the `pull/<PR>/head` ref); on another host, check out the candidate branch however that host exposes it and substitute its ref for `pr-<PR>` (and read the target from the host's PR view) — or just review your **local working tree** with the alternative shown:
 
 ```bash
-git fetch origin "pull/<PR>/head:pr-<PR>" && DUMP=$(git show "pr-<PR>:<schema-path>")
+git fetch origin "pull/<PR>/head:pr-<PR>" && DUMP=$(git show "pr-<PR>:<schema-path>")   # GitHub
 # or local working tree:  DUMP=$(cat <schema-path>)
 ```
 
-**1. Target branch is correct**
+**1. Target branch is correct** — confirm the candidate targets the baseline's branch. On GitHub:
 
 ```bash
 gh pr view "<PR>" --json baseRefName -q .baseRefName   # expect: the baseline's target branch
 ```
+
+On another host, read the PR's target from its UI/API, or skip this check when reviewing a local working tree you already know the base of.
 
 **2. The tracked schema file changed, with no stray untracked dump** — the PR/working tree must modify the tracked baseline file and leave **no** untracked schema file (e.g. a `mysql-schema.sql` left behind when the project tracks a renamed file).
 
