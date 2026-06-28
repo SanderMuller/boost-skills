@@ -73,6 +73,7 @@ app running with realistic data.
 
 See the `javascript` guideline ("Eye-verify frontend changes") for the why.
 
+
 ## Quick Reference
 
 | Check | Command | Pass criteria |

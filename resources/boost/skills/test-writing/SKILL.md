@@ -11,7 +11,12 @@ Conventions for writing tests that are specific, descriptive, and well-structure
 
 ## Which framework to write for
 
-Write tests in <!--boost:conv path="testing.backend_framework" mode="inline"-->the test runner your project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present, else follow sibling test files<!--boost:conv:end-->. Never write a test in any framework on the project's forbidden list (<!--boost:conv path="testing.forbid" mode="inline"-->none — no restriction<!--boost:conv:end-->), or in any framework a listed **category alias** expands to; if asked to, redirect to the framework named above.
+Match the framework to the code under test:
+
+- **Backend / PHP code** → <!--boost:conv path="testing.backend_framework" mode="inline"-->the test runner your project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present, else follow sibling test files<!--boost:conv:end-->.
+- **Frontend / JS / TS code** → the project's JavaScript test runner. Detect it from `package.json` — a `test` / `test:js` script, or a `vitest` / `jest` / `mocha` dev-dependency plus its config — else follow sibling test files. Put specs where the existing ones live (e.g. a `tests/Js/` directory, or an `__tests__/` folder next to the source).
+
+A change to frontend logic needs a JS test the same way a change to backend logic needs a backend test — don't leave JS/TS behaviour uncovered just because the default examples below are PHP. Never write a test in any framework on the project's forbidden list (<!--boost:conv path="testing.forbid" mode="inline"-->none — no restriction<!--boost:conv:end-->), or in any framework a listed **category alias** expands to; if asked to, redirect to the appropriate framework above.
 
 Category alias expansions (a forbidden alias forbids every framework in its set):
 
