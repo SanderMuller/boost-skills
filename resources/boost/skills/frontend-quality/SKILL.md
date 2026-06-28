@@ -17,6 +17,7 @@ Activate this skill when:
 - The user asks to run frontend checks, ESLint, or TypeScript checks
 - Before creating a PR with JS/TS changes
 - Applying review feedback or rework with JS/TS changes
+- A change renders UI that should be *seen running*, not just type-checked
 
 ## Checks (Run in Order)
 
@@ -46,12 +47,29 @@ eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
 
 Must show 0 errors. Fix any linting issues found.
 
+### 3. Eye-verify — see UI changes run in a browser (suggested)
+
+If the change renders UI (not pure logic), type-check and lint aren't enough — runtime/visual
+bugs (stale state, dead toggles, broken scroll / sticky behaviour, z-index show-through, async
+races, untranslated keys) only show in a browser. **Suggested, not blocking** — it needs the
+app running with realistic data.
+
+- Drive the change in a real browser: the project's eye-verify harness if it ships one
+  (commonly `tools/verify/` + a load-on-demand setup doc), else a browser-automation tool
+  (Playwright / a Playwright MCP server).
+- Make the fixture sufficient first (enough data to exercise the behaviour — e.g. enough rows
+  and columns to overflow a scrollable table), then probe DOM/console first and screenshot to
+  back up visual claims. Verify behaviour, not just geometry.
+
+See the `javascript` guideline ("Eye-verify frontend changes") for the why.
+
 ## Quick Reference
 
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
 | Type checking | `npm run type-check` (TypeScript projects) | 0 errors |
 | Linting | `npm run lint` (the project's lint script) | 0 errors |
+| Eye-verify (UI changes, suggested) | Drive it in a real browser (project harness / Playwright MCP) | renders + behaves; no console errors or untranslated keys |
 
 ## Important
 

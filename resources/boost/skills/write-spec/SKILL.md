@@ -132,6 +132,8 @@ After the overview and assumptions ledger, use numbered top-level sections (`## 
 
 After the technical sections, include `## Edge Cases` — a compact table the Edge Case Sweep (below) fills in. Each row names a scenario the feature must handle and how the app handles it.
 
+> For a feature that renders UI, the spec's success measure includes **eye-verify** — the change is confirmed by *seeing it run* in a real browser (per the `frontend-quality` skill), not by type-check/lint alone; the `## Edge Cases` rows then double as the browser testables.
+
 ```markdown
 ## Edge Cases
 
