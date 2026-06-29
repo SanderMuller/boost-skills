@@ -317,7 +317,7 @@ This audit runs even when the requirements came from the `interview` skill — `
 - **"Recommended" choices accepted without engaging with the framing.**
 - **MVP trade-offs worth re-flagging** — an earlier accepted shortcut that's load-bearing enough to re-confirm now.
 
-**Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, 1-2 concrete alternatives, "Other / let me clarify". Never batch.
+**Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, plus 1-2 concrete alternatives (`AskUserQuestion` appends its own free-text "Other", so don't add a manual escape-hatch option). Never batch.
 
 **Step 3 — Record outcomes.** Capture each into a `## Assumptions` section near the top of the spec — the complete audit ledger, one bullet per scanned item regardless of outcome. This is the contract that lets the user sign off by skimming `## Assumptions` alone. Promote anything that became a real decision into `## Resolved Questions`; route anything still undecided to `## Open Questions`.
 

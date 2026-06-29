@@ -142,7 +142,7 @@ How will this be tested? Acceptance criteria? Specific scenarios QA should cover
 
 Exclude purely cosmetic inferences that don't change observable behaviour.
 
-**Step 2 — Grill one assumption at a time.** For each, ask via `AskUserQuestion` with the assumption stated in plain language (no jargon, no class names), "Correct as stated" as the first option, 1-2 concrete alternatives, and "Other / let me clarify". **Never batch** — the answer to assumption N often changes whether N+1 still applies.
+**Step 2 — Grill one assumption at a time.** For each, ask via `AskUserQuestion` with the assumption stated in plain language (no jargon, no class names), "Correct as stated" as the first option, plus 1-2 concrete alternatives. `AskUserQuestion` always appends its own free-text "Other" choice, so don't add a manual escape-hatch option. **Never batch** — the answer to assumption N often changes whether N+1 still applies.
 
 **Step 3 — Fold outcomes into the handoff.** Every scanned item becomes part of the requirements you pass to `write-spec`, regardless of outcome — this is the ledger that lets the user sign off by skimming alone. `write-spec` runs its own Assumptions Audit on the technical sections it adds.
 
