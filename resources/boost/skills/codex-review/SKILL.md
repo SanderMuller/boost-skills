@@ -68,18 +68,38 @@ COMPANION=$(ls ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-compan
 
 If the resolution returns nothing, the plugin is not installed — fall back to the **Plugin install** steps earlier in this skill.
 
-#### Preflight — clear stale brokers before every launch
+#### Preflight — start from a fresh broker before every launch
 
-Codex jobs share a per-cwd `codex app-server` "broker" that is reused whenever its socket merely responds, and the companion has **no completion timeout** — so a wedged broker left by an earlier run makes the *next* review hang forever. Before launching, clear stale brokers:
+**Codex here is best-effort, not dependable — the in-house `code-review` skill is the reliable second opinion.** Two upstream `codex-plugin-cc` facts force this: the companion **hard-codes broker reuse** (`reuseExistingBroker: true` in `lib/codex.mjs`; no env or flag disables it) and **has no completion timeout**. The dominant, reproducible hang is a **stale broker session** — the reuse path reconnects to `broker.json`'s endpoint with **no liveness check**, so once that broker dies the file still points at a dead socket and every relaunch hangs at connect. `pkill` removes the process but leaves the file behind, which is exactly why kill-and-retry alone never fixes it. Clear the session each launch — a fresh broker costs a couple of seconds; a stale one hangs forever:
 
 ```bash
-[ -n "$COMPANION" ] && node "$COMPANION" cancel 2>/dev/null || true   # release any stuck job (no-op if companion missing)
-pkill -U "$(id -u)" -f "codex app-server" 2>/dev/null || true        # drop your wedged brokers (they respawn cleanly)
+LIB="$(dirname "$COMPANION")/lib"
+
+# 1. Cancel every non-terminal job by its real id from `status --json` — any kind/id shape is covered
+#    (`review-…` AND multi-segment `adversarial-review-…`; a text-scraping regex truncates the latter
+#    and can mis-match id-shaped tokens inside a summary).
+node "$COMPANION" status --json 2>/dev/null | node -e '
+  let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{ try {
+    const j=JSON.parse(s);
+    [...(j.running||[]), ...(j.recent||[])]
+      .filter(x => x && x.status !== "completed" && x.status !== "cancelled")
+      .forEach(x => console.log(x.id));
+  } catch {} })' | while read -r J; do [ -n "$J" ] && node "$COMPANION" cancel "$J" >/dev/null 2>&1 || true; done
+
+# 2. THE LOAD-BEARING STEP: clear the per-cwd broker session via the companion's OWN path logic.
+#    clearBrokerSession resolves the state dir ($CLAUDE_PLUGIN_DATA/state or $TMPDIR/codex-companion,
+#    named <slug>-<sha256(realpath)[:16]>) reliably across machines — a hand-built tmp glob silently
+#    no-ops for some setups.
+node --input-type=module -e "import('file://$LIB/broker-lifecycle.mjs').then(m => m.clearBrokerSession(process.cwd())).catch(() => {})" 2>/dev/null || true
+
+# 3. Kill any leftover broker process; the next launch spawns a fresh one from the global npm CLI.
+pkill -U "$(id -u)" -f "codex app-server" 2>/dev/null || true
 ```
 
-- The `pkill` is scoped to your user but drops **all** your `codex app-server` brokers — including any other in-flight Codex job you are running — so don't run it while a separate review you care about is mid-flight.
-- **Trust the working dir.** Codex stalls on the project-trust gate *before the turn runs* if the working directory is not a trusted project in `~/.codex/config.toml`. Ephemeral clone paths (e.g. Polyscope clones, whose dirs are throwaway hashes) are **not** auto-trusted — trust the dir (or run from a trusted checkout) first, or the job hangs before it starts.
-- **Watch version skew.** A new `codex` CLI talking to an old lingering broker drops `turn/completed` events. If `codex --version` lags the published release (`npm view @openai/codex version`), upgrade with `npm install -g @openai/codex`; the `pkill` above then forces a fresh broker on the current version.
+- **One attempt, then fall back — do not loop.** Run one clean review after this preflight. If the poll loop below still times out (`CODEX_TIMED_OUT=true`), treat Codex as unavailable and recover (Bare-CLI path, then in-house `code-review`). Relaunching a hung review just stacks more stuck jobs (step 1) — it never un-wedges one.
+- The step-3 `pkill` is scoped to your user but drops **all** your `codex app-server` brokers — including any other in-flight Codex job — so don't run the preflight while a separate review you care about is mid-flight.
+- **Trust the working dir** (one-time setup, not a per-run cause). Codex stalls on the project-trust gate *before the turn runs* if the cwd isn't a trusted project in `~/.codex/config.toml` (`[projects."<path>"]` / `trust_level = "trusted"`). Ephemeral clone paths (throwaway hashes, e.g. Polyscope clones) are **not** auto-trusted — trust the dir once. If it's already trusted and still hangs, it's the broker session, not trust.
+- **Version skew is a red herring.** The fresh broker spawns from whatever `codex` is on `PATH`, so it is self-consistent regardless of any desktop-app version — chasing versions is why an earlier version of this guidance "fixed" the hang on one machine while peers still hung. Keep the CLI current as hygiene (`npm i -g @openai/codex`) if you like, but don't chase versions to explain a hang.
 
 #### Invocation patterns
 
@@ -126,13 +146,17 @@ done
 **Critical:** if `CODEX_TIMED_OUT=true`, the plugin hung (see "Why the plugin can hang" below). Do **NOT** call `result` afterwards — it returns the most recent *finished* job, which can be a stale unrelated review, and applying that as the current job mixes unrelated feedback into the conversation. Instead, clean up so the wedged broker does not poison the next run, then fall back — never leave the user blocked on a hung job:
 
 ```bash
-[ -n "$COMPANION" ] && node "$COMPANION" cancel 2>/dev/null || true
+LIB="$(dirname "$COMPANION")/lib"
+# Cancel every non-terminal job (real ids from --json, any kind shape), then clear the dead-socket
+# pointer — same load-bearing clearBrokerSession the preflight uses; cancel + pkill alone leave broker.json behind.
+node "$COMPANION" status --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);[...(j.running||[]),...(j.recent||[])].filter(x=>x&&x.status!=="completed"&&x.status!=="cancelled").forEach(x=>console.log(x.id));}catch{}})' | while read -r J; do [ -n "$J" ] && node "$COMPANION" cancel "$J" >/dev/null 2>&1 || true; done
+node --input-type=module -e "import('file://$LIB/broker-lifecycle.mjs').then(m => m.clearBrokerSession(process.cwd())).catch(() => {})" 2>/dev/null || true
 pkill -U "$(id -u)" -f "codex app-server" 2>/dev/null || true
 ```
 
 Then get the second opinion another way, in order of preference:
 
-1. **Re-run via the Bare-CLI path** (`codex exec review --base <base>`, below). It is synchronous with no broker / `turn/completed` dependency, so it is immune to this hang — it is the preferred recovery and usually just works.
+1. **Re-run via the Bare-CLI path** (below). It is synchronous with no broker / `turn/completed` dependency, so it is immune to this hang — the preferred recovery, and it usually just works. **Match the original review scope**: `codex exec review --uncommitted` if the timed-out run was a working-tree review, or `codex exec review --base <base>` if it was a branch-vs-base review. Recovering with the wrong scope (e.g. `--base` after a working-tree run) silently reviews the wrong diff — dropping the uncommitted changes the original pass was meant to cover.
 2. If the CLI itself cannot run (auth failure, capacity, not installed), **fall back to the in-house `code-review` skill** for second-opinion coverage and tell the user Codex was unavailable.
 
 #### Retrieving results
@@ -147,7 +171,9 @@ If the output mentions a file path (long reviews truncate in stdout), load the f
 
 #### Why the plugin can hang
 
-The companion ends a review by awaiting a root-thread `turn/completed` notification with **no wall-clock or idle timeout**. The codex app-server protocol has no at-least-once delivery or replay, so a single dropped `turn/completed` — from a broker/proxy disconnect, client/broker version skew, or an untrusted-dir trust-gate stall — leaves the companion waiting **forever** (on `cancel` it logs `thread not found` because the turn actually finished server-side). Large diffs lengthen the turn and widen the window for a dropped event. This is an upstream `codex-plugin-cc` limitation we cannot fix from here — the **Preflight** (fresh broker, trusted dir, current version) and the **Polling-step fallback** (cancel + clear brokers + switch to the Bare-CLI path) are the guards.
+The companion ends a review by awaiting a root-thread `turn/completed` notification with **no wall-clock or idle timeout**. The codex app-server protocol has no at-least-once delivery or replay, so a single dropped `turn/completed` — from a broker/proxy disconnect or a payload shape the matcher misses — leaves the companion waiting **forever** (on `cancel` it logs `thread not found` because the turn actually finished server-side). Large diffs lengthen the turn and widen the window for a dropped event.
+
+**Real-world triggers, observed and verified:** the dominant, reproducible one is a **stale broker session** — the reuse path (hard-coded `reuseExistingBroker: true`, no env disables it) reconnects to `broker.json`'s endpoint with **no liveness check** (the spawn path's `ensureBrokerSession` *does* probe; the bug is that reuse skips it), and `pkill` leaves the file behind, so every relaunch hangs at connect until the session is cleared. Secondary: stale jobs queued ahead of new ones (bare `cancel` releases only the latest; match any job-id shape, not the `review-` prefix). Residual: a genuine thread-start stall from a fully clean slate (the upstream no-timeout dropped-event bug). **Version skew is not a real trigger** — the fresh broker spawns from the global npm CLI, self-consistent regardless of the desktop app. This is an upstream `codex-plugin-cc` bug we cannot fix from the skill (reuse should liveness-check; the completion wait should have a timeout). The guards: clear the broker session via `clearBrokerSession` every launch (**Preflight**), a **one-attempt** budget, and the **Polling-step fallback** (cancel all jobs + clear the session + switch to the Bare-CLI path, then in-house `code-review`). Codex is best-effort here — never block delivery on it.
 
 ### Bare-CLI path (`invocation_mode: bare_cli`, opt-in fallback)
 
