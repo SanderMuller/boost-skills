@@ -264,11 +264,12 @@
                 "invocation_mode": {
                     "enum": ["plugin", "bare_cli"],
                     "default": "plugin",
-                    "description": "Codex invocation path. 'plugin' uses the openai/codex-plugin-cc companion script (default) — supports background queueing, project-aware diff scoping, focus-argument handling, stable file-based result retrieval, /codex:setup auth bootstrapping. 'bare_cli' uses bare `codex` CLI directly, without the companion script — opt-in fallback for environments where the plugin is not installable (e.g. service-account CI runners with no per-user .claude/plugins/ cache)."
+                    "deprecated": true,
+                    "description": "DEPRECATED and ignored since boost-skills 2.17.0. The codex-review skill now always runs the bounded native-CLI wrapper (`scripts/run-codex-review.mjs`, shipped as a skill companion asset); the plugin-broker path and its `bare_cli` fallback were removed because the broker hung on stale sessions. This key no longer affects behavior — remove it from your conventions. Retained in the schema only so existing configs keep validating."
                 },
                 "setup_doc": {
                     "type": "string",
-                    "description": "Optional path to a project-owned doc with project-specific codex overrides only (custom auth flow, project-specific focus areas, exclusions). The universal plugin and bare-CLI invocation playbooks are folded into the codex-review skill body — most consumers leave this slot unset. Validated for file-existence by `boost doctor --check-conventions` when declared."
+                    "description": "Optional path to a project-owned doc with project-specific codex overrides only (custom auth flow, project-specific focus areas, exclusions). The universal wrapper invocation playbook is folded into the codex-review skill body — most consumers leave this slot unset. Validated for file-existence by `boost doctor --check-conventions` when declared."
                 }
             }
         },
