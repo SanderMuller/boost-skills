@@ -138,7 +138,7 @@ Run the `codex-review` skill for a multi-model second opinion. Critically evalua
 1. `codex-review` already ran in this conversation and ended clean — no warranted findings remaining (every finding applied or dismissed with reasoning)
 2. No task files were added, removed, or changed since that clean run — any file counts (code, docs, skills, config), not only code; only edits inside agent-managed paths are exempt, mirroring the gate's `since_last_code_change` semantics
 
-If in doubt, run it. If `codex-review` cannot run (CLI or plugin missing, auth failure), note that in the Phase 8 report instead of silently skipping.
+If in doubt, run it. If `codex-review` cannot run (Codex CLI missing or unauthenticated), note that in the Phase 8 report instead of silently skipping.
 
 ### Phase 8: Report
 

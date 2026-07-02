@@ -117,6 +117,8 @@ Vendor verifies the named skill was invoked in the current conversation. Used fo
 - `window: in_session` — skill must have been invoked anywhere in the current conversation.
 - `window: since_last_code_change` — skill must have been invoked AFTER the most recent `Edit`/`Write` tool call to a file NOT inside boost-core's managed agent paths (returned by `vendor/bin/boost paths --managed` — typically `.ai/`, `.claude/`, `.github/skills/`, `.agents/`). Editing skill files or agent-managed paths does not reset the gate.
 
+When the gated skill is `codex-review` and the PR template carries a codex-review checkbox, satisfying the gate is not enough to tick it — the checkbox is proof-gated on the review's commit SHA. See [Codex-review checklist item](#codex-review-checklist-item).
+
 #### `type: shell_command`
 
 Vendor runs the named shell command and checks the exit code. Used for "must pass `composer test` before opening PR" or similar local-pass-fail policy.
@@ -271,6 +273,20 @@ General guidance regardless of format:
 ## PR template
 
 The project's PR template path is <!--boost:conv path="pr.template_path" mode="inline"-->.github/pull_request_template.md<!--boost:conv:end-->. If that file exists, **read it fresh** at PR-creation time and fill in each section. Do not hardcode the template — always read the file to get the current version. If the file is absent, skip template injection.
+
+### Codex-review checklist item
+
+If the template contains a codex-review checklist item — a checkbox asserting an independent Codex review ran — it is **proof-gated**: a tick is a verifiable claim, not a courtesy. Only mark it `[x]` when a dedicated codex-review commit exists on the branch (the `codex-review` skill's [Step 7](../codex-review/SKILL.md#step-7-commit--leave-a-dedicated-codex-review-commit-as-proof) leaves one — the fixes commit, or an empty `Codex review: clean, no changes` commit for a clean round), and **append that commit's short SHA** to the item as the proof. Never check it without a SHA — an unreferenced tick is an unauditable claim.
+
+```
+- [x] Codex reviewed — <short-sha>
+```
+
+If the review didn't run or couldn't complete — the `pr.gates` `on_missing` case (auth failure, plugin/CLI missing) — leave it unchecked and note the unrun-reason inline, so the gap is visible rather than silently ticked:
+
+```
+- [ ] Codex reviewed — not run: <reason>
+```
 
 ## PR Description
 

@@ -64,6 +64,40 @@ foreach ($files as $file) {
 $total = count($files);
 echo "\n" . ($total - $failed) . "/{$total} skills valid\n";
 
+// The codex-review skill ships a runnable `scripts/run-codex-review.mjs` wrapper
+// as a companion asset (boost-core >= 1.3 emits skill-dir siblings beside the
+// rendered SKILL.md). A syntax error there ships a broken wrapper, so guard it
+// with `node --check`. Node is optional in this PHP CI job — skip (don't fail)
+// when it's absent, but always fail when the expected wrapper file is missing.
+$wrapperFailed = 0;
+$wrapperScript = $skillsDir . '/codex-review/scripts/run-codex-review.mjs';
+if (! is_file($wrapperScript)) {
+    $wrapperFailed++;
+    echo "\nFAIL  codex-review wrapper: expected companion asset {$wrapperScript} is missing\n";
+} else {
+    $nodeProbe = [];
+    $nodeStatus = 1;
+    exec('command -v node 2>/dev/null', $nodeProbe, $nodeStatus);
+
+    if ($nodeStatus !== 0) {
+        echo "\nSKIP  codex-review wrapper syntax check (node not on PATH)\n";
+    } else {
+        $checkOut = [];
+        $checkStatus = 1;
+        exec('node --check ' . escapeshellarg($wrapperScript) . ' 2>&1', $checkOut, $checkStatus);
+
+        if ($checkStatus === 0) {
+            echo "\nPASS  codex-review wrapper syntax (node --check)\n";
+        } else {
+            $wrapperFailed++;
+            echo "\nFAIL  codex-review wrapper syntax (node --check)\n";
+            foreach ($checkOut as $line) {
+                echo "        {$line}\n";
+            }
+        }
+    }
+}
+
 // Guideline tag manifests. boost-skills' guidelines are frontmatter-free (for
 // laravel/boost compatibility), so their capability tags live in a sidecar
 // `.boost-tags.yaml` per guidelines directory, read by boost-core >= 0.6.0. An
@@ -152,4 +186,4 @@ if ($manifests !== []) {
     echo ($manifestTotal - $manifestFailed) . "/{$manifestTotal} guideline tag manifests valid\n";
 }
 
-exit($failed === 0 && $manifestFailed === 0 ? 0 : 1);
+exit($failed === 0 && $manifestFailed === 0 && $wrapperFailed === 0 ? 0 : 1);
