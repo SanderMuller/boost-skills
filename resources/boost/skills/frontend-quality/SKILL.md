@@ -64,17 +64,26 @@ bugs (stale state, dead toggles, broken scroll / sticky behaviour, z-index show-
 races, untranslated keys) only show in a browser. **Suggested, not blocking** — it needs the
 app running with realistic data.
 
-- Drive the change in a real browser: the project's eye-verify harness if it ships one
-  (commonly `tools/verify/` + a load-on-demand setup doc), else a browser-automation tool
-  (Playwright / a Playwright MCP server). In an ephemeral clone or git worktree the app may
-  be served on a different host/port — point the harness at *this* checkout and confirm it
-  serves a real page (a hard 404 means the wrong host).
+- Drive the change in a real browser. **This skill ships a framework-agnostic harness** —
+  `scripts/screenshot.mjs` (capture + crop-to-selector with ≥15px padding),
+  `scripts/console.mjs` (console/page errors + optional leak-pattern scan), and
+  `scripts/auth-capture.mjs` (save a login session the other two reuse via `--storage-state`).
+  See [`scripts/README.md`](scripts/README.md); it needs Playwright in the project
+  (`npm i -D playwright && npx playwright install chromium`) and points at the *already
+  running* app. Use it, the project's own harness if it has one, or a Playwright MCP server.
+  In an ephemeral clone or git worktree the app may be served on a different host/port — point
+  the harness at *this* checkout and confirm it serves a real page (a hard 404 means the wrong host).
 - Make the fixture sufficient first (enough data to exercise the behaviour — e.g. enough rows
   and columns to overflow a scrollable table), then probe DOM/console first and screenshot to
   back up visual claims (redact sensitive data before attaching to a PR). Verify behaviour, not just geometry.
-- When the change has an approved design, verify it **per element** (alignment, size, colour
-  incl. gradients, border, radius, icon, typography, spacing) rather than glancing at the whole
-  image — and keep ~15px around any single-element crop so edge misalignment stays visible.
+- **Put the app into the state that reveals the change before capturing.** A feature that ships
+  *off* by default — behind a flag, a new column, or per-record opt-in — renders nothing until
+  enabled, so you'd verify an empty surface: run its migration, set the flag/field on a seeded
+  record, and rebuild the frontend bundle if JS/CSS changed, first. Revert seeded test data after.
+- When the change has an approved design, verify it **per element**, not by glancing at the
+  whole image — keep ~15px around any single-element crop so edge misalignment stays visible.
+  The full attribute rubric and the per-element scoring table are in this skill's
+  [`references/design-verification.md`](references/design-verification.md).
 
 See the `javascript` guideline ("Eye-verify frontend changes" and "Verify against the design, per element") for the why.
 

@@ -51,17 +51,8 @@ behaviour, z-index show-through, async races, untranslated-key leaks.
 
 When the change has an approved design (a mockup, a Figma frame, a ticket attachment), don't
 eyeball the whole image and call it close — *"looks about right"* is how visual regressions
-ship. Verify it **element by element**:
-
-- List each changed element, plus the element as a whole; exclude anything documented as
-  out of scope.
-- Check each against the design attribute by attribute: alignment (horizontal and vertical),
-  size, text and background colour (including gradients), border presence / colour / width,
-  border-radius, icon, typography (family, weight, size), and spacing.
-- Record the deltas. Each mismatch is either a fix or a question for the designer — a
-  whole-image glance misses a 4px-vs-8px radius or a lost gradient.
-- When you crop a screenshot to a single element, keep a small margin (~15px) around it — a
-  flush crop hides the alignment and spacing errors at the element's own edges.
-
-The `frontend-quality` skill walks this as a suggested step; the `pull-requests` skill flags
-it before a PR.
+ship (a 4px-vs-8px radius, a lost gradient, a control 3px off-centre). Verify it **element by
+element, attribute by attribute**, and record each delta as a fix or a question for the
+designer. The full attribute rubric and the per-element scoring table live in the
+`frontend-quality` skill's `references/design-verification.md` — that skill walks it as a
+suggested step, and the `pull-requests` skill flags it before a PR.
