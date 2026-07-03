@@ -5,6 +5,76 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.17.0 - 2026-07-03
+
+<!-- verified-sha: d95543268942dfc269c6d04d09ab8dcedf2530a4 -->
+### Added
+
+- **A shipped eye-verify harness** (`frontend-quality/scripts/`, emitted as `boost-core` 1.3
+  companion assets). Three framework-agnostic tools so a project stops rebuilding the plumbing:
+  - `screenshot.mjs` — navigate a running app, optionally crop to a `--selector` with ≥15px
+    padding (clamped to the page), save a PNG.
+  - `console.mjs` — record console errors/warnings, uncaught page errors, and failed requests;
+    `--text-pattern` scans rendered text for a project-supplied leak regex (e.g. untranslated-key
+    markers); `--fail-on-error` gates.
+  - `auth-capture.mjs` — the portable auth seam: open a headed browser, log in by hand, save a
+    Playwright `storageState` the other two reuse via `--storage-state`. Knows nothing about any
+    login form, so it works for any app.
+    Playwright is a project prerequisite (`npm i -D playwright && npx playwright install chromium`);
+    each tool fails fast with that hint if it's absent. What stays per-app is only genuinely
+    app-specific glue (programmatic SSO login, data seeding, domain drivers).
+  
+- **Catalog-consistency CI gate** (`.github/validate-catalog.php`). The format validator never
+  checked that the catalog's own tables agree with what ships; the new gate enforces README
+  Skills/Guidelines tags vs each skill's `metadata.boost-tags`, skill/guideline inventory,
+  the guideline tag sidecar, the documented tag vocabulary, `boost:conv` tokens vs real
+  `conventions-schema.json` slots, and `schema-required` vs conv usage.
+- **On-demand design-verification reference** (`frontend-quality/references/design-verification.md`).
+  The full per-element scoring rubric — attributes incl. shadow/elevation, line-height,
+  letter-spacing, tap-area; the "undocumented difference is a finding, not a deviation" rule;
+  image-sampling to the nearest project token when there's no token spec; and a ✓/✗ scoring table.
+
+### Changed
+
+- **`codex-review` replaced the plugin path with a bounded native-CLI wrapper.** The Codex
+  plugin's companion awaited a `turn/completed` event with no timeout and hung on stale broker
+  sessions. The skill now ships `scripts/run-codex-review.mjs` (a companion asset) that runs the
+  bare `codex` CLI under a hard timeout — it cannot hang and cannot read a stale prior run's
+  output. The wrapper adds an env-configurable timeout (`CODEX_REVIEW_TIMEOUT_MS`, floor 1000ms;
+  `--timeout-ms` wins) and a no-flag target fallback that infers the review target from the repo's
+  default branch. `codex.invocation_mode` is deprecated and ignored (retained in the schema so
+  existing configs keep validating).
+- **Eye-verify woven deeper.** `frontend-quality` gained a "seed the off-by-default state before
+  capturing" step and points at the shipped harness as the primary capture path; `pull-requests`
+  documents private-repo image embedding (a committed PNG's `?raw=true` blob URL renders inline
+  for authenticated members; a browser drag-drop `user-attachments` URL is the no-file fallback;
+  `data:` URIs are stripped by GitHub). The `javascript` guideline was slimmed to the always-on
+  principle plus a pointer, so the detailed rubric lives on-demand rather than in every project's
+  `CLAUDE.md`.
+
+### Fixed
+
+- **README tag/inventory drift**, surfaced by the new gate: `pre-release` now documents its
+  `release-automation` tag (a consumer declaring only `php`+`github` would not have received it);
+  `jira-updates` drops a `github` tag it never carried in frontmatter; and the shipped
+  `signed-commits` guideline gets its missing row in the Guidelines inventory.
+
+### Internal
+
+Repository-only; none ship to consumers (all under `export-ignore`d paths or dev config):
+
+- CI `composer install` runs `--no-scripts --no-plugins` on the fork-exposed `pull_request` job.
+- Dependabot now watches the `composer` ecosystem, not just GitHub Actions.
+- `stolt/skill-validator` pinned exactly (`0.0.1`; the `^0.0.1` caret resolved to the same version).
+- Removed a dead `.mcp.json` pointing at a `vendor/bin/testbench boost:mcp` command this package
+  does not provide.
+
+The codex, eye-verify, and design-verification work was sourced from the upstream catalog and
+production adoption feedback, then dogfooded through this repository's own evaluate and
+codex-review flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.16.1...2.17.0
+
 ## 2.16.1 - 2026-06-30
 
 <!-- verified-sha: b17d63530e47ca45aabd7025ec084c4283acdeea -->
@@ -398,6 +468,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -418,6 +489,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -500,6 +572,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -526,6 +599,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -618,6 +692,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -645,6 +720,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -744,6 +820,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -811,6 +888,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -819,6 +897,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -908,6 +987,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -925,6 +1005,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1009,6 +1090,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1140,6 +1222,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1158,6 +1241,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1346,6 +1430,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
