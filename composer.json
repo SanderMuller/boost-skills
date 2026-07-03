@@ -24,7 +24,7 @@
         "laravel/pao": "^1.0",
         "nunomaduro/collision": "^8.0",
         "sandermuller/package-boost-php": "^1.0",
-        "stolt/skill-validator": "^0.0.1"
+        "stolt/skill-validator": "0.0.1"
     },
     "scripts": {
         "post-install-cmd": [

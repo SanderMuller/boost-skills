@@ -96,10 +96,10 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `interview`            | Adversarially grill out a complex feature's requirements — code-first, assumptions-audited — before writing its spec. | —               |
 | `jira-create`          | Create a Jira issue with a well-formed, user-facing description.                                     | `jira`          |
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
-| `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira` `github` |
+| `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
-| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github`  |
+| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github` `release-automation` |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
 | `readme`               | Author and maintain a high-quality README for a Composer package — stub vs comprehensive shape, voice, staleness audit. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
@@ -239,6 +239,7 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
+| `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 

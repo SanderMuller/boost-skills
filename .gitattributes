@@ -26,5 +26,5 @@ GEMINI.md               export-ignore
 .gitattributes          export-ignore
 .gitignore              export-ignore
 .lpv                    export-ignore
-.mcp.json               export-ignore
 CHANGELOG.md            export-ignore
+plans/                  export-ignore
