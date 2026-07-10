@@ -4,6 +4,7 @@ description: "Closeout verdict before shipping: runs the full evaluate loop (inc
 argument-hint: "[file path, feature name, or commit range]"
 metadata:
   boost-tags: "github"
+  boost-requires: "evaluate codex-review pull-requests"
   schema-required: "^1"
 ---
 

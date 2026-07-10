@@ -4,6 +4,7 @@ description: "Researches a Jira issue sent back for rework: reads the issue, com
 argument-hint: "<issue-key> e.g. PROJ-1234 [optional context]"
 metadata:
   boost-tags: "jira github"
+  boost-requires: "jira-updates"
   schema-required: "^1"
 ---
 

@@ -3,6 +3,7 @@ name: interview
 description: "Adversarial grilling flow that gathers requirements for a complex feature by challenging assumptions, sharpening fuzzy terms, and cross-referencing the codebase before handing off to write-spec. Pairs with write-spec: interview gathers the requirements, then write-spec turns them into the spec file. Activates when: gathering requirements, planning a feature, clarifying ambiguous work, or when user mentions: interview, grill, requirements gathering, feature planning, gather requirements, ask me about."
 argument-hint: "[feature or task description]"
 metadata:
+  boost-requires: "write-spec"
   schema-required: "^1"
 ---
 

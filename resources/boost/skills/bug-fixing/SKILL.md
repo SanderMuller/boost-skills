@@ -3,6 +3,7 @@ name: bug-fixing
 description: "Test-driven bug fixing workflow. Activates when: fixing bugs, debugging issues, resolving defects, investigating errors, or when user mentions: bug, fix, broken, not working, error, issue, defect, regression."
 argument-hint: [bug description or issue reference]
 metadata:
+  boost-requires: "test-writing"
   schema-required: "^1"
 ---
 
