@@ -5,6 +5,48 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.20.0 - 2026-07-16
+
+<!-- verified-sha: 2fbe6c08eeb1b25b034742ef2c81b0d0a76fbe34 -->
+### Added
+
+- **`clarify` skill** — the shared questioning core: code-first exploration,
+  bisect-to-intent, fuzzy-term sharpening, scenario stress-tests, and an
+  assumptions audit. Usable standalone (`/clarify`) or as the base other skills
+  build on.
+- **`promptimize` skill** — turns a rough prompt into one optimized,
+  model-agnostic prompt and returns only the prompt. Builds on `clarify`.
+- **Eye-verify harness for `frontend-quality`** — a shipped `scripts/lib.mjs`
+  helper library (`createChecker`, `capturePageIssues`, `withFailedRoute`) and a
+  `references/eye-verify.md` coverage-contract guide, so a project gets
+  browser-verification plumbing without building its own. `console.mjs` gained an
+  `--axe` accessibility/contrast pass, screen-reader-attribute leak scanning, and
+  application-request (xhr/fetch) failure gating.
+- **Dependency-aware spec workflow** — `write-spec` phases now declare an
+  immutable `ID` and `Depends:` edges; `implement-spec` computes each ready
+  "wave" and can implement independent phases in parallel under an explicit
+  opt-in, with write-disjoint and DAG-validation safeguards. Specs without the
+  new metadata fall back to the existing sequential behaviour.
+
+### Changed
+
+- **`interview` now builds on `clarify`** (declares `boost-requires: clarify`) —
+  the grilling disciplines live in one place instead of being duplicated across
+  skills.
+- **`migration-squash` is now invoke-only** (`disable-model-invocation: true`).
+  It no longer auto-activates on incidental mentions of migrations or
+  `schema:dump`; run it explicitly (`/migration-squash`) or by directly asking
+  for a squash. This matches its destructive nature — a squash deletes migration
+  files.
+
+### Internal
+
+- `validate-skills.php` now runs `node --check` over every shipped
+  `*/scripts/*.mjs` companion asset, not only the codex-review wrapper.
+- Documented the `boost-requires` skill-dependency system in the README.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.19.0...2.20.0
+
 ## 2.19.0 - 2026-07-10
 
 <!-- verified-sha: c7eccb58ea36bf8d78d8384e7cb239ddf5d0e931 -->
@@ -538,6 +580,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -558,6 +601,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -646,6 +690,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -672,6 +717,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -770,6 +816,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -797,6 +844,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -902,6 +950,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -972,6 +1021,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -980,6 +1030,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1075,6 +1126,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1092,6 +1144,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1179,6 +1232,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1316,6 +1370,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1334,6 +1389,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1525,6 +1581,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
