@@ -78,7 +78,7 @@ For each phase — whether worked solo or by a fanned-out agent:
 
 **In parallel mode a fanned-out agent never edits the spec file and never asks the user.** Any step below that writes to the spec — 2 (Open Questions), 4 (checkboxes), 8 (Findings) — is instead **returned as structured output** for the orchestrator to apply on join (see [Wave Execution](#wave-execution-solo-vs-parallel)). If step 2 surfaces an open question that wasn't resolved before fan-out, the agent **halts and returns it** rather than asking or proceeding. Solo, you write the spec directly and raise questions with the user as each step says.
 
-1. **Read all relevant existing files** before writing any code.
+1. **Read all relevant existing files** before writing any code. When the phase needs pattern-hunting beyond the files it will edit — how a sibling feature does it, where a convention lives, which callers exist — dispatch a read-only research subagent (e.g. Claude Code's `Explore`) for that sweep and work from its report (conclusions + `file:line`); read inline only the files the phase actually changes.
 2. **Raise any open questions** from the spec's Open Questions section that affect this phase. Don't make assumptions — ask the user. After the user answers, move it from `## Open Questions` to `## Resolved Questions` with the decision and rationale.
 3. **Implement each task** described in the phase.
 4. **Check off each task** (`- [x]`) in the spec file as you complete it.
@@ -110,7 +110,7 @@ All checks must pass with 0 errors/failures. Fix any issues and re-run until cle
 
 ## Step 4: Clean Up
 
-After final verification passes, the spec file can be removed as part of PR creation or kept for reference — ask the user.
+After final verification passes, decide the spec file's fate with the user: remove it as part of PR creation, or keep it for reference. If removing, don't hand-delete it from memory — the `pull-requests` skill (step 11) detects the branch's spec from the `origin/<base>...HEAD` diff, removes it, and verifies no spec (its own or an unrelated one swept in by a broad `git add`) is left added or modified before the PR goes to review. A spec that nonetheless reaches the base branch (removal skipped, or swept in later) is caught post-merge by the `/clean-specs` command.
 
 ## Guidelines
 

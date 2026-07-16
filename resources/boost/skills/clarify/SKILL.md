@@ -31,6 +31,8 @@ If a question is answerable by reading the codebase, **read instead of asking**:
 - "What pattern do we use for this kind of resource?" → grep an existing one.
 - "Is there already an authorization check for this?" → look for it.
 
+**Delegate the bulky sweeps.** For anything beyond a single targeted lookup — mapping a feature area, checking how a pattern is used across files, verifying stated behaviour in several files — dispatch a read-only research subagent (e.g. Claude Code's `Explore`) and work from its brief (conclusions + `file:line`, no file contents), so multi-file reads never bloat this context. Targeted single-file lookups stay inline.
+
 Only ask the user what the code cannot answer: intent, priorities, business rules, UX trade-offs, future plans. If the project ships reference docs (architecture, domain glossary, relationship maps), consult them first so terminology matches project canon.
 
 ### 2. Bisect toward intent

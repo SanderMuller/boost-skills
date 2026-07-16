@@ -94,7 +94,7 @@ Before writing from a fresh template, check whether a spec for this work already
 
 ## Research Before Writing — Required Checklist
 
-Specs are only as good as the research behind them. Before writing the spec body, do all of the following and reference findings in the spec:
+Specs are only as good as the research behind them. Before writing the spec body, do all of the following and reference findings in the spec. **Delegate the bulky steps** — locating code (2) and verifying stated behaviour (4) — **to a read-only research subagent** (e.g. Claude Code's `Explore`), which returns a slim brief instead of loading every file into context; the targeted reads stay inline:
 
 1. **Read the issue** (if any) — description, acceptance criteria, all comments.
 2. **Locate relevant code** — grep for the primary domain term(s); list the files you'll touch.
