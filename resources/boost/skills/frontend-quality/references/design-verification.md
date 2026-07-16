@@ -28,7 +28,7 @@ comparison to be explicit.
 2. **The implementation screenshot** — captured against *this* working tree, cropped to the
    changed surface with **≥15px breathing room** around it (a flush crop hides alignment and
    spacing errors at the element's own edges). The skill's `scripts/screenshot.mjs` companion
-   does this — `--selector` crops to the element and pads automatically; see `scripts/README.md`.
+   does this — `--selector` crops to the element and pads automatically; see [`../scripts/README.md`](../scripts/README.md).
 
 Put the two side by side before scoring.
 
@@ -40,9 +40,13 @@ Put the two side by side before scoring.
 2. **Exclude out-of-scope elements and documented deviations — but only when the divergence is
    written down** (ticket, spec, or PR). An **undocumented** difference is a finding, not a
    deviation.
-3. **Score every remaining element against every applicable attribute.** "Applicable": a text
-   node has no border-radius; a container has no typography of its own — skip the N/A ones, but
-   walk the whole list each time so none is forgotten.
+3. **Score every remaining element against every applicable attribute — and against its
+   sibling family.** "Applicable": a text node has no border-radius; a container has no
+   typography of its own — skip the N/A ones, but walk the whole list each time so none is
+   forgotten. When the element has an **established sibling** (a new badge beside existing
+   badges, a new modal beside sibling modals), compare the same attributes *across the
+   family* with real numbers — same-family drift (a marker 2px larger, a shade off) is the
+   single most-missed class when judging one element in isolation.
 
    | Attribute | Check (design → implementation) |
    |---|---|
@@ -61,6 +65,25 @@ Put the two side by side before scoring.
    rather than guessing — pixel-pick gradient stops and text colours from the design, then map
    each to the nearest **project token** (Tailwind palette / SCSS variable / CSS custom
    property), not an approximate literal.
+
+## Assert the computed truth over eyeballing — and drive the state first
+
+Comparing a screenshot against a design held in memory misses small-but-real diffs (a badge
+flush-to-corner vs inline, a 4px gap, one contrast shade). Two habits close that gap, both
+stronger than a naked-eye comparison:
+
+- **Read and assert the computed value.** For position / alignment / size / colour, don't
+  judge by sight — measure it. `getBoundingClientRect()` on the element and its
+  `offsetParent` gives the true gap between their edges (subtract the rects);
+  `getComputedStyle()` gives `position`, colours, font metrics. Assert each against the
+  design's intent as PASS/FAIL (e.g. a "selected" badge must be `position: absolute` with
+  small top/right offsets, **not** `static` mid-row). Numbers need no judgement and
+  regression-guard the next run.
+- **State-dependent styles need the state driven first.** A static screenshot never enters
+  `:hover` / `:focus` / `:active`, so a contrast bug there is invisible — and global/legacy
+  CSS often overrides the design system's hover styles by specificity. Drive the state
+  (Playwright `locator.hover()` / `.focus()`) **then** read the computed `background` /
+  `color` (a luminance check on the resulting `rgb(...)` catches light-text-on-light-bg).
 
 ## Output
 

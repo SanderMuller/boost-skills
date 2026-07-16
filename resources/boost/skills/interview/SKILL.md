@@ -3,7 +3,7 @@ name: interview
 description: "Adversarial grilling flow that gathers requirements for a complex feature by challenging assumptions, sharpening fuzzy terms, and cross-referencing the codebase before handing off to write-spec. Pairs with write-spec: interview gathers the requirements, then write-spec turns them into the spec file. Activates when: gathering requirements, planning a feature, clarifying ambiguous work, or when user mentions: interview, grill, requirements gathering, feature planning, gather requirements, ask me about."
 argument-hint: "[feature or task description]"
 metadata:
-  boost-requires: "write-spec"
+  boost-requires: "clarify write-spec"
   schema-required: "^1"
 ---
 
@@ -32,57 +32,20 @@ Do NOT use for:
 
 ## Grilling Techniques (Apply Throughout)
 
-These rules apply across every phase. They override any "ask a batch of questions per round" habit — grilling is interactive, one thread at a time.
+The questioning disciplines live in the `clarify` skill — **read it first**. Apply all of them throughout the interview, one thread at a time (this overrides any "batch a round of questions" habit):
 
-### Code-First — Explore Before Asking
+- **Code-First** — read the codebase before asking; only ask the user what code can't answer (intent, priorities, business rules, UX trade-offs).
+- **Bisect toward intent** — halve the possibility space each question while the ask is fuzzy (Phase 0).
+- **One question at a time, with a recommended answer** — recommendation first, 2-3 alternatives.
+- **Sharpen fuzzy terms** — resolve overloaded words to a canonical one.
+- **Stress-test with concrete scenarios** — force a precise answer on each edge.
+- **Cross-reference stated behavior against code** — surface contradictions immediately.
+- **Assumptions audit** — flag every AI-introduced inference and grill it (Phase 7 runs this in full).
 
-If a question is answerable by reading the codebase, **read instead of asking**. Examples:
-- "Does this model already have a `status` column?" → check the migration, don't ask.
-- "What pattern do we use for this kind of resource?" → grep an existing one, don't ask.
-- "Is there already a policy / authorization check for this?" → look for it, don't ask.
+Two overlays specific to the interview → spec hand-off:
 
-Only ask the user about things the code cannot answer: intent, priorities, business rules, UX trade-offs, future plans.
-
-### One Question at a Time, with a Recommended Answer
-
-Default to **one question per turn**, each with your recommended answer plus 2-3 alternatives. The user reacts (accept / pick an alternative / push back) instead of drafting from scratch. Group questions only when they are clearly orthogonal and small.
-
-This produces better answers than batches: the user's response to question N often changes which questions N+1 and N+2 are even relevant. Use `AskUserQuestion` with predefined options where possible, always leading with your recommendation:
-
-```
-"How should errors be displayed?"
-- Inline validation messages (Recommended)
-- Toast notifications
-- Modal dialog
-- Other (describe)
-```
-
-### Sharpen Fuzzy Terms
-
-When the user uses a vague or overloaded term, stop and resolve it. Propose a canonical term and ask which they mean:
-
-> "You said 'item'. Do you mean a saved draft or a published record? Those behave differently here."
-
-Check the project reference docs (above) for canonical names before proposing one. If resolving a term settles a recurring ambiguity, flag it so `write-spec` records it under a `## Terminology` section.
-
-### Stress-Test with Concrete Scenarios
-
-When the user states a rule, invent a specific edge case that probes the boundary and force a precise answer. Don't accept "we'd handle that case" — make them say what happens.
-
-> User: "Editors can edit any record in their workspace."
-> You: "OK — an editor opens a record that was moved into their workspace yesterday from another workspace whose owner just revoked their access. Can they edit it?"
-
-### Cross-Reference Stated Behavior Against Code
-
-When the user describes how something currently works, **verify it against the actual code** before building on it. If they're wrong, surface the contradiction immediately:
-
-> "You said deleting a parent also deletes its children. I checked the relevant handler — it actually orphans them to the grandparent. Which behavior do you want for this feature?"
-
-### Capture Decisions as They Crystallize
-
-When a decision settles, record it immediately in a running **Resolved Questions** tally (question, decision, rationale) that you maintain through the interview and hand to `write-spec` at the end. Do not batch this at the close — capturing as you go prevents re-litigating settled decisions and keeps the handoff accurate if the conversation gets long.
-
-Filter for what qualifies: a decision a future reader would otherwise wonder about — scope boundaries, behavior under conflict, terminology choices, technical trade-offs with real alternatives. Trivial preferences (icon, button label, exact wording) belong in the spec body, not in Resolved Questions, or they dilute the signal.
+- **Capture decisions as they crystallize** into a running **Resolved Questions** tally (question, decision, rationale) that you maintain through the interview and hand to `write-spec` at the end. Capturing as you go — not batched at the close — prevents re-litigating settled decisions and keeps the hand-off accurate if the conversation gets long. Filter for what a future reader would wonder about (scope boundaries, conflict behavior, terminology, technical trade-offs with real alternatives); trivial preferences (icon, button label, exact wording) belong in the spec body.
+- **Terminology** — when sharpening a fuzzy term settles a recurring ambiguity, flag it so `write-spec` records it under a `## Terminology` section.
 
 ## Interview Process
 
@@ -90,15 +53,7 @@ Filter for what qualifies: a decision a future reader would otherwise wonder abo
 
 **Evaluate fuzziness *after* pulling all available context** — fetch the linked issue first if one was provided, then judge. A one-line ask with a richly-detailed linked issue has sharp intent; Phase 0 is skipped.
 
-Trigger this phase only when, with all context in hand, the request is one sentence, uses overloaded terms, or has multiple plausible interpretations. Use **bisecting questions** that cut the possibility space roughly in half each turn — not open-ended "tell me about X", but "is this A or B" until intent converges.
-
-Example — initial ask: `/interview Improve sharing`
-
-1. "Is this about how users *invite collaborators*, or how they *publish to an audience*?" (internal vs external)
-2. (external) "Is the gap in *who can access* the published thing, or in *how the link works* once shared?" (access control vs link UX)
-3. (access control) "Is this a *missing capability* (e.g. no password-protected links) or *friction with an existing one* (too many clicks)?" (missing feature vs friction)
-
-After 2-4 such questions, intent is sharp enough for Phase 1. Capture each bisecting outcome into the Resolved Questions tally — they are real scope decisions. **Bisecting also applies mid-interview**: if any answer reveals new fuzziness, drop in 1-2 bisecting questions before continuing.
+Trigger this phase only when, with all context in hand, the request is still fuzzy — one sentence, overloaded terms, or multiple plausible interpretations. Apply the **Bisect toward intent** discipline from `clarify`: cut the possibility space roughly in half each turn until intent converges (its "Improve sharing" walkthrough is the model). Capture each bisecting outcome into the Resolved Questions tally — they are real scope decisions. Bisecting also applies mid-interview: if any answer reveals new fuzziness, drop in 1-2 bisecting questions before continuing.
 
 ### Phase 1: Problem & Goals
 
@@ -128,24 +83,11 @@ How will this be tested? Acceptance criteria? Specific scenarios QA should cover
 
 **Run this phase always, no skip.** Earlier phases capture *answered* questions. This phase catches the inverse: every place you silently inferred something the user did not explicitly say, and every place an answer was clear at the time but has fuzzy implications now that surrounding decisions are in. The goal is to make it safe for the user to ship the spec **without reading it end-to-end**.
 
-**Step 1 — Scan for AI-introduced assumptions.** Walk every decision gathered so far and list every statement that meets *any* of these:
+Run the **Assumptions audit** from `clarify` over every decision gathered so far — its category list is the checklist. Add one interview-specific trigger:
 
-- **Magic numbers invented from nothing** — char caps, retry counts, backoff sequences, cache TTLs, delays, pagination sizes. Wrote a number the user didn't say? Ask.
-- **Naming and string content invented** — message templates, cache-key prefixes, error wording, queue names. The user probably has opinions on user-visible strings.
-- **Behavioural defaults the user did not bless** — retry-vs-fail-fast, silent-skip vs surfaced-error, idempotency.
-- **Unverified factual claims** — "all modern browsers support X", "this column is already indexed". If you asserted a fact the user couldn't see, flag it.
-- **Deviations from the user's original wording** — even when they approved the change later, surface original intent vs final decision so they spot drift.
-- **Filled-gap behaviours** — they said "block them", you assumed the UX (error vs silent fail vs redirect).
-- **Convention-added pieces the user did not ask for** — a factory/policy/observer added because that's how the codebase usually wires it.
-- **Implicit edge-case behaviour** — retry, conflict, timeout, missing related record, parallel invocation.
-- **"Recommended" options accepted without engaging** — they took your recommendation, but did they understand the trade-off?
 - **MVP trade-offs worth re-flagging** — an earlier accepted shortcut that's load-bearing enough to re-confirm now.
 
-Exclude purely cosmetic inferences that don't change observable behaviour.
-
-**Step 2 — Grill one assumption at a time.** For each, ask via `AskUserQuestion` with the assumption stated in plain language (no jargon, no class names), "Correct as stated" as the first option, plus 1-2 concrete alternatives. `AskUserQuestion` always appends its own free-text "Other" choice, so don't add a manual escape-hatch option. **Never batch** — the answer to assumption N often changes whether N+1 still applies.
-
-**Step 3 — Fold outcomes into the handoff.** Every scanned item becomes part of the requirements you pass to `write-spec`, regardless of outcome — this is the ledger that lets the user sign off by skimming alone. `write-spec` runs its own Assumptions Audit on the technical sections it adds.
+Grill one assumption at a time (never batch), then **fold every scanned item into the requirements you hand to `write-spec`**, regardless of outcome — this is the ledger that lets the user sign off by skimming alone. `write-spec` runs its own Assumptions Audit on the technical sections it adds.
 
 ### Phase 8: Feature Flag Consideration
 

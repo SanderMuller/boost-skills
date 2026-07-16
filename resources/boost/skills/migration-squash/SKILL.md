@@ -1,6 +1,7 @@
 ---
 name: migration-squash
-description: "Create or review a Laravel migration squash (schema:dump --prune into a single schema baseline). Holds the conventions and the verification checklist that catches an incomplete, contaminated, or data-losing dump before it breaks fresh installs. Activates when: squashing migrations, running schema:dump, reviewing a squash PR, pruning migrations, resetting a migration baseline, or when user mentions: squash migrations, schema:dump, schema dump prune, mysql-schema, migration baseline, prune migrations, review a squash PR."
+description: "Conventions and verification checklist for creating or reviewing a Laravel migration squash (schema:dump --prune into a single schema baseline) — catches an incomplete, contaminated, or data-losing dump before it breaks fresh installs. Invoke-only: run only when explicitly invoked (e.g. /migration-squash) or when the user directly asks to create or review a migration squash. Do NOT auto-activate on incidental mentions of migrations, schema:dump, baselines, or pruning."
+disable-model-invocation: true
 metadata:
   boost-tags: "laravel"
 ---

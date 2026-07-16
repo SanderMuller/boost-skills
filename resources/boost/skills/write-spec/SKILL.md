@@ -149,11 +149,15 @@ The final sections are always:
 
 ### Phase 1: {Phase Name} (Priority: {HIGH/MEDIUM/LOW})
 
+**ID:** {slug} · **Depends:** none
+
 - [ ] {Task description} — {brief context}
 - [ ] {Task description} — {brief context}
 - [ ] Tests — {what to test}
 
 ### Phase 2: {Phase Name} (Priority: {HIGH/MEDIUM/LOW})
+
+**ID:** {slug} · **Depends:** {id}, {id}
 
 - [ ] {Task description} — {brief context}
 - [ ] Tests — {what to test}
@@ -255,9 +259,25 @@ Use "None." when the change has no load-bearing assumptions.
 
 ### Phases
 
-- `### Phase N: {Name} (Priority: HIGH/MEDIUM/LOW)` — ordered by dependency.
+- `### Phase N: {Name} (Priority: HIGH/MEDIUM/LOW)`. Number phases in dependency (topological) order so the list reads top-to-bottom — but the `Depends:` edges, not the numbers, govern execution order.
 - Priorities: `HIGH` = must have, `MEDIUM` = should have, `LOW` = nice to have (skipped by default during implementation).
 - Keep phases manageable: ~half a day to a day. Split if more than 8-10 tasks.
+- **Every phase boundary must earn itself.** A boundary is justified by either (a) a **dependency edge** — this phase needs a prior phase's output — or (b) a **parallel split** — independent work that can run concurrently. Two phases that are merely sequential with neither are arbitrary grouping — merge them. Don't add a boundary just to get a review: `implement-spec` pauses for the user after *every* wave anyway. To force a phase to be reviewed in isolation before the work that follows, give that later work a dependency edge on it, so the phase lands alone in its own wave. This is the antidote to over-phasing: don't manufacture phases, and where work *is* independent, split it so it can run in parallel.
+
+### Phase Dependencies (the DAG)
+
+Every phase carries one metadata line immediately under its heading:
+
+```
+**ID:** {slug} · **Depends:** {comma-separated IDs, or none}
+```
+
+- **ID** — an immutable, kebab-case slug unique within the spec (e.g. `migration`, `import-parser`). Always depend on IDs, **never on phase numbers**: numbers renumber when phases are reordered and silently corrupt the graph; IDs don't.
+- **Depends** — the IDs of every phase that must complete before this one starts. Write `none` to state affirmatively that the phase is independent; don't omit the field — an explicit `none` reads as "considered and independent", a missing line reads as "forgot". Record **forward edges only** — never the inverse (`Blocks:`); one direction, one source of truth.
+- **Independence means write-disjoint, not merely logically unrelated.** Two phases may run concurrently only if they also touch **disjoint files**. If two otherwise-independent phases would edit the same file, add a dependency edge to serialise them (or merge them) — concurrent edits to one file collide. Marking a phase `Depends: none` asserts it shares no written file with any other phase that could be ready at the same time.
+- **Never depend on a lower-priority phase.** A `HIGH` phase must not `Depends:` on a `MEDIUM`/`LOW` phase, nor `MEDIUM` on `LOW`. Lower-priority phases are skipped by default at implementation time, which would leave the dependent phase permanently unready. If phase B genuinely needs phase A's output, A is at least as important as B — raise A's priority to match.
+- Keep the graph **linearizable**: forward edges, IDs not positions, no cross-spec dependencies. If the graph is complex enough to need a diagram to follow, the spec is too big — split it. Don't add a derived "waves"/DAG-diagram block: the per-phase edges are the single source of truth, and a hand-maintained summary just drifts.
+- `implement-spec` reads these edges to compute each **wave** — the set of phases whose dependencies are all met — and may implement a wave's independent phases in parallel. A spec where every phase is `Depends: none` is one fully parallel wave; a straight `a → b → c` chain runs exactly like the old sequential model.
 
 ### Tasks
 

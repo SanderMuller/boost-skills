@@ -6,11 +6,17 @@
 //
 // Framework-agnostic runtime check: load a URL on the project's running app and record
 // console errors/warnings, uncaught page errors, and failed requests — the signals
-// type-check and lint can't see. Optionally scan the rendered text for a leak pattern
-// the project supplies (e.g. untranslated-key markers). Prints a JSON report; with
-// --fail-on-error, exits non-zero when errors, page errors, or leaks are present.
+// type-check and lint can't see. Optionally scan for a leak pattern the project supplies
+// (e.g. untranslated-key markers): --text-pattern matches both the rendered text AND
+// screen-reader attributes (aria-label, title, alt, placeholder — where a raw key hides
+// from a visible-text-only scan). Optionally run an axe-core accessibility/contrast pass
+// (--axe). Prints a JSON report; with --fail-on-error, exits non-zero when the page is not
+// clean: console/page errors, leaks, serious/critical axe violations, a main-document ≥400
+// (wrong-host / dead page), or a failed application request (xhr/fetch ≥400 or network fail).
+// Every failed request (any type) is listed in `failedRequests` for inspection.
 //
 // Prerequisite (the project provides it): npm i -D playwright && npx playwright install chromium
+// The --axe pass additionally needs: npm i -D @axe-core/playwright
 
 import path from 'node:path';
 import fs from 'node:fs';
@@ -29,11 +35,15 @@ function usage() {
         'Usage:',
         '  node console.mjs --url <url> [--wait-selector <css>] [--dwell-ms <ms>]',
         '                   [--text-pattern <regex>] [--storage-state <file.json>]',
-        '                   [--viewport <WxH>] [--timeout-ms <ms>] [--fail-on-error]',
+        '                   [--viewport <WxH>] [--timeout-ms <ms>] [--axe] [--fail-on-error]',
         '',
         'Loads the page and records console errors/warnings, uncaught page errors, and',
-        'failed requests. --text-pattern scans the rendered body text for a project-supplied',
-        'regex (e.g. untranslated-key markers). --fail-on-error exits 1 when anything is found.',
+        'failed requests. --text-pattern scans both the rendered text and screen-reader',
+        'attributes (aria-label, title, alt, placeholder) for a project-supplied regex',
+        '(e.g. untranslated-key markers). --axe runs an axe-core accessibility/contrast pass',
+        '(needs @axe-core/playwright). --fail-on-error exits 1 when the page is not clean:',
+        'console/page errors, leaks, serious/critical axe violations, a main-document ≥400, or',
+        'a failed application request (xhr/fetch). Every failed request is listed in failedRequests.',
         `Prerequisite: Playwright installed in the project (${INSTALL_HINT}).`,
     ].join('\n');
 }
@@ -56,6 +66,7 @@ function parseArgs(argv) {
         storageState: null,
         viewport: DEFAULT_VIEWPORT,
         timeoutMs: DEFAULT_TIMEOUT_MS,
+        axe: false,
         failOnError: false,
         help: false,
     };
@@ -69,6 +80,10 @@ function parseArgs(argv) {
         }
         if (arg === '--fail-on-error') {
             options.failOnError = true;
+            continue;
+        }
+        if (arg === '--axe') {
+            options.axe = true;
             continue;
         }
 
@@ -163,6 +178,7 @@ async function capture(options) {
     const consoleWarnings = [];
     const pageErrors = [];
     const failedRequests = [];
+    let appRequestFailed = false;
 
     try {
         const contextOptions = { viewport: options.viewport };
@@ -182,11 +198,33 @@ async function capture(options) {
             }
         });
         page.on('pageerror', (error) => pageErrors.push(error.message));
+        // Both HTTP ≥400 responses (a silently-500ing XHR) and network-level failures:
+        // `requestfailed` never fires for 4xx/5xx, so the `response` listener catches those.
+        // An xhr/fetch failure is an application-request failure (a feature depends on it) and
+        // gates `clean`; a decorative sub-resource failure (favicon/image/font) does not by
+        // itself gate `clean` (the browser may still log its own console error for it).
+        const isAppRequest = (request) => request.resourceType() === 'xhr' || request.resourceType() === 'fetch';
+        page.on('response', (response) => {
+            if (response.status() >= 400) {
+                const request = response.request();
+                failedRequests.push(`${request.method()} ${response.url()} — ${response.status()}`);
+                if (isAppRequest(request)) {
+                    appRequestFailed = true;
+                }
+            }
+        });
         page.on('requestfailed', (request) => {
             failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText ?? 'failed'}`);
+            if (isAppRequest(request)) {
+                appRequestFailed = true;
+            }
         });
 
-        await page.goto(options.url, { waitUntil: 'load', timeout: options.timeoutMs });
+        const response = await page.goto(options.url, { waitUntil: 'load', timeout: options.timeoutMs });
+        // The MAIN document status is a first-class signal: a hard 404/500 here is the
+        // "wrong host / dead page" case the docs warn about, so it gates `clean` (below) —
+        // distinct from a subresource ≥400 (favicon), which stays informational.
+        const navStatus = response ? response.status() : null;
         if (options.waitSelector) {
             await page.waitForSelector(options.waitSelector, { timeout: options.timeoutMs });
         }
@@ -196,14 +234,78 @@ async function capture(options) {
 
         let leaks = [];
         if (options.textRegex) {
-            const text = await page.evaluate(() => document.body?.innerText ?? '');
-            leaks = [...new Set(text.match(options.textRegex) ?? [])];
+            // Scan the rendered text AND screen-reader attributes: a raw i18n key in an
+            // aria-label / title / alt / placeholder is invisible to a body-text-only scan.
+            const scanText = await page.evaluate(() => {
+                const parts = [document.body?.innerText ?? ''];
+                const attributes = ['aria-label', 'aria-valuetext', 'aria-description', 'aria-placeholder', 'aria-roledescription', 'title', 'alt', 'placeholder'];
+                for (const element of document.querySelectorAll('*')) {
+                    for (const name of attributes) {
+                        const value = element.getAttribute(name);
+                        if (value) {
+                            parts.push(value);
+                        }
+                    }
+                }
+
+                return parts.join('\n');
+            });
+            leaks = [...new Set(scanText.match(options.textRegex) ?? [])];
         }
 
-        return { consoleErrors, consoleWarnings, pageErrors, failedRequests, leaks };
+        const axe = options.axe ? await runAxe(page) : null;
+
+        return { consoleErrors, consoleWarnings, pageErrors, failedRequests, leaks, axe, navStatus, appRequestFailed };
     } finally {
         await browser.close();
     }
+}
+
+// Optional axe-core accessibility/contrast pass. @axe-core/playwright is a project
+// prerequisite for --axe; a missing package is reported as a setup gap (available:false
+// + install hint), not a page defect, so it never silently greens a skipped audit.
+async function runAxe(page) {
+    let AxeBuilder;
+    try {
+        // @axe-core/playwright exports AxeBuilder as a NAMED export (its README documents
+        // `const { AxeBuilder } = require(...)`); under `await import()` of the CJS module,
+        // `.default` is the namespace object, not the class. Prefer the named export, fall
+        // back to `.default` for any dual-published build.
+        const mod = await import('@axe-core/playwright');
+        AxeBuilder = mod.AxeBuilder ?? mod.default;
+        if (typeof AxeBuilder !== 'function') {
+            throw new Error('@axe-core/playwright did not export an AxeBuilder constructor');
+        }
+    } catch (error) {
+        return {
+            available: false,
+            hint: 'Install the axe pass: npm i -D @axe-core/playwright',
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const counts = { critical: 0, serious: 0, moderate: 0, minor: 0 };
+    const violations = results.violations.map((violation) => {
+        if (violation.impact && counts[violation.impact] !== undefined) {
+            counts[violation.impact] += 1;
+        }
+
+        return {
+            id: violation.id,
+            impact: violation.impact,
+            help: violation.help,
+            nodes: violation.nodes.length,
+            targets: violation.nodes.slice(0, 5).map((node) => node.target.join(' ')),
+        };
+    });
+
+    return {
+        available: true,
+        blocking: counts.critical > 0 || counts.serious > 0,
+        counts,
+        violations,
+    };
 }
 
 async function main() {
@@ -225,19 +327,31 @@ async function main() {
 
     try {
         const result = await capture(options);
-        const clean = result.consoleErrors.length === 0 && result.pageErrors.length === 0 && result.leaks.length === 0;
+        const axeBlocking = result.axe?.available === true && result.axe.blocking === true;
+        // A requested --axe pass that couldn't run (missing @axe-core/playwright) is a setup
+        // failure: it must not read green in the JSON either, or a consumer parsing `clean`
+        // (rather than the exit code) sees a pass for an audit that never ran.
+        const axeRequestedButUnavailable = options.axe && result.axe?.available === false;
+        const navFailed = result.navStatus !== null && result.navStatus >= 400;
+        const clean = result.consoleErrors.length === 0 && result.pageErrors.length === 0 && result.leaks.length === 0 && !axeBlocking && !axeRequestedButUnavailable && !navFailed && !result.appRequestFailed;
         report({
             ok: true,
             url: options.url,
             clean,
+            navStatus: result.navStatus,
+            appRequestFailed: result.appRequestFailed,
             consoleErrors: result.consoleErrors,
             pageErrors: result.pageErrors,
             leaks: result.leaks,
             consoleWarnings: result.consoleWarnings,
             failedRequests: result.failedRequests,
+            axe: result.axe,
             error: null,
         });
-        if (options.failOnError && !clean) {
+        // Missing-but-requested axe (folded into `clean` above) exits non-zero even
+        // without --fail-on-error: a setup failure like a missing Playwright, so it
+        // can't silently green an audit that never ran.
+        if (axeRequestedButUnavailable || (options.failOnError && !clean)) {
             process.exitCode = 1;
         }
     } catch (error) {

@@ -83,13 +83,14 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `autoresearch`         | Autonomous performance loop: benchmark, change code, then keep or revert by measured result.         | `php`           |
 | `backend-quality`      | Two-tier PHP quality gate: Pint + related tests on every change, PHPStan + full suite on completion. | `php`           |
 | `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
+| `clarify`              | Turn a fuzzy ask into sharp, fact-checked intent — reduce ambiguity, sharpen terms, surface assumptions. Shared core of `interview` and `promptimize`. | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
 | `final-verification-review` | Closeout verdict: run the full evaluate loop, dry-run the closeout preflight (PR flow *or* no-PR commit/release), report READY / NOT READY. | `github`        |
-| `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; eye-verify advisory for UI changes. | `frontend`      |
+| `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; browser eye-verify for UI changes, with a shipped harness. | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
 | `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |
 | `implement-spec`       | Implement a specification file phase by phase with progress tracking.                                | —               |
@@ -100,6 +101,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github` `release-automation` |
+| `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
 | `readme`               | Author and maintain a high-quality README for a Composer package — stub vs comprehensive shape, voice, staleness audit. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
@@ -138,7 +140,7 @@ A skill or guideline can carry more than one tag, and then applies only where th
 
 ## Skill dependencies
 
-Some skills hand off to others: `interview` hands to `write-spec`, `evaluate` runs `code-review` and `codex-review`, `pre-release` drafts docs via `readme` / `release-notes` / `upgrading`. A skill declares these hard hand-offs in its `SKILL.md` frontmatter (`metadata.boost-requires`, space-delimited skill names). Whenever the skill syncs, every skill it requires syncs too. That includes one your `withTags(...)` would otherwise filter out, which `boost-core` pulls in anyway (a "rescue") so the dependent never delegates to a skill that isn't there. Resolution is transitive and cycle-tolerant.
+Some skills hand off to others: `interview` and `promptimize` both build on `clarify`, `interview` then hands to `write-spec`, `evaluate` runs `code-review` and `codex-review`, `pre-release` drafts docs via `readme` / `release-notes` / `upgrading`. A skill declares these hard hand-offs in its `SKILL.md` frontmatter (`metadata.boost-requires`, space-delimited skill names). Whenever the skill syncs, every skill it requires syncs too. That includes one your `withTags(...)` would otherwise filter out, which `boost-core` pulls in anyway (a "rescue") so the dependent never delegates to a skill that isn't there. Resolution is transitive and cycle-tolerant.
 
 Like the tag mechanism, this is family-canonical: `boost-core` (`^1.4`) resolves `boost-requires` at sync time and surfaces the pulled-in dependencies; `boost doctor` reports any that are unsatisfied. On older engines or under `laravel/boost` the key is inert. Only genuine hand-offs are declared; conditional ("delegate where synced") and routing ("NOT for X — use Y") references are not. See [`boost-core`'s README](https://github.com/sandermuller/boost-core) for the authoring guidance.
 

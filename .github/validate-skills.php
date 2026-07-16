@@ -64,35 +64,45 @@ foreach ($files as $file) {
 $total = count($files);
 echo "\n" . ($total - $failed) . "/{$total} skills valid\n";
 
-// The codex-review skill ships a runnable `scripts/run-codex-review.mjs` wrapper
-// as a companion asset (boost-core >= 1.3 emits skill-dir siblings beside the
-// rendered SKILL.md). A syntax error there ships a broken wrapper, so guard it
-// with `node --check`. Node is optional in this PHP CI job — skip (don't fail)
-// when it's absent, but always fail when the expected wrapper file is missing.
-$wrapperFailed = 0;
+// Runnable Node companion assets. boost-core (>= 1.3) emits skill-dir siblings
+// beside the rendered SKILL.md, so a syntax error in one ships a broken asset.
+// Syntax-check every `.mjs` shipped under a skill's `scripts/` with `node --check`
+// (the codex-review wrapper, the frontend-quality eye-verify harness, and any
+// future companion). Node is optional in this PHP CI job — skip (don't fail) when
+// it's absent. The codex-review wrapper is a REQUIRED companion: its absence is a
+// hard fail, not a skip.
+$assetFailed = 0;
 $wrapperScript = $skillsDir . '/codex-review/scripts/run-codex-review.mjs';
 if (! is_file($wrapperScript)) {
-    $wrapperFailed++;
+    $assetFailed++;
     echo "\nFAIL  codex-review wrapper: expected companion asset {$wrapperScript} is missing\n";
-} else {
+}
+
+$mjsFiles = glob($skillsDir . '/*/scripts/*.mjs') ?: [];
+sort($mjsFiles);
+
+if ($mjsFiles !== []) {
     $nodeProbe = [];
     $nodeStatus = 1;
     exec('command -v node 2>/dev/null', $nodeProbe, $nodeStatus);
 
     if ($nodeStatus !== 0) {
-        echo "\nSKIP  codex-review wrapper syntax check (node not on PATH)\n";
+        echo "\nSKIP  shipped .mjs syntax check (node not on PATH)\n";
     } else {
-        $checkOut = [];
-        $checkStatus = 1;
-        exec('node --check ' . escapeshellarg($wrapperScript) . ' 2>&1', $checkOut, $checkStatus);
+        foreach ($mjsFiles as $mjs) {
+            $rel = str_replace($skillsDir . '/', '', $mjs);
+            $checkOut = [];
+            $checkStatus = 1;
+            exec('node --check ' . escapeshellarg($mjs) . ' 2>&1', $checkOut, $checkStatus);
 
-        if ($checkStatus === 0) {
-            echo "\nPASS  codex-review wrapper syntax (node --check)\n";
-        } else {
-            $wrapperFailed++;
-            echo "\nFAIL  codex-review wrapper syntax (node --check)\n";
-            foreach ($checkOut as $line) {
-                echo "        {$line}\n";
+            if ($checkStatus === 0) {
+                echo "\nPASS  {$rel} syntax (node --check)\n";
+            } else {
+                $assetFailed++;
+                echo "\nFAIL  {$rel} syntax (node --check)\n";
+                foreach ($checkOut as $line) {
+                    echo "        {$line}\n";
+                }
             }
         }
     }
@@ -186,4 +196,4 @@ if ($manifests !== []) {
     echo ($manifestTotal - $manifestFailed) . "/{$manifestTotal} guideline tag manifests valid\n";
 }
 
-exit($failed === 0 && $manifestFailed === 0 && $wrapperFailed === 0 ? 0 : 1);
+exit($failed === 0 && $manifestFailed === 0 && $assetFailed === 0 ? 0 : 1);
