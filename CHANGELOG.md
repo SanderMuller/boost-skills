@@ -5,6 +5,31 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.23.0 - 2026-07-26
+
+<!-- verified-sha: a838c232e569713b5b806b6c907d2c01324fea38 -->
+`resolve-conflicts` now owns the whole merge rather than just the conflicted parts of it, and verifies the cases git reports as clean. Every git behaviour below was checked against real repositories before being written down; two claims the skill previously made turned out to be wrong.
+
+### Added
+
+- **Cross-side consistency check in `resolve-conflicts`, with a shipped companion.** A merge can combine both sides cleanly and still leave code that no longer agrees with itself — one side renames a declaration while the other adds a reference to the old name. Git reports no conflict, and a diff against either side looks exactly as it should, because the removal and the stale reference never appear in the same comparison. The new `scripts/dangling-symbols.sh` companion sweeps **both** directions (they removed something you call, and you removed something they call) and reports surviving references. Retarget it at any language with `--keywords`; `--help` documents the rest.
+- **Clean-tree preflight.** A dirty tree does not reliably stop a merge: git aborts only when the incoming change would overwrite the dirty file, so unrelated work-in-progress otherwise survives into the verification diffs with nothing marking it as unrelated. Untracked files stay excluded from the gate — they never reach a diff — but now carry their own documented abort path, since an incoming file landing on an untracked path stops the merge outright.
+- **`bash -n` syntax gate for shipped `.sh` companions**, mirroring the existing `node --check` path for `.mjs` assets.
+
+### Changed
+
+- **`resolve-conflicts` merges with `--no-commit`.** A conflict-free merge previously committed itself before any of the prescribed verification ran, leaving a failed check fixable only by amending or resetting. Conflicted and clean merges now behave identically: the merge stays staged until the commit phase. Fast-forwards are unaffected and need no verification.
+- **Marker-less conflicts are handled.** Modify/delete and rename/delete conflicts (`DU`/`UD`) carry no `<<<<<<<` markers — git leaves the surviving side's content in place, so deciding what is left to resolve by grepping for markers skips those files entirely while they look finished. Conflicts are now enumerated by status code, with the opposite side read through `git show :N:`.
+- **Failing tests are baselined against both parents.** Red on your branch was previously enough to call a failure pre-existing and move on. But a test red on your side may have been *fixed* on the incoming one, in which case a red result after the merge means the resolution dropped that fix — the exact dropped-functionality bug the skill exists to prevent. All four ours/theirs combinations now have a verdict.
+- **Verification split by the question it answers.** "Did the resolution keep both sides?" (a diff) and "do those changes still agree with each other?" (the sweep and the test suite) are separate checks, and the second runs even when git reported no conflict.
+- **`pull-requests`, `pr-review-feedback`, and `jira-rework` route their whole base-sync merge through `resolve-conflicts`**, not just the conflicted case. Each previously restated the post-merge verification itself, precisely because a clean merge never reached the skill. All three now declare `boost-requires: resolve-conflicts`.
+
+### Fixed
+
+- **`merge-tree` exit taxonomy in `resolve-conflicts`.** Unrelated histories exit `128` with `fatal: refusing to merge unrelated histories`, not exit `1` with the `not something we can merge` message the skill attributed to them. Exit `128` is now documented as its own case, covering both that and the rejected `--quiet` + `--name-only` combination.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.22.0...2.23.0
+
 ## 2.22.0 - 2026-07-26
 
 <!-- verified-sha: a52cbddfe51142c389cdd33ba4079f2bf59caaa4 -->
@@ -614,6 +639,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -634,6 +660,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -728,6 +755,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -754,6 +782,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -858,6 +887,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -885,6 +915,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -996,6 +1027,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1069,6 +1101,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1077,6 +1110,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1178,6 +1212,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1195,6 +1230,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1285,6 +1321,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1428,6 +1465,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1446,6 +1484,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1640,6 +1679,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
