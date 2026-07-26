@@ -4,6 +4,7 @@ description: "Applies PR review feedback with critical evaluation, then replies 
 argument-hint: "[PR number]"
 metadata:
   boost-tags: "github"
+  boost-requires: "resolve-conflicts"
   schema-required: "^1"
 ---
 
@@ -154,17 +155,12 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
 
 Apply feedback on top of an up-to-date branch — a branch that has drifted from its base can produce changes that pass locally but conflict or break once merged. Bring the base (`baseRefName` from Phase 1) in first.
 
-1. **Confirm the working tree is clean first.** `git merge-tree` only compares `HEAD` to the base, so it can report a clean merge while the actual `git merge` below aborts on local changes. Right after the Phase 1 checkout the tree should already be clean; verify with `git status --porcelain` and, if anything is staged or modified, stash it (`git stash -u`) before merging and pop it after, or skip this phase if the changes can't be safely set aside.
+1. **Use the `resolve-conflicts` skill to run the merge.** Merging `origin/<baseRefName>` into the PR branch is that skill's whole subject: it owns the clean-tree preflight, the side-effect-free conflict probe (including the older-Git fallback), the resolution itself, and the post-merge verification a conflict-free merge still needs. Do not reimplement any of it here, and **do not force a resolution inline**. Return to this skill once the merge is committed.
 
-2. **Fetch and check for conflicts without side effects** (Git ≥ 2.38):
-   ```bash
-   git fetch origin <baseRefName>
-   git merge-tree --write-tree --name-only HEAD origin/<baseRefName>
-   ```
-   - **Exit 0** — clean. Merge it in: `git merge --no-edit origin/<baseRefName>`. The merge commit rides along with the feedback commits pushed in Phase 5 (if no feedback changes are applied, push the sync merge on its own).
-   - **Exit 1 with file names on stdout** — conflicts. **Do not force a resolution here.** Hand off to the `resolve-conflicts` skill, then return to this skill once the merge is committed. (Exit 1 with *empty* stdout and a `merge-tree:` line on stderr is a bad ref, not a conflict — fix the ref name and retry.)
-   - **Already up to date** (base is an ancestor of HEAD) — nothing to do; continue.
-   - **`git merge-tree --write-tree` unavailable** (Git < 2.38) — skip the probe and run `git merge --no-edit origin/<baseRefName>` directly. A clean merge proceeds as in Exit 0; if it stops with conflicts, hand off to `resolve-conflicts` (which documents an older-Git temp-worktree fallback) instead of resolving inline. Do not let an old Git client stall the rest of the skill.
+2. **Details specific to this flow:**
+   - The tree should already be clean straight after the Phase 1 checkout. If it is not, and the changes cannot be safely stashed (`git stash -u`) and popped after, **skip this phase** rather than blocking on it.
+   - The resulting merge commit rides along with the feedback commits pushed in Phase 5. If no feedback changes end up being applied, push the sync merge on its own.
+   - "Already up to date" means there is nothing to do; continue.
 
 3. **If the merge changed any files, the Phase 1 thread snapshot no longer lines up with the working tree.** GitHub does not recompute thread positions or `isOutdated` until the merge commit is *pushed* (Phase 5), so re-running the Phase 1 query here returns the same pre-merge `path`/`line`/`diffHunk` — it cannot refresh them. Don't rely on those line numbers after the merge. In the later phases, locate each comment's target by **content** — match its `diffHunk` against the current merged file — rather than by `line`. Thread IDs are unaffected, so reply and resolve still target the right thread.
 

@@ -108,6 +108,39 @@ if ($mjsFiles !== []) {
     }
 }
 
+// Shell companions get the same treatment via `bash -n`. Same reasoning as the
+// `.mjs` check above: an emitted asset with a syntax error ships broken. Bash is
+// effectively always present on the CI image, but skip rather than fail if not.
+$shFiles = glob($skillsDir . '/*/scripts/*.sh') ?: [];
+sort($shFiles);
+
+if ($shFiles !== []) {
+    $bashProbe = [];
+    $bashStatus = 1;
+    exec('command -v bash 2>/dev/null', $bashProbe, $bashStatus);
+
+    if ($bashStatus !== 0) {
+        echo "\nSKIP  shipped .sh syntax check (bash not on PATH)\n";
+    } else {
+        foreach ($shFiles as $sh) {
+            $rel = str_replace($skillsDir . '/', '', $sh);
+            $checkOut = [];
+            $checkStatus = 1;
+            exec('bash -n ' . escapeshellarg($sh) . ' 2>&1', $checkOut, $checkStatus);
+
+            if ($checkStatus === 0) {
+                echo "\nPASS  {$rel} syntax (bash -n)\n";
+            } else {
+                $assetFailed++;
+                echo "\nFAIL  {$rel} syntax (bash -n)\n";
+                foreach ($checkOut as $line) {
+                    echo "        {$line}\n";
+                }
+            }
+        }
+    }
+}
+
 // Guideline tag manifests. boost-skills' guidelines are frontmatter-free (for
 // laravel/boost compatibility), so their capability tags live in a sidecar
 // `.boost-tags.yaml` per guidelines directory, read by boost-core >= 0.6.0. An
