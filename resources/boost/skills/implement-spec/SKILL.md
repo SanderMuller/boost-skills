@@ -104,9 +104,9 @@ After each wave completes, ask the user whether to:
 
 ## Step 3: Final Verification (After All Waves Complete)
 
-Once every task checkbox in all **non-skipped** phases is checked (phases skipped as `Priority: LOW` are excluded from this condition), use the `backend-quality` skill (Tier 2: full checks).
+Once every task checkbox in all **non-skipped** phases is checked (phases skipped as `Priority: LOW` are excluded from this condition), **first walk the requirements — checkboxes track tasks, not requirements met.** A checked box means a task was done; it does not prove the spec's *intent* was delivered — a required behaviour that no task happened to map to is never caught by the checkboxes. Verify the spec's stated goals (`## Overview`), its normative technical/design sections (e.g. `## Data Model`, `## API Design`, `## Proposed Changes`), every `## Edge Cases` row, and any linked issue acceptance criteria the spec hasn't superseded (the spec is the source of truth where the two differ — a documented scope cut or a resolved contradiction is not unfinished work) against real code — **requirement-down, not diff-up** — confirming each with a concrete `file:line` or test reference. (Same walk as the `code-review` skill's *Conformance & scope* check.) A required behaviour left unmet or only partially met is unfinished work: implement it or raise it with the user before proceeding.
 
-All checks must pass with 0 errors/failures. Fix any issues and re-run until clean.
+Then, with the implementation complete, run the `backend-quality` skill (Tier 2: full checks) as the **final gate** — last, so it covers any code the requirements walk just changed. All checks must pass with 0 errors/failures. Fix any issues and re-run until clean.
 
 ## Step 4: Clean Up
 
