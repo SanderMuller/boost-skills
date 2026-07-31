@@ -79,24 +79,44 @@ names() {
         | sort -u
 }
 
-# Declarations $1 removed relative to its merge base with $2, minus any it re-added.
-# Three dots: the merge base, not the other tip — a two-dot diff would report the
-# other side's own files as removals and bury the real hits.
-removed_by() {
-    local diff
-    diff=$(git diff "$2...$1" 2>/dev/null) || die "git diff $2...$1 failed"
-    comm -23 <(printf '%s\n' "$diff" | names '^-') \
-             <(printf '%s\n' "$diff" | names '^\+')
+# Declarations the given diff removed, minus any it re-added under the same name.
+removed_from_diff() {
+    comm -23 <(printf '%s\n' "$1" | names '^-') \
+             <(printf '%s\n' "$1" | names '^\+')
 }
+
+# Collect both diffs HERE, in the main shell. A die() inside a pipeline or process
+# substitution exits only that subshell, so a failure there would print an error and
+# still let the script fall through to "No dangling references" with exit 0 — a
+# verification tool reporting success because it could not run.
+#
+# Every flag below neutralises a config that silently empties the result rather than
+# erroring — the worst failure mode for a check whose whole job is to catch omissions:
+# --no-color: `color.diff=always` / `color.ui=always` wrap lines in ANSI codes, so
+#   '^-' and '^+' stop matching and every symbol silently disappears.
+# --no-ext-diff: `diff.external` (and `GIT_EXTERNAL_DIFF`) replaces the output with a
+#   driver's format entirely.
+# --no-textconv: a `diff.<driver>.textconv` bound via .gitattributes rewrites the
+#   content before diffing, so a symbol can be transformed out of the diff.
+# Three dots: the merge base, not the other tip — a two-dot diff reports the other
+#   side's own files as removals and buries the real hits.
+DIFF_THEIRS=$(git diff --no-color --no-ext-diff --no-textconv "$OURS...$BASE") \
+    || die "git diff $OURS...$BASE failed"
+DIFF_OURS=$(git diff --no-color --no-ext-diff --no-textconv "$BASE...$OURS") \
+    || die "git diff $BASE...$OURS failed"
 
 found=0
 while IFS= read -r symbol; do
     [ -n "$symbol" ] || continue
 
+    # -w -F, never a `\b` regex: `\b` is a GNU extension that matches nothing under
+    # `grep.patternType=extended` (and on platforms whose regex lib lacks it), which
+    # would report a clean sweep on a broken merge. -w is a git option and -F treats
+    # the symbol as the literal it is, so both are immune to that config.
     if [ ${#PATHSPEC[@]} -gt 0 ]; then
-        hits=$(git grep -ln -- "\b${symbol}\b" -- "${PATHSPEC[@]}" 2>/dev/null)
+        hits=$(git grep --no-color -lnwF -- "$symbol" -- "${PATHSPEC[@]}" 2>/dev/null)
     else
-        hits=$(git grep -ln -- "\b${symbol}\b" 2>/dev/null)
+        hits=$(git grep --no-color -lnwF -- "$symbol" 2>/dev/null)
     fi
 
     if [ -n "$hits" ]; then
@@ -104,7 +124,7 @@ while IFS= read -r symbol; do
         printf 'DANGLING  %s\n' "$symbol"
         printf '%s\n' "$hits" | sed 's/^/          /'
     fi
-done < <({ removed_by "$BASE" "$OURS"; removed_by "$OURS" "$BASE"; } | sort -u)
+done < <({ removed_from_diff "$DIFF_THEIRS"; removed_from_diff "$DIFF_OURS"; } | sort -u)
 
 if [ "$found" -eq 0 ]; then
     printf 'No dangling references. (ours=%s base=%s)\n' "$OURS" "$BASE"

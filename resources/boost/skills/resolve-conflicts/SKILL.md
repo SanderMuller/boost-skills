@@ -69,7 +69,7 @@ git merge --no-commit origin/<base-branch>
 Three outcomes need different handling:
 
 - **"Already up to date"** — nothing to do; stop here.
-- **Fast-forward** — `--no-commit` does *not* stop one; git moves HEAD regardless. That is fine: a fast-forward means your branch had no commits of its own, so there is no resolution to get wrong and nothing of yours to drop. Nothing further to verify.
+- **Fast-forward** — `--no-commit` does *not* stop one; git moves HEAD regardless. That is fine: a fast-forward means your branch had no commits of its own, so there is no resolution to get wrong and nothing of yours to drop. Nothing to verify and nothing to commit — stop here; do not fall through to Phase 6.
 - **Anything else** — a real merge, conflicted or clean. Both still owe you Phase 4 Check 2 and Phase 5 before Phase 6 commits.
 
 Enumerate the conflicts precisely — do **not** eyeball `git status` prose:
