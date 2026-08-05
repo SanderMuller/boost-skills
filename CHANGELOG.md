@@ -5,6 +5,51 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.24.0 - 2026-08-05
+
+<!-- verified-sha: 5dfddd7d389faa2896842069c2c76fd197eacaa9 -->
+A conventions slot for projects that mandate a label on every PR. Optional and additive — leave it out and nothing changes.
+
+### Added
+
+- **`pr.labels` — a configurable mandatory-PR-label policy for `pull-requests`.** Some organisations require every PR to carry exactly one label from a fixed vocabulary, chosen by a question the diff cannot answer: who wrote the first working version, which change class this is, which compliance category applies. There was no slot for that — `pr` accepted only `title_format`, `template_path`, `gates` and `risk`, and rejects unknown keys, so the policy could not even be forward-declared. The remaining option was the guideline layer, which is compiled into `CLAUDE.md` / `AGENTS.md` and loaded in every session, so a rule that only matters when a PR is created cost tokens on every unrelated task.
+  
+  Declared in `boost.php`, the policy renders inside the `pull-requests` skill instead, where it is read only when that skill activates:
+  
+  ```php
+  'pr' => [
+      'labels' => [
+          'require_exactly_one' => true,   // false ⇒ at most one
+          'exempt_bot_authors' => true,    // skip for Dependabot & friends
+          'rule' => 'Who wrote the first working version of the main change?',
+          'rule_doc' => 'docs/pr-label-policy.md',   // optional prose
+          'options' => [
+              ['name' => 'Label A', 'when' => 'criterion for A'],
+              ['name' => 'Label B', 'when' => 'criterion for B', 'on_doubt' => true],
+          ],
+      ],
+  ],
+  
+  ```
+  The slot carries the mechanism only. Label names, the deciding question, and the policy prose are yours — no vocabulary and no semantics are fixed by the package, and `options` has no mandated length beyond needing at least one entry.
+  
+  The skill applies the `name` **verbatim**. These vocabularies are usually aggregated outside the repo, where a translated or re-cased name does not fail loudly; it just stops counting, and the repo drops out of the aggregation unnoticed.
+  
+  How the label is decided: the agent answers `rule` from first-hand knowledge when the work happened in the session, treats repository evidence (commit history, trailers, the diff) as an input rather than an answer when the branch predates it, and asks the author otherwise — batched into the existing pre-PR `AskUserQuestion` call alongside the risk and description-direction questions. `on_doubt` marks the option an uncertain *author* falls back to; the agent may not use it to skip asking. A resolved label reaches the PR via `gh pr create --label`.
+  
+  The package applies the label, it does not enforce it. Nothing here blocks an unlabelled PR — add a CI check on the PR event if you need a hard gate.
+  
+- **`final-verification-review` reports the label policy in its closeout check.** A configured mandate is now visible before the PR exists rather than at creation time. An unresolved label is a note, since the pre-PR question resolves it; only a config that cannot be satisfied — an empty `options` list, or several options claiming `on_doubt` — is reported as blocking.
+  
+
+### Notes
+
+- **Absent ⇒ no behaviour change.** With no `pr.labels` declared, both skills render an explicit no-op and there is no label step. Existing configs are unaffected.
+- **No `schema-version` bump.** This is additive to v1; `schema-version` stays `1`.
+- **Orthogonal to `pr.risk`.** A risk tier's own `label` is routing metadata applied by tier score; `pr.labels` is an author-declared policy. Declare either, both, or neither — with both, a PR carries both labels.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.23.1...2.24.0
+
 ## 2.23.1 - 2026-07-31
 
 <!-- verified-sha: 650ae5a2e0bbbe7faed5042e2518b7ae759d087d -->
@@ -13,13 +58,16 @@ Fixes four ways the `dangling-symbols.sh` companion introduced in 2.23.0 could r
 ### Fixed
 
 - **The sweep no longer depends on the reader's git configuration.** It parsed git's human-facing output while assuming defaults, but that output is shaped by settings the script neither set nor inspected. Four of them made it print `No dangling references` and exit `0` against a repository that provably had one:
+  
   - `grep.patternType=extended` — the word-boundary `\b` is a GNU regex extension that matches nothing under ERE, so every symbol lookup came back empty. The lookup now uses `git grep -w -F`: `-w` is a git option rather than a regex feature, and `-F` treats the symbol as the literal identifier it is. Verified against the `basic`, `extended`, `fixed` and `perl` pattern types.
   - `color.diff=always` / `color.ui=always` — ANSI escapes prefixed every line, so the `^-` and `^+` matching that finds removed declarations stopped working. Closed with `--no-color`.
   - `diff.external`, and the `GIT_EXTERNAL_DIFF` environment variable — an external driver replaced the diff output entirely. Closed with `--no-ext-diff`.
   - A `textconv` driver bound through `.gitattributes` — content was rewritten before diffing, so a symbol could be transformed out of the diff. Closed with `--no-textconv`.
   
 - **A failed sweep now fails loudly instead of reporting success.** `die` was being called from inside a pipeline subshell, where `exit` terminates only that subshell; the script printed its error and then fell through to `No dangling references` with exit `0`. Both diffs are now collected in the main shell, so a git failure exits `2`.
+  
 - **`resolve-conflicts` no longer falls through to the commit phase on a fast-forward.** The fast-forward outcome noted that nothing needed verifying but omitted the explicit stop its sibling outcome carries, leaving a path that reached the commit phase with an empty tree.
+  
 
 **Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.23.0...2.23.1
 
@@ -659,6 +707,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -679,6 +728,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -777,6 +827,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -803,6 +854,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -911,6 +963,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -938,6 +991,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1053,6 +1107,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1128,6 +1183,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1136,6 +1192,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1241,6 +1298,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1258,6 +1316,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1350,6 +1409,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1497,6 +1557,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1515,6 +1576,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1711,6 +1773,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
