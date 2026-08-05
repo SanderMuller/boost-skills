@@ -103,7 +103,7 @@ This project's PR-label policy:
 <!--boost:conv path="pr.labels" mode="yaml"-->none — no PR-label policy<!--boost:conv:end-->
 ```
 
-If none is configured, skip that item. If one is, walk the `pull-requests` [PR Labels](../pull-requests/SKILL.md#pr-labels) evidence ladder check-only and report either the option it settles on, or that `pull-requests` will ask the author at creation time — the latter is a note, not a blocker, since the question resolves it. Report it **blocking** only when the mandate cannot be satisfied at all: `require_exactly_one` set with an empty `options` list, or several options claiming `on_doubt`. Never apply a label here — this skill creates nothing.
+If none is configured, skip that item. If one is, walk the `pull-requests` [PR Labels](../pull-requests/SKILL.md#pr-labels) evidence ladder check-only and report either the option it settles on, or that `pull-requests` will ask the author at creation time — the latter is a note, not a blocker, since the question resolves it. Report it **blocking** only when that section's unusable-config cases leave no label that can apply at all. Never apply a label here — this skill creates nothing.
 
 **No-PR flow** — there is no PR title or template. If the endpoint is a **release**, the next step is the `pre-release` skill (its gauntlet, CI gate, and tag handoff own the release preconditions) — this skill does not duplicate those; just confirm the change is the intended release scope. If the endpoint is a **plain commit to the target branch**, there are no extra preconditions beyond 2a–2c.
 

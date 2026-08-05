@@ -78,7 +78,7 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
      --title "<title>" \
      --body-file /tmp/pr-body.md
    ```
-   When the project configures a PR-label policy (see [PR Labels](#pr-labels)), add `--label "<resolved-name>"` to that command, passing the option's `name` verbatim. Omit the flag entirely when no policy is configured.
+   When the project configures a PR-label policy (see [PR Labels](#pr-labels)), add `--label "<resolved-name>"` to that command, passing the option's `name` verbatim. Omit the flag entirely when no policy is configured. The vocabulary is expected to already exist in the tracker; if the create call rejects the label as unknown, report that rather than retrying without the flag (which produces an unlabelled PR under a mandate) or creating a label to match (which makes a typo permanent).
 
    The command prints the PR URL on success — capture the PR number from it.
 8. **Post-creation verification** — immediately after the PR is created, fetch only the fields needed in a single call:
@@ -242,7 +242,7 @@ Treat all of the following as "no direction" and fall through to diff-driven dra
 Step 6 renders the still-open questions in a single `AskUserQuestion` call. Possible questions:
 
 - **Question 1 — Risk level** (`header: "Risk level"`, `multiSelect: false`): asked **only** when no `pr.risk` tiers are configured — the generic `Low` / `Medium` / `High`, with your recommendation. When `pr.risk` tiers are configured, the tier is scored by the agent (per [Risk Assessment](#risk-assessment-before-pr-creation)), not asked — omit this question.
-- **Question 2 — PR label** (`header: "PR label"`, `multiSelect: false`): asked **only** when a `pr.labels` policy is configured and its evidence ladder (see [PR Labels](#pr-labels)) left the choice uncertain. Use the policy's `rule` as the question text and its `options` as the choices, each `name` verbatim with its `when` as the description; mark the `on_doubt` option as the fallback for an uncertain author. Never drop this question by picking `on_doubt` yourself.
+- **Question 2 — PR label** (`header: "PR label"`, `multiSelect: false`): asked **only** when a `pr.labels` policy is configured and its evidence ladder (see [PR Labels](#pr-labels)) left the choice uncertain. Use the policy's `rule` as the question text and its `options` as the choices, each `name` verbatim with its `when` as the description; mark the `on_doubt` option as the fallback for an uncertain author, and add a no-label choice when `require_exactly_one` is false. Never drop this question by picking `on_doubt` yourself.
 - **Question 3 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
 
 Order when more than one is present: risk first, label second, direction third. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when no label policy is configured or the evidence already settled it, drop Question 3 when the user already supplied direction this turn, and skip the call entirely when none remains.
@@ -291,7 +291,7 @@ Apply the option's `name` **verbatim** — exact spelling, casing, spacing, and 
 
 `require_exactly_one: true` (the default) means exactly one option — never zero, never two. `false` means at most one: the label is encouraged, not mandatory, so a PR may go up without one.
 
-Two configurations are unusable, and neither is yours to repair: an empty `options` list, and more than one option setting `on_doubt`. In either case report the problem to the user and ask which label to apply. Do not pick one.
+Two configurations are unusable: an empty `options` list, and more than one option setting `on_doubt`. Neither is yours to repair — report the problem to the user and ask which label to apply. Do not pick one. Check both here rather than assuming the schema caught them: it rejects an empty `options` but cannot express the `on_doubt` count, and a config it does reject still renders.
 
 ### Resolving which option applies
 
@@ -299,11 +299,11 @@ Two configurations are unusable, and neither is yours to repair: an empty `optio
 
 1. **The work happened in this session** — you have first-hand knowledge of how the change was made, so answer `rule` from that and apply the matching option. No question needed.
 2. **The branch predates this session** — repository evidence (the commit history from `git log origin/<base>..HEAD`, commit trailers, commit authorship, the diff itself) is an **input**, not an answer: it establishes that something was involved, not the specific fact `rule` turns on. Read `rule_doc`, if configured, when the case is not obvious.
-3. **Anything short of certain — ask the author.** Render the question in the step-6 `AskUserQuestion` batch (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), offering the `options` verbatim.
+3. **Anything short of certain — ask the author.** Render the question in the step-6 `AskUserQuestion` batch (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), offering the `options` verbatim. Under `require_exactly_one: false`, add a no-label choice — the policy allows zero, so the question must let the author say so.
 
 `on_doubt` marks the option the **author** falls back to when *they* are uncertain. It is not a shortcut for the agent: never apply it to avoid asking. Uncertainty on your side means rung 3, not `on_doubt`.
 
-`exempt_bot_authors: true` skips this whole section for bot-authored PRs. Resolve that from the tracker's own bot flag (`author.is_bot` on GitHub), not by matching author names.
+`exempt_bot_authors: true` skips this whole section for bot-authored PRs. Resolve that from the tracker's own bot flag, never by matching author names — on GitHub, `author.is_bot` from `gh pr view --json author`. That field needs a PR to read, so it applies in the [existing-PR flow](#how-to-work-on-existing-prs); at creation time the author is whichever account `gh` is authenticated as, and the exemption bites only if that account is itself a bot.
 
 ### Enforcement
 

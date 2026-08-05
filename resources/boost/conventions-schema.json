@@ -251,7 +251,8 @@
                         "options": {
                             "type": "array",
                             "render": "yaml",
-                            "description": "The label vocabulary. Variable length — no mandated count or names.",
+                            "minItems": 1,
+                            "description": "The label vocabulary. Variable length — no mandated count or names — but at least one option, since a policy with nothing to apply is meaningless. The skill re-checks this: a config rejected here still renders.",
                             "items": {
                                 "type": "object",
                                 "required": ["name"],
@@ -259,7 +260,7 @@
                                 "properties": {
                                     "name": { "type": "string", "description": "The label name exactly as it exists in the tracker. Applied verbatim — never translated, re-cased, abbreviated or re-worded, because these names are typically aggregated outside the repo." },
                                     "when": { "type": "string", "description": "One-line criterion for choosing this option." },
-                                    "on_doubt": { "type": "boolean", "default": false, "description": "This option is the fallback when the AUTHOR is uncertain. At most one option may set it — a constraint JSONSchema cannot express; the skill treats a config with several as invalid and asks rather than picking." }
+                                    "on_doubt": { "type": "boolean", "default": false, "description": "This option is the fallback when the AUTHOR is uncertain. At most one option may set it. Not enforced here — expressing 'at most one, zero allowed' needs minContains, which the validator does not honor — so the skill treats a config with several as invalid and asks rather than picking." }
                                 }
                             }
                         }

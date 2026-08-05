@@ -47,10 +47,12 @@ step-6/step-7/batching pointers in `pull-requests`; the 2d label check in
 `README.md` `pr` row updated. Verified: schema parses; `validate-skills.php`
 → 32/32 skills + 1/1 tag manifests, exit 0; `validate-catalog.php` → passes,
 exit 0; `composer validate` → valid; invariant-F negative test run on both new
-tokens (caught, then restored). Rendered through `vendor/bin/boost sync` twice
-— once with no `pr.labels` (reads as an explicit no-op) and once with the
-consumer contract's exact config (all three label names verbatim and correctly
-cased); `additionalProperties: false` confirmed to reject an unknown key.
+tokens (caught, then restored). Rendered through `vendor/bin/boost sync` in both
+states — with no `pr.labels` (reads as an explicit no-op) and with the consumer
+contract's exact config (all three label names verbatim and correctly cased).
+Schema rejection confirmed for an unknown key (`additionalProperties: false`)
+and for an empty vocabulary (`options.minItems`) — and a rejected config was
+observed to render anyway, which is why the skill re-checks both.
 `schema-version` still `1`.
 
 Two deviations from the plan as written, both deliberate:
