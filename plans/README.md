@@ -27,8 +27,44 @@ row when done.
 | 004  | Dependabot watches Composer dependencies | P2 | S | — | DONE (working tree, uncommitted) |
 | 005  | `skill-validator` constraint states its real intent (exact pin) | P2 | S | — (pairs with 004) | DONE (working tree, uncommitted) |
 | 006  | Remove the dead `.mcp.json` | P3 | S | — | DONE (working tree, uncommitted) |
+| 007  | `pr.labels` — configurable mandatory-PR-label policy for `pull-requests` | P1 | M | — | DONE (Step 5 implemented; CHANGELOG left to CI — see note) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
+
+**007 has a different provenance from 001–006.** It is not an audit finding but a
+consumer request, handed off from a session in `blinqx-vh/mijntp` on 2026-08-05
+against commit `e7dde00`. That consumer has a department mandate to label every
+PR by authorship provenance and no slot to express it, so the rule currently
+lives in their always-loaded guideline layer, costing tokens in every session.
+The plan adds the mechanism only — the label names stay consumer configuration.
+Read its "Consumer contract" section before changing the schema shape.
+
+**Implemented 2026-08-05** on `feature/007-pr-labels-convention`, against
+commit `e7dde00` (drift check clean). `pr.labels` added to
+`conventions-schema.json`; `## PR Labels` section + preflight item 8 + the
+step-6/step-7/batching pointers in `pull-requests`; the 2d label check in
+`final-verification-review` (Step 5 **implemented**, not declined);
+`README.md` `pr` row updated. Verified: schema parses; `validate-skills.php`
+→ 32/32 skills + 1/1 tag manifests, exit 0; `validate-catalog.php` → passes,
+exit 0; `composer validate` → valid; invariant-F negative test run on both new
+tokens (caught, then restored). Rendered through `vendor/bin/boost sync` twice
+— once with no `pr.labels` (reads as an explicit no-op) and once with the
+consumer contract's exact config (all three label names verbatim and correctly
+cased); `additionalProperties: false` confirmed to reject an unknown key.
+`schema-version` still `1`.
+
+Two deviations from the plan as written, both deliberate:
+
+- **Step 6's `CHANGELOG.md` edit was skipped.** `CLAUDE.md` states the
+  CHANGELOG is CI-managed — `update-changelog.yml` prepends the release body on
+  `release: released` — and forbids hand-editing it as part of a release. Only
+  `internal/release-notes-2.24.0.md` was written; CI produces the CHANGELOG
+  entry from it at publish time.
+- **README's "Policy slots" paragraph (line 183) was left alone.** It defines a
+  policy slot as a typed-object array with a `type:` discriminator; `pr.labels`
+  has no discriminator (neither does `pr.risk`, which is also absent there), so
+  adding it would misclassify the slot. The plan made this conditional on it
+  reading naturally.
 
 **Implemented 2026-07-03** (all of 001–006): applied to the working tree and
 verified. `php .github/validate-skills.php` → 29/29 valid, exit 0;
