@@ -191,7 +191,7 @@ Missing-slot behavior is per-slot: value slots prompt the user once per session;
 | `jira` | Jira issue tracker — project key, refuse-other-projects policy, description-format doc | `jira-create`, `jira-rework`, `jira-updates` |
 | `github` | GitHub repo identity — owner, repo, default base branch | `pull-requests`, `pr-review-feedback`, `github-issue-updates` |
 | `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
-| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`) | `pull-requests`, `final-verification-review` |
+| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`), mandatory PR labels (`pr.labels`) | `pull-requests`, `final-verification-review` |
 | `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
 | `quality` | Automated code-quality tooling (optional) — `rector` opt-in (Rector before Pint at completion / PR preflight) | `backend-quality`, `pull-requests` |
 | `codex` | Codex review — optional project setup doc (`invocation_mode` is deprecated and ignored) | `codex-review` |

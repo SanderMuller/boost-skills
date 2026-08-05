@@ -222,6 +222,48 @@
                             }
                         }
                     }
+                },
+                "labels": {
+                    "type": "object",
+                    "render": "yaml",
+                    "description": "Optional mandatory-PR-label policy for the pull-requests skill. ABSENT ⇒ the skill has no label step (no behavior change). Use for a label vocabulary the project must apply to every PR — authorship provenance, change class, compliance tagging — where the choice depends on knowledge only the author has and cannot be derived from the diff. Orthogonal to pr.risk: a risk tier's own 'label' field is routing metadata applied by tier score, this slot is an author-declared policy; a project may declare either, both, or neither. Declaring pr.labels requires at least the options array (a policy with no vocabulary has nothing to apply).",
+                    "additionalProperties": false,
+                    "required": ["options"],
+                    "properties": {
+                        "require_exactly_one": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Exactly one option must be applied. false ⇒ at most one (the label is encouraged, not mandatory)."
+                        },
+                        "exempt_bot_authors": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Skip the policy for PRs authored by a bot (Dependabot, github-actions, autofix bots). Set true when the policy's question cannot be answered for machine-authored PRs. Deliberately says nothing about WHICH bots — bot detection belongs to the tracker query (e.g. GitHub's author.is_bot), not to a name list here that would rot."
+                        },
+                        "rule": {
+                            "type": "string",
+                            "description": "The single question that decides which option applies, in the project's own words (e.g. 'Who wrote the first working version of the main change?'). Rendered verbatim to the agent and to the author when asked."
+                        },
+                        "rule_doc": {
+                            "type": "string",
+                            "description": "Optional path to a project-owned doc holding the full policy — rationale, edge cases, exemptions. The option TABLE is data (see options); this doc holds only prose. Validated for file-existence by 'boost doctor --check-conventions'."
+                        },
+                        "options": {
+                            "type": "array",
+                            "render": "yaml",
+                            "description": "The label vocabulary. Variable length — no mandated count or names.",
+                            "items": {
+                                "type": "object",
+                                "required": ["name"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": { "type": "string", "description": "The label name exactly as it exists in the tracker. Applied verbatim — never translated, re-cased, abbreviated or re-worded, because these names are typically aggregated outside the repo." },
+                                    "when": { "type": "string", "description": "One-line criterion for choosing this option." },
+                                    "on_doubt": { "type": "boolean", "default": false, "description": "This option is the fallback when the AUTHOR is uncertain. At most one option may set it — a constraint JSONSchema cannot express; the skill treats a config with several as invalid and asks rather than picking." }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },

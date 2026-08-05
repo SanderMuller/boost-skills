@@ -51,6 +51,7 @@ Before creating the PR, verify all of the following:
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first; see [PR Description](#pr-description) for how to embed it). If the eye-verify or screenshot harness can't run this session, don't silently drop it — note the deferral in the PR (why it was skipped) and recommend the author capture it before the PR reaches a human reviewer.
 7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then **use the `resolve-conflicts` skill** to run that merge — it owns the merge end to end (clean-tree preflight, resolution, and the post-merge verification that a conflict-free auto-merge still needs) and leaves the merge committed but unpushed. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Push the merge before creating the PR.
+8. **A mandated PR label is resolved** — applies **only when the project configures a PR-label policy** (`pr.labels`; see [PR Labels](#pr-labels) below). Decide which option applies before creation, asking the author in the step-6 batch when the evidence does not settle it. If no policy is configured, skip this step — the project mandates no label.
 
 #### Verifying / creating against the tracker
 
@@ -70,13 +71,15 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
    Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
-6. **Resolve risk + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask (tier-scored or no risk question, plus pre-supplied direction), skip the call entirely.
+6. **Resolve risk + any mandated label + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation), [PR Labels](#pr-labels) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. A label question is rendered only when a `pr.labels` policy is configured *and* its evidence ladder left the choice uncertain. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the label question (only when unresolved) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask, skip the call entirely.
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
      --title "<title>" \
      --body-file /tmp/pr-body.md
    ```
+   When the project configures a PR-label policy (see [PR Labels](#pr-labels)), add `--label "<resolved-name>"` to that command, passing the option's `name` verbatim. Omit the flag entirely when no policy is configured.
+
    The command prints the PR URL on success — capture the PR number from it.
 8. **Post-creation verification** — immediately after the PR is created, fetch only the fields needed in a single call:
    ```bash
@@ -214,7 +217,7 @@ The author knows the PR's intent in a way the diff cannot reveal — which user 
 
 ### When to ask
 
-- **By default**, on every PR creation, batched together with the risk-level question in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
+- **By default**, on every PR creation, batched together with the other still-open questions in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
 - **Skip** only when the user already supplied a direction in the current turn (e.g. their request was "create a PR — focus on the cross-tenant isolation, that's the headline").
 
 ### How to ask
@@ -239,13 +242,14 @@ Treat all of the following as "no direction" and fall through to diff-driven dra
 Step 6 renders the still-open questions in a single `AskUserQuestion` call. Possible questions:
 
 - **Question 1 — Risk level** (`header: "Risk level"`, `multiSelect: false`): asked **only** when no `pr.risk` tiers are configured — the generic `Low` / `Medium` / `High`, with your recommendation. When `pr.risk` tiers are configured, the tier is scored by the agent (per [Risk Assessment](#risk-assessment-before-pr-creation)), not asked — omit this question.
-- **Question 2 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
+- **Question 2 — PR label** (`header: "PR label"`, `multiSelect: false`): asked **only** when a `pr.labels` policy is configured and its evidence ladder (see [PR Labels](#pr-labels)) left the choice uncertain. Use the policy's `rule` as the question text and its `options` as the choices, each `name` verbatim with its `when` as the description; mark the `on_doubt` option as the fallback for an uncertain author. Never drop this question by picking `on_doubt` yourself.
+- **Question 3 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
 
-Order when both are present: risk first, direction second. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when the user already supplied direction this turn, and skip the call entirely when neither remains.
+Order when more than one is present: risk first, label second, direction third. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when no label policy is configured or the evidence already settled it, drop Question 3 when the user already supplied direction this turn, and skip the call entirely when none remains.
 
 ## Risk Assessment Before PR Creation
 
-**Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with the description-direction question in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
+**Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with whatever other questions remain open in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
 
 <!--boost:conv path="pr.risk" mode="yaml"-->No project risk tiers configured.<!--boost:conv:end-->
 
@@ -266,6 +270,44 @@ Weigh each factor as **residual** risk — what remains after the checks that ru
 - **Low**: Purely additive, isolated, no security or data impact — and any failure would be loud and reversible, caught by tests / CI / QA. Author plus any automated review is sufficient.
 - **Medium**: Touches existing behavior, adds migrations, or affects integrations. A human reviewer should review.
 - **High**: Security-sensitive, silent or hard-to-detect, data-migrating, or non-reversible. A human reviewer **must** review.
+
+## PR Labels
+
+Some projects mandate a label on every PR, drawn from a fixed vocabulary and chosen by a question the diff cannot answer. This project's policy:
+
+```boost:conv
+<!--boost:conv path="pr.labels" mode="yaml"-->No project PR-label policy configured.<!--boost:conv:end-->
+```
+
+**If no policy is configured above, there is no label step.** Skip the rest of this section, add no `--label` flag, and never invent a label.
+
+**If a policy is configured**, resolve the label before the PR is created (preflight item 8) and pass it to `gh pr create` (step 7).
+
+This is independent of `pr.risk`. A tier's own `label` is risk-routing metadata applied by tier score; this slot is an author-declared policy. A project may configure either, both, or neither — with both, a PR carries both labels.
+
+### Applying the name
+
+Apply the option's `name` **verbatim** — exact spelling, casing, spacing, and language. Never translate it, re-case it, abbreviate it, expand it, or apply a name absent from `options`. These vocabularies are typically aggregated outside the repo, where a deviating name does not fail loudly; it just stops counting, and the repo silently drops out of the aggregation.
+
+`require_exactly_one: true` (the default) means exactly one option — never zero, never two. `false` means at most one: the label is encouraged, not mandatory, so a PR may go up without one.
+
+Two configurations are unusable, and neither is yours to repair: an empty `options` list, and more than one option setting `on_doubt`. In either case report the problem to the user and ask which label to apply. Do not pick one.
+
+### Resolving which option applies
+
+`rule` is the question that decides it. Work down this ladder and stop at the first rung that settles it **with certainty**:
+
+1. **The work happened in this session** — you have first-hand knowledge of how the change was made, so answer `rule` from that and apply the matching option. No question needed.
+2. **The branch predates this session** — repository evidence (the commit history from `git log origin/<base>..HEAD`, commit trailers, commit authorship, the diff itself) is an **input**, not an answer: it establishes that something was involved, not the specific fact `rule` turns on. Read `rule_doc`, if configured, when the case is not obvious.
+3. **Anything short of certain — ask the author.** Render the question in the step-6 `AskUserQuestion` batch (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), offering the `options` verbatim.
+
+`on_doubt` marks the option the **author** falls back to when *they* are uncertain. It is not a shortcut for the agent: never apply it to avoid asking. Uncertainty on your side means rung 3, not `on_doubt`.
+
+`exempt_bot_authors: true` skips this whole section for bot-authored PRs. Resolve that from the tracker's own bot flag (`author.is_bot` on GitHub), not by matching author names.
+
+### Enforcement
+
+This skill applies the label; it does not enforce it. Nothing here blocks a PR that ends up unlabelled — a project needing a hard gate adds its own CI check on the PR event.
 
 ## PR Title
 
