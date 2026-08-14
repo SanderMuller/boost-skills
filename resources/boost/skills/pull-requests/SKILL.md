@@ -92,8 +92,8 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
    If any assertion fails, fix it inline before continuing. Use the REST API for body/title patches rather than `gh pr edit` — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation path in some `gh` versions.
 9. **Request review** — request a reviewer on the PR (an automated reviewer if the project uses one, and/or human reviewers). Use `gh pr edit <pr-number> --add-reviewer <login>` or the project's configured review mechanism.
 10. **Handle review based on risk level**:
-    - **If `pr.risk` tiers are configured** (see [Risk Assessment](#risk-assessment-before-pr-creation)): route per the matched tier — a tier with `human_reviewers: 0` and no `require_codeowners` → mark ready with `gh pr ready <pr-number>`; a tier needing one or more human reviewers (or `require_codeowners`) → leave it a draft, request the tier's reviewers, and tell the user which approvals it needs.
-    - **Otherwise** (generic assessment): **Low** → mark ready immediately with `gh pr ready <pr-number>`; **Medium/High** → a human reviewer must also review, so leave it a draft and tell the user to assign one.
+    - **If `pr.risk` tiers are configured** (see [Risk Assessment](#risk-assessment-before-pr-creation)): route per the matched tier — a tier with `human_reviewers: 0` and no `require_codeowners` → mark ready via [Marking a PR Draft / Ready](#marking-a-pr-draft--ready) (its zero-unresolved-bot-threads precondition applies here too); a tier needing one or more human reviewers (or `require_codeowners`) → leave it a draft, request the tier's reviewers, and tell the user which approvals it needs.
+    - **Otherwise** (generic assessment): **Low** → mark ready immediately via [Marking a PR Draft / Ready](#marking-a-pr-draft--ready); **Medium/High** → a human reviewer must also review, so leave it a draft and tell the user to assign one.
 11. **Remove the implemented spec file — detect it, don't recall it.** When the branch implemented a spec from the project's specs directory (the `write-spec` / `implement-spec` flow), the spec has served its purpose once the PR captures the work; deleting it from memory is how specs leak onto the base branch. Skip this step entirely if the project doesn't use specs. (Derive the specs directory from `spec.filename_pattern` — the literal prefix before the first `{…}` placeholder, `specs/` by default; substitute a configured path like `docs/specs/` in the globs below.)
     - **List** every spec the branch changed against `origin/<base>` (the base resolved above — preflight item 7 already fetched and merged it, so it is current), **with its status letter** so a stray *deletion* of an unrelated spec is caught too, not only an added/modified/renamed one:
       ```bash
@@ -189,6 +189,41 @@ When making changes to an existing PR you authored:
 5. **Commit changes**: create meaningful commits following the project's commit conventions.
 6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
 7. **Push to remote**: `git push origin <branch-name>`.
+
+### Marking a PR Draft / Ready
+
+This skill owns both directions — `gh pr ready <pr-number>` and `gh pr ready --undo <pr-number>`. No other skill calls them directly.
+
+**Ready is a claim that reviewers are the only thing left, so it has one precondition: zero unresolved bot/self review threads.** Check before every mark-ready, including the auto-ready in create-flow step 10 (a freshly created PR has none yet — the check costs one call and catches the re-ready case):
+
+```bash
+gh api graphql \
+  -F owner='{owner}' -F repo='{repo}' -F number=<NUMBER> \
+  -f query='
+query ($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100) {
+        pageInfo { hasNextPage endCursor }
+        nodes { isResolved comments(first: 100) { totalCount nodes { author { login } } } }
+      }
+    }
+  }
+}' --jq '{
+  hasNextPage: .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage,
+  endCursor: .data.repository.pullRequest.reviewThreads.pageInfo.endCursor,
+  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[]
+    | select(.isResolved | not)
+    | {authors: ([.comments.nodes[].author.login] | unique),
+       fetched: (.comments.nodes | length), total: .comments.totalCount}]
+}'
+```
+
+If `hasNextPage` is `true`, page with `after: "<endCursor>"` and merge before judging — a truncated list hides unresolved bot threads and passes the check falsely. Likewise, an entry whose `total` exceeds `fetched` has comments you have not seen, so its author set proves nothing — page that thread's comments before judging it.
+
+Any entry whose authors are all bots or your own login (see `pr-review-feedback` § Author Classification) blocks ready — hand it to `pr-review-feedback` to close the loop first. Unresolved **colleague** threads do not block: they are the review conversation itself. That holds regardless of the project's `review.colleague_gate` setting — this check is deliberately decoupled from it.
+
+**Draft means work is in flight on this PR** — including a bot review thread a human took over and is still working (`pr-review-feedback` Phase 6, deferred outcome). Mark it draft for the duration and back to ready once the thread is closed.
 
 ### Finding the PR
 

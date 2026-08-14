@@ -4,7 +4,7 @@ description: "Applies PR review feedback with critical evaluation, then replies 
 argument-hint: "[PR number]"
 metadata:
   boost-tags: "github"
-  boost-requires: "resolve-conflicts"
+  boost-requires: "resolve-conflicts pull-requests"
   schema-required: "^1"
 ---
 
@@ -20,10 +20,20 @@ A disciplined approach to addressing PR review comments: **evaluate first, apply
 2. Filter out resolved conversations
 3. **Classify each thread by author** — bot vs. self (you) vs. other human colleague
 4. Critically evaluate each piece of feedback
-5. **Bots and self**: apply/skip, reply, and resolve automatically
+5. **Bots and self**: apply or decline, reply on the thread, and resolve automatically — the one exception is a thread a human takes over (deferred, see below)
 6. **Other colleagues** (default, `review.colleague_gate: true`): evaluate, then present findings + proposed actions to the user; let the user decide whether to apply, reply, or resolve. When the gate is `false`, handle them like bot threads.
 
-**Close the loop.** Applying the code is half the job — an applied-but-unresolved thread reads as ignored to the author and re-surfaces in the next review. The skill is not done until every bot/self thread is **resolved** (replied to where useful) and Phase 7 confirms zero unresolved bot/self threads remain.
+**Close the loop.** Applying the code is half the job — an applied-but-unresolved thread reads as ignored to the author and re-surfaces in the next review. Every bot/self thread ends this run in exactly **one** of three states:
+
+| Outcome | Thread reply | Resolve? | PR state |
+|---|---|---|---|
+| **Applied** — feedback was valid, change is made | Mandatory for bot threads — what was changed. Optional for self notes | Yes | unchanged |
+| **Declined** — feedback is wrong or does not apply | Mandatory for bot threads — the reasoning. Optional for self notes | Yes | unchanged |
+| **Deferred** — a human took the thread and is still working it | Mandatory — say it is being worked on | **No** — stays open | **Draft** while the work is ongoing |
+
+**A top-level PR comment never closes a thread.** Reasoning goes as a reply *on the thread it answers* — a batched issue comment leaves the threads showing as unresolved, so the next reviewer still has to read and re-judge every one of them. That is exactly the failure this rule exists to prevent.
+
+The skill is not done until every bot/self thread sits in one of those three states and Phase 7 confirms it.
 
 ## Author Classification
 
@@ -52,7 +62,7 @@ The "every comment" rule only holds if you actually fetched every comment. The P
 
 | Classification | Rule                                                                                            | Auto-handling allowed?                      |
 |----------------|-------------------------------------------------------------------------------------------------|---------------------------------------------|
-| **bot / self** | Every comment in the thread is from a bot login (built-in set + `review.bot_reviewers`) or from your own login | Yes — apply/skip, reply, resolve |
+| **bot / self** | Every comment in the thread is from a bot login (built-in set + `review.bot_reviewers`) or from your own login | Yes — apply/decline, reply, resolve automatically |
 | **colleague**  | At least one comment is from another human, or any login is ambiguous                           | **Gated** — when `review.colleague_gate` is `true` (default), no auto-act: discuss with user. When `false`, handle like a bot thread. |
 
 **Self** covers the common case: you open your own PR, manually review it, leave feedback comments, then run this skill to pick them up. Those are your own notes-to-self — apply them automatically like bot feedback (still evaluating each critically).
@@ -64,7 +74,7 @@ When in doubt (ambiguous login that is neither a clear bot nor a match for your 
 This project's colleague-gate setting: <!--boost:conv path="review.colleague_gate" mode="inline"-->true (default) — colleague threads are never auto-acted on<!--boost:conv:end-->.
 
 - **`true` (default, and when unset)** — the colleague handling below applies in full: evaluate, present a recommendation, and let the user decide whether to apply, reply, or resolve. Never auto-act on a colleague thread.
-- **`false`** — the project has opted into full automation: handle colleague threads the same way as bot threads (apply/skip, reply, resolve without a confirmation step). The Phase 3b discussion gate is skipped. Bot-thread handling is identical either way.
+- **`false`** — the project has opted into full automation: handle colleague threads the same way as bot threads (apply/decline, reply, resolve without a confirmation step). The Phase 3b discussion gate is skipped. Bot-thread handling is identical either way.
 
 The rest of this skill describes the `true` (default) behavior; under `false`, treat every colleague thread as a bot thread for action purposes.
 
@@ -170,7 +180,7 @@ Apply feedback on top of an up-to-date branch — a branch that has drifted from
 
 **First, split threads into buckets by author** (see Author Classification above):
 
-- **Bot + self bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6). Self comments are your own self-review notes; treat them like bot feedback. Track each thread as one unit by its `id` from Phase 1 (evaluate → apply/skip → reply → resolve); a thread isn't handled until it's resolved.
+- **Bot + self bucket** — proceed through evaluation, application, reply, and resolution automatically (Phases 3, 6). Self comments are your own self-review notes; treat them like bot feedback. Track each thread as one unit by its `id` from Phase 1 (evaluate → apply/decline → reply → resolve); a thread isn't handled until it's resolved.
 - **Colleague bucket** — *other* humans. Handling depends on `review.colleague_gate` (see [Colleague gate toggle](#colleague-gate-toggle)). Under the default (`true`): evaluate to form a recommendation, but do **not** apply, reply, or resolve — surface every colleague thread to the user and let them decide (Phase 3b); the user replies/resolves themselves, or explicitly tells you to do it on their behalf. Under `false`: treat the colleague bucket exactly like the bot/self bucket (auto apply/reply/resolve), and skip Phase 3b.
 
 **Handle outdated threads carefully:**
@@ -260,7 +270,9 @@ If no code changes were applied **but Phase 1b created a sync merge commit**, st
 
 Reply/resolve permissions depend on the thread's author bucket from Phase 2.
 
-**Bot and self threads (applied or skipped)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed. **Resolving is mandatory for every bot/self thread; the reply is recommended (and optional for self notes). Resolving without a reply is fine — leaving a thread unresolved is not.** You need each thread's `id` (from Phase 1) here — if those IDs are no longer in context, re-run the Phase 1 query to re-fetch them; never skip resolve because the IDs scrolled off.
+**Bot and self threads (applied or declined)** — after committing and pushing, reply to each thread and resolve it, no confirmation needed. **For bot threads both are mandatory: a reply on the thread, then resolve it.** Post the reply on each thread individually, even when several threads share one reasoning — a single top-level PR comment covering them all does not close anything and does not count. For **self** threads (your own notes-to-self) the reply is optional; resolving without one is fine. You need each thread's `id` (from Phase 1) here — if those IDs are no longer in context, re-run the Phase 1 query to re-fetch them; never skip resolve because the IDs scrolled off.
+
+**Bot threads the user takes over (deferred)** — when the user says they will work a bot thread themselves, or asks for more work on it than this run delivers: reply on the thread saying it is being worked on, leave it **unresolved**, and put the PR back to **draft** for the duration — via the `pull-requests` skill (Marking a PR Draft / Ready), never a raw `gh` call. A ready PR with open threads tells reviewers the work is waiting on them; draft tells the truth. Record which threads were deferred — Phase 7 needs them. Once the user replies on that thread on GitHub it re-classifies as **colleague** on the next run (Author Classification wins, unchanged) and is theirs to close — that is the intended hand-off, not a rule you have escaped.
 
 ```bash
 # Reply to the thread
@@ -287,16 +299,18 @@ mutation($threadId: ID!) {
 
 **Reply guidelines (when you do reply):**
 - **Applied feedback**: "Fixed as suggested." or a brief note on what was changed
-- **Skipped feedback**: Brief explanation of why
+- **Declined feedback**: Brief explanation of why
 - **Discussion needed**: Ask a clarifying question — present planned reply to the user first
 
 Keep replies concise. Do not repeat the reviewer's comment back to them.
 
 ### Phase 7: Verify Threads Resolved (Hard Gate)
 
-**The skill is not done until this passes.** Re-run the Phase 1 reviewThreads query and confirm **zero unresolved bot/self threads** remain. Colleague threads under the default gate are excluded — they stay open by design; include them only when `review.colleague_gate` is `false`.
+**The skill is not done until this passes.** Re-run the reviewThreads query below and confirm **zero unresolved bot/self threads** remain. Colleague threads under the default gate are excluded — they stay open by design; include them only when `review.colleague_gate` is `false`.
 
-List every still-unresolved thread with its authors, so you can confirm none are bot/self:
+An unresolved **bot** thread passes only as a **deferred** thread (Phase 6): the user explicitly took it over *in this run*, and `isDraft` is `true` on the PR. Both conditions, together — "the user might want to look at it" is not a deferral, and a deferred thread on a ready PR is a gate failure you fix by marking the PR draft (via the `pull-requests` skill), not by rewording the report. Fetch the flag alongside the threads (`gh pr view <NUMBER> --json isDraft`).
+
+List every still-unresolved thread with its `id`, authors, and `viewerCanResolve`, so you can confirm none are bot/self and act on any that remain:
 
 ```bash
 gh api graphql \
@@ -306,38 +320,65 @@ query ($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
       reviewThreads(first: 100) {
-        nodes { isResolved comments(first: 100) { nodes { author { login } } } }
+        pageInfo { hasNextPage endCursor }
+        nodes { id isResolved viewerCanResolve comments(first: 100) { totalCount nodes { author { login } } } }
       }
     }
   }
-}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[]
-  | select(.isResolved | not)
-  | {authors: ([.comments.nodes[].author.login] | unique)}]'
+}' --jq '{
+  hasNextPage: .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage,
+  endCursor: .data.repository.pullRequest.reviewThreads.pageInfo.endCursor,
+  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[]
+    | select(.isResolved | not)
+    | {id, viewerCanResolve, authors: ([.comments.nodes[].author.login] | unique),
+       fetched: (.comments.nodes | length), total: .comments.totalCount}]
+}'
 ```
 
-Read the result:
+**If `hasNextPage` is `true`, the gate has not seen every thread** — page through with `after: "<endCursor>"` using the emitted `endCursor`, and merge before judging; a truncated list can hide unresolved bot/self threads and let the gate pass falsely. **Truncation cuts the other way too**: an entry whose `total` exceeds `fetched` has comments you never saw, so its author set cannot prove it is all bot/self — page that thread's comments, or fail safe to colleague, per Author Classification, before judging it. Read the merged `unresolved` list:
 
 - **Empty list** → gate passes; the loop is closed. Every bot/self thread is resolved.
-- **Non-empty** → each remaining entry must be a **colleague** thread (contains a human who is not you), legitimately left open under the default gate. If any entry is all-bot or all-you (self), that is unresolved bot/self work — resolve it (Phase 6 mutations; re-fetch the `id` if needed) and re-run this query until only colleague threads remain. Under `colleague_gate: false`, the list must be empty.
+- **Non-empty** → each remaining entry must be either a **colleague** thread (contains a human who is not you), legitimately left open under the default gate, or a **deferred** bot thread on a draft PR. Any other all-bot or all-you (self) entry is unresolved bot/self work — reply and resolve it with its `id` (Phase 6 mutations) and re-run this query until only colleague and deferred threads remain. Under `colleague_gate: false`, colleague threads are auto-handled too, so only deferred threads may remain.
 
-The one allowed exception: a bot/self thread where `viewerCanResolve` is `false` (you lack permission). Don't loop on it — report it to the user with the reason instead of treating the gate as failed.
+**Resolving without replying passes this query but fails the rule** — an unreplied resolve is invisible here, which is exactly why it is on you to check: for every **bot** thread you resolved this run, confirm your reply is on it. The Phase 6 reply mutation's returned `comment.url` is that proof — a missing or failed reply call means not replied. If unsure, fetch the resolved thread by its `id` (the Phase 1 and gate queries only list unresolved threads, so they cannot show it):
+
+```bash
+gh api graphql -f query='
+query($id: ID!) {
+  node(id: $id) {
+    ... on PullRequestReviewThread { comments(last: 1) { nodes { author { login } body } } }
+  }
+}' -f id="<THREAD_ID>"
+```
+
+A bot thread you resolved silently is not closed work; reply on it now. (Self threads are exempt — resolving your own note without a reply is fine.)
+
+A bot/self thread whose `viewerCanResolve` is `false` (you lack permission) is **not** a fourth outcome — it is a **blocked** thread. Don't loop on it: report it to the user with its `id` and the reason, and say plainly that the loop is not closed. Whether the PR can be marked ready with it open is the user's call, not a gate you quietly pass.
 
 ## Response Template
 
-Summarize once Phases 3 + 3b + the Phase 7 gate are complete. Bot and self items are already applied and resolved on the PR — state the verified count (e.g. "All 3 bot/self threads resolved"). Colleague items are presented as proposals — the user decides next steps (unless `review.colleague_gate` is `false`, in which case they're already handled too).
+Summarize once Phases 3 + 3b + the Phase 7 gate are complete. Bot and self items are already replied to on their own threads (mandatory for bot threads, optional for self notes) and resolved — state the verified count (e.g. "All 3 bot/self threads resolved"), and name any deferred thread separately with the PR's draft state. Colleague items are presented as proposals — the user decides next steps (unless `review.colleague_gate` is `false`, in which case they're already handled too).
 
 ```markdown
-## Bot & Self Feedback — Applied (resolved)
+## Bot & Self Feedback — Applied (replied & resolved)
 
 1. **[File]** — [bot/self login]
    - Comment: [Brief summary]
    - Change: [What was done]
 
-## Bot & Self Feedback — Skipped (resolved)
+## Bot & Self Feedback — Declined (replied & resolved)
 
 1. **[File]** — [bot/self login]
    - Comment: [Brief summary]
-   - Reason: [Why it was skipped]
+   - Reason: [Why it was declined]
+   - Reply: "[What was posted]"
+
+## Bot Feedback — Deferred (replied, left open, PR back to draft)
+
+1. **[File]** — [bot login]
+   - Comment: [Brief summary]
+   - Who is working it and what remains: [...]
+   - Reply: "[What was posted]" · PR is now draft
 
 ## Colleague Feedback — Awaiting Your Decision
 
