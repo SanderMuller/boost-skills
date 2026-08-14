@@ -83,23 +83,26 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `autoresearch`         | Autonomous performance loop: benchmark, change code, then keep or revert by measured result.         | `php`           |
 | `backend-quality`      | Two-tier PHP quality gate: Pint + related tests on every change, PHPStan + full suite on completion. | `php`           |
 | `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
+| `clarify`              | Turn a fuzzy ask into sharp, fact-checked intent — reduce ambiguity, sharpen terms, surface assumptions. Shared core of `interview` and `promptimize`. | —               |
+| `clean-specs`          | Command-only (`/clean-specs`): remove spec files whose work is fully implemented and merged to the base branch, keeping only live work.               | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
 | `final-verification-review` | Closeout verdict: run the full evaluate loop, dry-run the closeout preflight (PR flow *or* no-PR commit/release), report READY / NOT READY. | `github`        |
-| `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; eye-verify advisory for UI changes. | `frontend`      |
+| `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; browser eye-verify for UI changes, with a shipped harness. | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
 | `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |
 | `implement-spec`       | Implement a specification file phase by phase with progress tracking.                                | —               |
 | `interview`            | Adversarially grill out a complex feature's requirements — code-first, assumptions-audited — before writing its spec. | —               |
 | `jira-create`          | Create a Jira issue with a well-formed, user-facing description.                                     | `jira`          |
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
-| `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira` `github` |
+| `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
-| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github`  |
+| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github` `release-automation` |
+| `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
 | `readme`               | Author and maintain a high-quality README for a Composer package — stub vs comprehensive shape, voice, staleness audit. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
@@ -137,11 +140,17 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 
 A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
 
+## Skill dependencies
+
+Some skills hand off to others: `interview` and `promptimize` both build on `clarify`, `interview` then hands to `write-spec`, `evaluate` runs `code-review` and `codex-review`, `pre-release` drafts docs via `readme` / `release-notes` / `upgrading`, and `pull-requests` / `pr-review-feedback` / `jira-rework` each run their base-sync merge through `resolve-conflicts`. A skill declares these hard hand-offs in its `SKILL.md` frontmatter (`metadata.boost-requires`, space-delimited skill names). Whenever the skill syncs, every skill it requires syncs too. That includes one your `withTags(...)` would otherwise filter out, which `boost-core` pulls in anyway (a "rescue") so the dependent never delegates to a skill that isn't there. Resolution is transitive and cycle-tolerant.
+
+Like the tag mechanism, this is family-canonical: `boost-core` (`^1.4`) resolves `boost-requires` at sync time and surfaces the pulled-in dependencies; `boost doctor` reports any that are unsatisfied. On older engines or under `laravel/boost` the key is inert. Only genuine hand-offs are declared; conditional ("delegate where synced") and routing ("NOT for X — use Y") references are not. See [`boost-core`'s README](https://github.com/sandermuller/boost-core) for the authoring guidance.
+
 ## Project Conventions schema
 
 Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex review setup doc, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers declare values in `boost.php` via `->withConventions([...])`; `boost sync` inlines each slot value directly into the skill bodies at sync time (2.0+; the `1.7`–`1.9` line instead rendered a `## Project Conventions` block that skills read at agent runtime).
 
-**Requires** `sandermuller/boost-core ^1.3` — the `codex-review` skill ships its wrapper as a **companion asset** that `boost-core` only emits beside `SKILL.md` since `1.3`. Slot-aware skills also carry **paired visible-default tokens** — `<!--boost:conv path="…" mode="…"-->default words<!--boost:conv:end-->` — which `boost-core` resolves at sync time, replacing the whole span with the configured value (or the schema default, or the visible default as fallback). The visible default is what makes the catalog usable under **any** engine: one that doesn't resolve `boost:conv` — notably `laravel/boost`, which installs `SKILL.md` and preserves the markers verbatim — leaves the default *value* sitting in the text as readable content (`Write tests in …Pest…`), rather than trapped inside a comment `fallback=` attribute where the prior bare-token form hid it. The surrounding `<!--boost:conv …-->` / `<!--boost:conv:end-->` markers stay as inert noise the agent reads past; in `mode="yaml"` fenced blocks they show inside the code fence, so the default value is still present, just wrapped. The paired form was added in `boost-core 1.2.1` (the `1.2.0` tag shipped without it and is skipped); an older engine would emit both the resolved value and the visible default, hence the `^1.2.1` minimum for conv-token resolution (the overall package floor is `^1.3`, raised by the asset-sibling requirement above). (Earlier the catalog used bare `<!--boost:conv … fallback="…"-->` tokens — resolver since `0.15.0`, `mcp.*` sub-keys since `0.16.0` — whose fallback lived inside the comment and so vanished under `laravel/boost`; the paired form is the cross-engine fix.)
+**Requires** `sandermuller/boost-core ^1.4` — the floor was raised to `1.4` for [skill-dependency resolution](#skill-dependencies). The prior `1.3` floor came from the `codex-review` skill shipping its wrapper as a **companion asset** that `boost-core` only emits beside `SKILL.md` since `1.3`. Slot-aware skills also carry **paired visible-default tokens** — `<!--boost:conv path="…" mode="…"-->default words<!--boost:conv:end-->` — which `boost-core` resolves at sync time, replacing the whole span with the configured value (or the schema default, or the visible default as fallback). The visible default is what makes the catalog usable under **any** engine: one that doesn't resolve `boost:conv` — notably `laravel/boost`, which installs `SKILL.md` and preserves the markers verbatim — leaves the default *value* sitting in the text as readable content (`Write tests in …Pest…`), rather than trapped inside a comment `fallback=` attribute where the prior bare-token form hid it. The surrounding `<!--boost:conv …-->` / `<!--boost:conv:end-->` markers stay as inert noise the agent reads past; in `mode="yaml"` fenced blocks they show inside the code fence, so the default value is still present, just wrapped. The paired form was added in `boost-core 1.2.1` (the `1.2.0` tag shipped without it and is skipped); an older engine would emit both the resolved value and the visible default, hence the `^1.2.1` minimum for conv-token resolution (the overall package floor is `^1.4`, raised by the skill-dependency resolution requirement above). (Earlier the catalog used bare `<!--boost:conv … fallback="…"-->` tokens — resolver since `0.15.0`, `mcp.*` sub-keys since `0.16.0` — whose fallback lived inside the comment and so vanished under `laravel/boost`; the paired form is the cross-engine fix.)
 
 Skill bodies inline slots via paired `<!--boost:conv path="jira.project_key" mode="inline"-->default<!--boost:conv:end-->` tokens, resolved at sync time; the `boost slots` command lists the same slots in dotted form (`jira.project_key`). The `path=` and dotted forms name the same slot.
 
@@ -183,7 +192,7 @@ Missing-slot behavior is per-slot: value slots prompt the user once per session;
 | `jira` | Jira issue tracker — project key, refuse-other-projects policy, description-format doc | `jira-create`, `jira-rework`, `jira-updates` |
 | `github` | GitHub repo identity — owner, repo, default base branch | `pull-requests`, `pr-review-feedback`, `github-issue-updates` |
 | `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
-| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`) | `pull-requests`, `final-verification-review` |
+| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`), mandatory PR labels (`pr.labels`) | `pull-requests`, `final-verification-review` |
 | `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
 | `quality` | Automated code-quality tooling (optional) — `rector` opt-in (Rector before Pint at completion / PR preflight) | `backend-quality`, `pull-requests` |
 | `codex` | Codex review — optional project setup doc (`invocation_mode` is deprecated and ignored) | `codex-review` |
@@ -207,7 +216,7 @@ All 12 groups are root-optional — only `schema-version: 1` is root-required. A
 
 ### Schema-versioning
 
-Vendor skills declare `metadata.schema-required` in their frontmatter — a Composer-style semver range naming which `schema-version` they consume. boost-skills' v1 vocabulary is `schema-version: 1`; current slot-aware skills (`jira-create`, `pull-requests`) declare `schema-required: ^1`. A future v2 schema is published via a vendor minor bump; consumers update their host `schema-version` declaration when their full vendor lineup supports it. Skills with mismatched `schema-required` skip-write with a warning; no broken syncs.
+Vendor skills declare `metadata.schema-required` in their frontmatter — a Composer-style semver range naming which `schema-version` they consume. boost-skills' v1 vocabulary is `schema-version: 1`; current slot-aware skills declare `schema-required: ^1` (e.g. `jira-create`, `pull-requests`). A future v2 schema is published via a vendor minor bump; consumers update their host `schema-version` declaration when their full vendor lineup supports it. Skills with mismatched `schema-required` skip-write with a warning; no broken syncs.
 
 ### Vendor schema vs catalog vocabulary
 
@@ -240,6 +249,7 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
+| `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 | `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |

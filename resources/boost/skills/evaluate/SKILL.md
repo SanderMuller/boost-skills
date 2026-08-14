@@ -3,6 +3,7 @@ name: evaluate
 description: "Self-directed eval loop: review own implementation, fix issues found, re-evaluate until clean, then run code review. Fix yourself; only ask the user for decisions. Activates when: evaluating implementation, self-reviewing code, checking for issues, or when user mentions: evaluate, check implementation, self-review, verify implementation."
 argument-hint: "[file path, feature name, or description of what to evaluate]"
 metadata:
+  boost-requires: "code-review codex-review"
   schema-required: "^1"
 ---
 

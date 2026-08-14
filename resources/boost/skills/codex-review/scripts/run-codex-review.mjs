@@ -25,9 +25,11 @@ const VALUE_OPTIONS = new Set(['--base', '--commit', '--model', '--prompt', '--p
 function usage() {
     return [
         'Usage:',
-        '  node run-codex-review.mjs (--base <branch>|--uncommitted|--commit <sha>) [--prompt <text>|--prompt-file <file>] [--model <model>] [--timeout-ms <ms>] [--use-user-config]',
+        '  node run-codex-review.mjs [--base <branch>|--uncommitted|--commit <sha>] [--prompt <text>|--prompt-file <file>] [--model <model>] [--timeout-ms <ms>] [--use-user-config]',
         '',
         'Runs Codex non-interactively, captures JSONL/stderr/result files, and fails on timeout without reading stale output.',
+        'With no target flag, infers one: a feature branch that differs from the repo default branch -> that branch diff; otherwise the uncommitted working tree.',
+        'Timeout resolves as --timeout-ms > $CODEX_REVIEW_TIMEOUT_MS > 15min default (floor 1000ms).',
     ].join('\n');
 }
 
@@ -38,7 +40,7 @@ function parseArgs(argv) {
         model: null,
         prompt: null,
         promptFile: null,
-        timeoutMs: DEFAULT_TIMEOUT_MS,
+        timeoutMs: envInteger('CODEX_REVIEW_TIMEOUT_MS', DEFAULT_TIMEOUT_MS),
         uncommitted: false,
         useUserConfig: false,
         help: false,
@@ -98,15 +100,16 @@ function parseArgs(argv) {
     }
 
     const targetCount = [options.base, options.commit, options.uncommitted].filter(Boolean).length;
-    if (targetCount === 0) {
-        throw new Error('Choose a target: --base <branch>, --commit <sha>, or --uncommitted.');
-    }
     if (targetCount > 1) {
         throw new Error('Choose only one target: --base, --commit, or --uncommitted.');
     }
 
     if (options.prompt && options.promptFile) {
         throw new Error('Choose either --prompt or --prompt-file.');
+    }
+
+    if (targetCount === 0) {
+        resolveDefaultTarget(options);
     }
 
     return options;
@@ -134,6 +137,65 @@ function ensureCommand(command, args, failureMessage) {
         throw new Error(stderr ? `${failureMessage}\n${stderr}` : failureMessage);
     }
     return result;
+}
+
+function envInteger(name, fallback) {
+    const value = process.env[name];
+    if (value === undefined) {
+        return fallback;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 1_000) {
+        return fallback;
+    }
+
+    return Math.floor(parsed);
+}
+
+function git(args) {
+    return run('git', args, { timeout: PREFLIGHT_TIMEOUT_MS });
+}
+
+// Repo default branch from origin's HEAD symref (e.g. "origin/main" -> "main").
+// Returns null when it can't be determined — the caller then reviews the
+// working tree rather than guessing a base. No hardcoded branch names.
+function detectDefaultBase() {
+    const ref = git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+    if (ref.status !== 0) {
+        return null;
+    }
+    const name = ref.stdout.trim().replace(/^origin\//, '');
+
+    return name === '' ? null : name;
+}
+
+function currentBranch() {
+    const branch = git(['branch', '--show-current']);
+
+    return branch.status === 0 ? branch.stdout.trim() : '';
+}
+
+function hasBranchDiff(base) {
+    // `git diff --quiet` exits 1 when there are differences, 0 when identical.
+    return git(['diff', '--quiet', `${base}...HEAD`]).status === 1;
+}
+
+// No target flag given: infer one instead of erroring. On a feature branch that
+// differs from the repo's default branch, review that branch diff; otherwise
+// (on the default branch, detached, or default-branch undetectable) review the
+// uncommitted working tree. The documented flow still passes a target
+// explicitly — this only makes a flagless invocation graceful.
+function resolveDefaultTarget(options) {
+    const base = detectDefaultBase();
+    const current = currentBranch();
+    if (base !== null && current !== '' && current !== base && hasBranchDiff(base)) {
+        options.base = base;
+
+        return;
+    }
+
+    options.uncommitted = true;
 }
 
 function resolvePrompt(options) {

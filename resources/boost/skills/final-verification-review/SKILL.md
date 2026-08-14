@@ -4,6 +4,7 @@ description: "Closeout verdict before shipping: runs the full evaluate loop (inc
 argument-hint: "[file path, feature name, or commit range]"
 metadata:
   boost-tags: "github"
+  boost-requires: "evaluate codex-review pull-requests"
   schema-required: "^1"
 ---
 
@@ -90,10 +91,19 @@ If no gates are configured, say so and move on.
 
 ### 2d. Endpoint-specific preconditions
 
-**PR flow** — two `pull-requests` preflight items are creation-time commitments; verify their preconditions now:
+**PR flow** — three `pull-requests` preflight items are creation-time commitments; verify their preconditions now:
 
 - **Template** — if the project configures a PR template path (see the `pull-requests` skill), check that the file exists; a missing template would otherwise only surface at creation time.
 - **Title format** — report the configured title format in the verdict so the eventual PR title is written against it; if enough is known about the task (e.g. an issue key the format requires), flag anything already missing.
+- **Mandated PR label** — check the PR-label policy below; a label the PR can actually carry is part of READY.
+
+This project's PR-label policy:
+
+```boost:conv
+<!--boost:conv path="pr.labels" mode="yaml"-->none — no PR-label policy<!--boost:conv:end-->
+```
+
+If none is configured, skip that item. If one is, walk the `pull-requests` [PR Labels](../pull-requests/SKILL.md#pr-labels) evidence ladder check-only and report either the option it settles on, or that `pull-requests` will ask the author at creation time — the latter is a note, not a blocker, since the question resolves it. Report it **blocking** only when that section's unusable-config cases leave no label that can apply at all. Never apply a label here — this skill creates nothing.
 
 **No-PR flow** — there is no PR title or template. If the endpoint is a **release**, the next step is the `pre-release` skill (its gauntlet, CI gate, and tag handoff own the release preconditions) — this skill does not duplicate those; just confirm the change is the intended release scope. If the endpoint is a **plain commit to the target branch**, there are no extra preconditions beyond 2a–2c.
 

@@ -4,6 +4,7 @@ description: "Creates and manages your own GitHub PRs via the gh CLI — analyze
 argument-hint: "[PR number or target branch]"
 metadata:
   boost-tags: "github"
+  boost-requires: "resolve-conflicts"
   schema-required: "^1"
 ---
 
@@ -49,7 +50,8 @@ Before creating the PR, verify all of the following:
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first; see [PR Description](#pr-description) for how to embed it). If the eye-verify or screenshot harness can't run this session, don't silently drop it — note the deferral in the PR (why it was skipped) and recommend the author capture it before the PR reaches a human reviewer.
-7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then run `git fetch origin <resolved-base> && git merge origin/<resolved-base>`. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks (a clean auto-merge can still pull in a breaking target change), then push the merge before creating the PR.
+7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then **use the `resolve-conflicts` skill** to run that merge — it owns the merge end to end (clean-tree preflight, resolution, and the post-merge verification that a conflict-free auto-merge still needs) and leaves the merge committed but unpushed. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Push the merge before creating the PR.
+8. **A mandated PR label is resolved** — applies **only when the project configures a PR-label policy** (`pr.labels`; see [PR Labels](#pr-labels) below). Decide which option applies before creation, asking the author in the step-6 batch when the evidence does not settle it. If no policy is configured, skip this step — the project mandates no label.
 
 #### Verifying / creating against the tracker
 
@@ -69,13 +71,15 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 
    Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
-6. **Resolve risk + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask (tier-scored or no risk question, plus pre-supplied direction), skip the call entirely.
+6. **Resolve risk + any mandated label + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation), [PR Labels](#pr-labels) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. A label question is rendered only when a `pr.labels` policy is configured *and* its evidence ladder left the choice uncertain. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the label question (only when unresolved) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask, skip the call entirely.
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
      --title "<title>" \
      --body-file /tmp/pr-body.md
    ```
+   When the project configures a PR-label policy (see [PR Labels](#pr-labels)), add `--label "<resolved-name>"` to that command, passing the option's `name` verbatim. Omit the flag entirely when no policy is configured. The vocabulary is expected to already exist in the tracker; if the create call rejects the label as unknown, report that rather than retrying without the flag (which produces an unlabelled PR under a mandate) or creating a label to match (which makes a typo permanent).
+
    The command prints the PR URL on success — capture the PR number from it.
 8. **Post-creation verification** — immediately after the PR is created, fetch only the fields needed in a single call:
    ```bash
@@ -90,6 +94,15 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 10. **Handle review based on risk level**:
     - **If `pr.risk` tiers are configured** (see [Risk Assessment](#risk-assessment-before-pr-creation)): route per the matched tier — a tier with `human_reviewers: 0` and no `require_codeowners` → mark ready with `gh pr ready <pr-number>`; a tier needing one or more human reviewers (or `require_codeowners`) → leave it a draft, request the tier's reviewers, and tell the user which approvals it needs.
     - **Otherwise** (generic assessment): **Low** → mark ready immediately with `gh pr ready <pr-number>`; **Medium/High** → a human reviewer must also review, so leave it a draft and tell the user to assign one.
+11. **Remove the implemented spec file — detect it, don't recall it.** When the branch implemented a spec from the project's specs directory (the `write-spec` / `implement-spec` flow), the spec has served its purpose once the PR captures the work; deleting it from memory is how specs leak onto the base branch. Skip this step entirely if the project doesn't use specs. (Derive the specs directory from `spec.filename_pattern` — the literal prefix before the first `{…}` placeholder, `specs/` by default; substitute a configured path like `docs/specs/` in the globs below.)
+    - **List** every spec the branch changed against `origin/<base>` (the base resolved above — preflight item 7 already fetched and merged it, so it is current), **with its status letter** so a stray *deletion* of an unrelated spec is caught too, not only an added/modified/renamed one:
+      ```bash
+      git diff --name-status --diff-filter=ACMRD origin/<base>...HEAD -- 'specs/*.md' 'specs/**/*.md'
+      ```
+    - **The branch's own spec** (its `{issue_key}` matches the branch's issue key, or the single spec you implemented) → unless the user chose to keep it (`implement-spec` Step 4 leaves this to the user), `git rm` it, commit the deletion, and push so the removal is part of the PR (reviewers see what was built). How it shows in the diff depends on where the spec was born: a spec **created on this branch** (the usual `write-spec` flow) that you then removed nets to **no entry at all** (the add and the delete cancel); one that already existed on `origin/<base>` shows as `D`. If the user **kept** it, it shows as `A` (born on the branch) or `M` (was on base).
+    - **Every other entry is a leak** — an unrelated in-flight spec swept in by a broad `git add -A` (`A`/`M`/`R`), or an unrelated spec wrongly removed (`D`). None may ride along, but **don't discard content you might still need** getting them out: if the unwanted change is only staged/working-tree, `git restore --staged <spec>` drops it from the PR while keeping your local copy; a spec newly added on this branch → `git rm --cached <spec>` (same effect). Only when the change is already committed on the branch — its content preserved elsewhere (the real work lives on its own branch) — reset this branch's copy with `git checkout origin/<base> -- <spec>` and commit; copy the file aside first if it holds local-only edits. Never force-push to strip it.
+    - **Verify** — the real invariant is that **no spec other than the branch's own** appears in the list; the branch's own may show as `D`/`A`/`M` or not at all per the case above. Re-run the command and confirm every remaining line belongs to the branch's own spec. If this runs after step 10 already marked a low-risk PR ready and the check fails, move it back to draft (`gh pr ready --undo <pr-number>`) until fixed, so a review-ready PR never carries a spec leak. Any unexpected line means a spec was left in, swept in, or wrongly deleted — fix it and re-push before review.
+    - A spec that nonetheless reaches the base branch (this step skipped, or a spec swept in later) is caught post-merge by the `/clean-specs` command.
 
 ## Pre-PR Gates
 
@@ -174,7 +187,7 @@ When making changes to an existing PR you authored:
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
 5. **Commit changes**: create meaningful commits following the project's commit conventions.
-6. **Sync the base in before pushing**: `git fetch origin <base> && git merge origin/<base>`, where `<base>` is the `baseRefName` from step 1. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict. Hand any `CONFLICT` to the `resolve-conflicts` skill; after any merge that was not "Already up to date" re-run the project's quality checks before pushing.
+6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
 7. **Push to remote**: `git push origin <branch-name>`.
 
 ### Finding the PR
@@ -204,7 +217,7 @@ The author knows the PR's intent in a way the diff cannot reveal — which user 
 
 ### When to ask
 
-- **By default**, on every PR creation, batched together with the risk-level question in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
+- **By default**, on every PR creation, batched together with the other still-open questions in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
 - **Skip** only when the user already supplied a direction in the current turn (e.g. their request was "create a PR — focus on the cross-tenant isolation, that's the headline").
 
 ### How to ask
@@ -229,13 +242,14 @@ Treat all of the following as "no direction" and fall through to diff-driven dra
 Step 6 renders the still-open questions in a single `AskUserQuestion` call. Possible questions:
 
 - **Question 1 — Risk level** (`header: "Risk level"`, `multiSelect: false`): asked **only** when no `pr.risk` tiers are configured — the generic `Low` / `Medium` / `High`, with your recommendation. When `pr.risk` tiers are configured, the tier is scored by the agent (per [Risk Assessment](#risk-assessment-before-pr-creation)), not asked — omit this question.
-- **Question 2 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
+- **Question 2 — PR label** (`header: "PR label"`, `multiSelect: false`): asked **only** when a `pr.labels` policy is configured and its evidence ladder (see [PR Labels](#pr-labels)) left the choice uncertain. Use the policy's `rule` as the question text and its `options` as the choices, each `name` verbatim with its `when` as the description; mark the `on_doubt` option as the fallback for an uncertain author, and add a no-label choice when `require_exactly_one` is false. Never drop this question by picking `on_doubt` yourself.
+- **Question 3 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
 
-Order when both are present: risk first, direction second. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when the user already supplied direction this turn, and skip the call entirely when neither remains.
+Order when more than one is present: risk first, label second, direction third. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when no label policy is configured or the evidence already settled it, drop Question 3 when the user already supplied direction this turn, and skip the call entirely when none remains.
 
 ## Risk Assessment Before PR Creation
 
-**Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with the description-direction question in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
+**Always assess the risk level before creating a PR.** It determines the review process (step 10). Whether risk is *asked* or *scored* depends on configuration (below): when `pr.risk` tiers are configured the agent scores the tier — no user risk question; otherwise the generic risk question is asked and batched with whatever other questions remain open in one `AskUserQuestion` call (see [Batching with the risk-level question](#batching-with-the-risk-level-question)).
 
 <!--boost:conv path="pr.risk" mode="yaml"-->No project risk tiers configured.<!--boost:conv:end-->
 
@@ -256,6 +270,44 @@ Weigh each factor as **residual** risk — what remains after the checks that ru
 - **Low**: Purely additive, isolated, no security or data impact — and any failure would be loud and reversible, caught by tests / CI / QA. Author plus any automated review is sufficient.
 - **Medium**: Touches existing behavior, adds migrations, or affects integrations. A human reviewer should review.
 - **High**: Security-sensitive, silent or hard-to-detect, data-migrating, or non-reversible. A human reviewer **must** review.
+
+## PR Labels
+
+Some projects mandate a label on every PR, drawn from a fixed vocabulary and chosen by a question the diff cannot answer. This project's policy:
+
+```boost:conv
+<!--boost:conv path="pr.labels" mode="yaml"-->No project PR-label policy configured.<!--boost:conv:end-->
+```
+
+**If no policy is configured above, there is no label step.** Skip the rest of this section, add no `--label` flag, and never invent a label.
+
+**If a policy is configured**, resolve the label before the PR is created (preflight item 8) and pass it to `gh pr create` (step 7).
+
+This is independent of `pr.risk`. A tier's own `label` is risk-routing metadata applied by tier score; this slot is an author-declared policy. A project may configure either, both, or neither — with both, a PR carries both labels.
+
+### Applying the name
+
+Apply the option's `name` **verbatim** — exact spelling, casing, spacing, and language. Never translate it, re-case it, abbreviate it, expand it, or apply a name absent from `options`. These vocabularies are typically aggregated outside the repo, where a deviating name does not fail loudly; it just stops counting, and the repo silently drops out of the aggregation.
+
+`require_exactly_one: true` (the default) means exactly one option — never zero, never two. `false` means at most one: the label is encouraged, not mandatory, so a PR may go up without one.
+
+Two configurations are unusable: an empty `options` list, and more than one option setting `on_doubt`. Neither is yours to repair — report the problem to the user and ask which label to apply. Do not pick one. Check both here rather than assuming the schema caught them: it rejects an empty `options` but cannot express the `on_doubt` count, and a config it does reject still renders.
+
+### Resolving which option applies
+
+`rule` is the question that decides it. Work down this ladder and stop at the first rung that settles it **with certainty**:
+
+1. **The work happened in this session** — you have first-hand knowledge of how the change was made, so answer `rule` from that and apply the matching option. No question needed.
+2. **The branch predates this session** — repository evidence (the commit history from `git log origin/<base>..HEAD`, commit trailers, commit authorship, the diff itself) is an **input**, not an answer: it establishes that something was involved, not the specific fact `rule` turns on. Read `rule_doc`, if configured, when the case is not obvious.
+3. **Anything short of certain — ask the author.** Render the question in the step-6 `AskUserQuestion` batch (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), offering the `options` verbatim. Under `require_exactly_one: false`, add a no-label choice — the policy allows zero, so the question must let the author say so.
+
+`on_doubt` marks the option the **author** falls back to when *they* are uncertain. It is not a shortcut for the agent: never apply it to avoid asking. Uncertainty on your side means rung 3, not `on_doubt`.
+
+`exempt_bot_authors: true` skips this whole section for bot-authored PRs. Resolve that from the tracker's own bot flag, never by matching author names — on GitHub, `author.is_bot` from `gh pr view --json author`. That field needs a PR to read, so it applies in the [existing-PR flow](#how-to-work-on-existing-prs); at creation time the author is whichever account `gh` is authenticated as, and the exemption bites only if that account is itself a bot.
+
+### Enforcement
+
+This skill applies the label; it does not enforce it. Nothing here blocks a PR that ends up unlabelled — a project needing a hard gate adds its own CI check on the PR event.
 
 ## PR Title
 
@@ -292,7 +344,7 @@ If the review didn't run or couldn't complete — the `pr.gates` `on_missing` ca
 
 If there is no template, write a clear description that covers:
 - **Summary** — 1-3 sentences. Lead with the user-facing change and the motivation, not the implementation — see [Writing the Description: Why, Not What](#writing-the-description-why-not-what).
-- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and embed a screenshot in the PR **body** (not a comment), redacting sensitive or personal data first. Commit the image as a file rather than inlining a base64 `data:` URI — common hosts (GitHub among them) strip those, so the image renders blank. When an approved design exists, include it alongside — design above implementation — so reviewers compare the two and a missing design is visible rather than silently skipped.
+- **Testing** — clear steps a reviewer or QA can follow to verify the change. For UI changes, note that it was eye-verified in a browser and embed a screenshot in the PR **body** (not a comment), redacting sensitive or personal data first. Commit the image as a file rather than inlining a base64 `data:` URI — common hosts (GitHub among them) strip those, so the image renders blank. In a **private** repo the usual raw hosts (`raw.githubusercontent`, gists) don't render for reviewers either — but a committed PNG referenced by its branch blob URL (`https://github.com/<owner>/<repo>/blob/<branch>/<path>.png?raw=true`) *does* render inline for authenticated repo members; the no-file fallback is to drag-drop the image into the description in the browser, which yields an inline `user-attachments` URL with nothing committed. When an approved design exists, include it alongside — design above implementation — so reviewers compare the two and a missing design is visible rather than silently skipped.
 - **Security & privacy** — describe any security considerations, or state "No security implications".
 - **Risk assessment** — record the agreed risk level, e.g. `**Risk assessment**: Medium`, with a short explanation of the contributing factors.
 

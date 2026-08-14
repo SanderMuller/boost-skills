@@ -5,6 +5,307 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.24.0 - 2026-08-05
+
+<!-- verified-sha: 5dfddd7d389faa2896842069c2c76fd197eacaa9 -->
+A conventions slot for projects that mandate a label on every PR. Optional and additive — leave it out and nothing changes.
+
+### Added
+
+- **`pr.labels` — a configurable mandatory-PR-label policy for `pull-requests`.** Some organisations require every PR to carry exactly one label from a fixed vocabulary, chosen by a question the diff cannot answer: who wrote the first working version, which change class this is, which compliance category applies. There was no slot for that — `pr` accepted only `title_format`, `template_path`, `gates` and `risk`, and rejects unknown keys, so the policy could not even be forward-declared. The remaining option was the guideline layer, which is compiled into `CLAUDE.md` / `AGENTS.md` and loaded in every session, so a rule that only matters when a PR is created cost tokens on every unrelated task.
+  
+  Declared in `boost.php`, the policy renders inside the `pull-requests` skill instead, where it is read only when that skill activates:
+  
+  ```php
+  'pr' => [
+      'labels' => [
+          'require_exactly_one' => true,   // false ⇒ at most one
+          'exempt_bot_authors' => true,    // skip for Dependabot & friends
+          'rule' => 'Who wrote the first working version of the main change?',
+          'rule_doc' => 'docs/pr-label-policy.md',   // optional prose
+          'options' => [
+              ['name' => 'Label A', 'when' => 'criterion for A'],
+              ['name' => 'Label B', 'when' => 'criterion for B', 'on_doubt' => true],
+          ],
+      ],
+  ],
+  
+  ```
+  The slot carries the mechanism only. Label names, the deciding question, and the policy prose are yours — no vocabulary and no semantics are fixed by the package, and `options` has no mandated length beyond needing at least one entry.
+  
+  The skill applies the `name` **verbatim**. These vocabularies are usually aggregated outside the repo, where a translated or re-cased name does not fail loudly; it just stops counting, and the repo drops out of the aggregation unnoticed.
+  
+  How the label is decided: the agent answers `rule` from first-hand knowledge when the work happened in the session, treats repository evidence (commit history, trailers, the diff) as an input rather than an answer when the branch predates it, and asks the author otherwise — batched into the existing pre-PR `AskUserQuestion` call alongside the risk and description-direction questions. `on_doubt` marks the option an uncertain *author* falls back to; the agent may not use it to skip asking. A resolved label reaches the PR via `gh pr create --label`.
+  
+  The package applies the label, it does not enforce it. Nothing here blocks an unlabelled PR — add a CI check on the PR event if you need a hard gate.
+  
+- **`final-verification-review` reports the label policy in its closeout check.** A configured mandate is now visible before the PR exists rather than at creation time. An unresolved label is a note, since the pre-PR question resolves it; only a config that cannot be satisfied — an empty `options` list, or several options claiming `on_doubt` — is reported as blocking.
+  
+
+### Notes
+
+- **Absent ⇒ no behaviour change.** With no `pr.labels` declared, both skills render an explicit no-op and there is no label step. Existing configs are unaffected.
+- **No `schema-version` bump.** This is additive to v1; `schema-version` stays `1`.
+- **Orthogonal to `pr.risk`.** A risk tier's own `label` is routing metadata applied by tier score; `pr.labels` is an author-declared policy. Declare either, both, or neither — with both, a PR carries both labels.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.23.1...2.24.0
+
+## 2.23.1 - 2026-07-31
+
+<!-- verified-sha: 650ae5a2e0bbbe7faed5042e2518b7ae759d087d -->
+Fixes four ways the `dangling-symbols.sh` companion introduced in 2.23.0 could report a clean sweep on a merge that had a real dangling reference. **If you are on 2.23.0, upgrade** — a check that silently passes is worse than no check, because `resolve-conflicts` tells you to trust its result.
+
+### Fixed
+
+- **The sweep no longer depends on the reader's git configuration.** It parsed git's human-facing output while assuming defaults, but that output is shaped by settings the script neither set nor inspected. Four of them made it print `No dangling references` and exit `0` against a repository that provably had one:
+  
+  - `grep.patternType=extended` — the word-boundary `\b` is a GNU regex extension that matches nothing under ERE, so every symbol lookup came back empty. The lookup now uses `git grep -w -F`: `-w` is a git option rather than a regex feature, and `-F` treats the symbol as the literal identifier it is. Verified against the `basic`, `extended`, `fixed` and `perl` pattern types.
+  - `color.diff=always` / `color.ui=always` — ANSI escapes prefixed every line, so the `^-` and `^+` matching that finds removed declarations stopped working. Closed with `--no-color`.
+  - `diff.external`, and the `GIT_EXTERNAL_DIFF` environment variable — an external driver replaced the diff output entirely. Closed with `--no-ext-diff`.
+  - A `textconv` driver bound through `.gitattributes` — content was rewritten before diffing, so a symbol could be transformed out of the diff. Closed with `--no-textconv`.
+  
+- **A failed sweep now fails loudly instead of reporting success.** `die` was being called from inside a pipeline subshell, where `exit` terminates only that subshell; the script printed its error and then fell through to `No dangling references` with exit `0`. Both diffs are now collected in the main shell, so a git failure exits `2`.
+  
+- **`resolve-conflicts` no longer falls through to the commit phase on a fast-forward.** The fast-forward outcome noted that nothing needed verifying but omitted the explicit stop its sibling outcome carries, leaving a path that reached the commit phase with an empty tree.
+  
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.23.0...2.23.1
+
+## 2.23.0 - 2026-07-26
+
+<!-- verified-sha: a838c232e569713b5b806b6c907d2c01324fea38 -->
+`resolve-conflicts` now owns the whole merge rather than just the conflicted parts of it, and verifies the cases git reports as clean. Every git behaviour below was checked against real repositories before being written down; two claims the skill previously made turned out to be wrong.
+
+### Added
+
+- **Cross-side consistency check in `resolve-conflicts`, with a shipped companion.** A merge can combine both sides cleanly and still leave code that no longer agrees with itself — one side renames a declaration while the other adds a reference to the old name. Git reports no conflict, and a diff against either side looks exactly as it should, because the removal and the stale reference never appear in the same comparison. The new `scripts/dangling-symbols.sh` companion sweeps **both** directions (they removed something you call, and you removed something they call) and reports surviving references. Retarget it at any language with `--keywords`; `--help` documents the rest.
+- **Clean-tree preflight.** A dirty tree does not reliably stop a merge: git aborts only when the incoming change would overwrite the dirty file, so unrelated work-in-progress otherwise survives into the verification diffs with nothing marking it as unrelated. Untracked files stay excluded from the gate — they never reach a diff — but now carry their own documented abort path, since an incoming file landing on an untracked path stops the merge outright.
+- **`bash -n` syntax gate for shipped `.sh` companions**, mirroring the existing `node --check` path for `.mjs` assets.
+
+### Changed
+
+- **`resolve-conflicts` merges with `--no-commit`.** A conflict-free merge previously committed itself before any of the prescribed verification ran, leaving a failed check fixable only by amending or resetting. Conflicted and clean merges now behave identically: the merge stays staged until the commit phase. Fast-forwards are unaffected and need no verification.
+- **Marker-less conflicts are handled.** Modify/delete and rename/delete conflicts (`DU`/`UD`) carry no `<<<<<<<` markers — git leaves the surviving side's content in place, so deciding what is left to resolve by grepping for markers skips those files entirely while they look finished. Conflicts are now enumerated by status code, with the opposite side read through `git show :N:`.
+- **Failing tests are baselined against both parents.** Red on your branch was previously enough to call a failure pre-existing and move on. But a test red on your side may have been *fixed* on the incoming one, in which case a red result after the merge means the resolution dropped that fix — the exact dropped-functionality bug the skill exists to prevent. All four ours/theirs combinations now have a verdict.
+- **Verification split by the question it answers.** "Did the resolution keep both sides?" (a diff) and "do those changes still agree with each other?" (the sweep and the test suite) are separate checks, and the second runs even when git reported no conflict.
+- **`pull-requests`, `pr-review-feedback`, and `jira-rework` route their whole base-sync merge through `resolve-conflicts`**, not just the conflicted case. Each previously restated the post-merge verification itself, precisely because a clean merge never reached the skill. All three now declare `boost-requires: resolve-conflicts`.
+
+### Fixed
+
+- **`merge-tree` exit taxonomy in `resolve-conflicts`.** Unrelated histories exit `128` with `fatal: refusing to merge unrelated histories`, not exit `1` with the `not something we can merge` message the skill attributed to them. Exit `128` is now documented as its own case, covering both that and the rejected `--quiet` + `--name-only` combination.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.22.0...2.23.0
+
+## 2.22.0 - 2026-07-26
+
+<!-- verified-sha: a52cbddfe51142c389cdd33ba4079f2bf59caaa4 -->
+Two review-quality disciplines: trace behavior claims to real code before writing them, and check what was built against what was actually required.
+
+### Added
+
+- **"Trace, Don't Assume"** in the verification-before-completion guideline (so it applies everywhere, via `CLAUDE.md` / `AGENTS.md`): a claim about how the code *currently* behaves — a root cause, an existing mechanism, present behavior — must be traced to real code or a runtime observation before it's written into a spec, PR, commit, review, issue, or comment, and no illustrative example may be invented. Intended behavior a spec proposes as a requirement is exempt. Stops one unverified guess from seeding a whole ticket's context and tests on a false premise.
+- **Conformance & scope check in `code-review`** — fetch the *real* requirement (the spec's goals, technical sections, and edge cases; un-superseded linked-issue criteria; or the task itself), then verdict each requirement **requirement-down** (Met / Partial / Unmet), and scope-check for implied requirements, unrequested extras, silent interpretations, and side effects. The diff shows what was built, never what was forgotten.
+
+### Changed
+
+- **`implement-spec` now walks the requirements before final verification** — task checkboxes track *tasks done*, not *requirements met*, so a required behaviour no task mapped to is otherwise never caught. It verifies each requirement against real code, then runs the full quality gate last so that gate covers anything the walk changed.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.21.0...2.22.0
+
+## 2.21.0 - 2026-07-16
+
+<!-- verified-sha: 9257915c000c140d8d38258d83ffc397711ce368 -->
+### Added
+
+- **`clean-specs` skill** (command-only, `/clean-specs`) — a post-merge net that removes spec files whose work is fully shipped: every task box checked **and** a title/branch-matched, un-reverted merge commit that is an ancestor of the base branch. Conservative by design — it leans toward keeping a spec on any ambiguity, reports and asks for confirmation before deleting, re-checks eligibility against fresh state, and ships the removal as a reviewable PR.
+
+### Changed
+
+- **`pull-requests` now removes the implemented spec as a detect-and-verify step**, not a from-memory delete. It finds the branch's spec from the diff against the base, removes it, and verifies no unrelated spec was swept in by a broad `git add -A` — closing the path by which implemented specs reached the base branch. Unrelated specs that were swept in are restored without discarding local content.
+- **`implement-spec` cleanup** defers spec removal to that step instead of hand-deleting, and points at `/clean-specs` as the post-merge backstop.
+- **`clarify`, `write-spec`, and `implement-spec`** now delegate multi-file research sweeps to a read-only research subagent, keeping the main working context small on research-heavy flows.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.20.0...2.21.0
+
+## 2.20.0 - 2026-07-16
+
+<!-- verified-sha: 2fbe6c08eeb1b25b034742ef2c81b0d0a76fbe34 -->
+### Added
+
+- **`clarify` skill** — the shared questioning core: code-first exploration,
+  bisect-to-intent, fuzzy-term sharpening, scenario stress-tests, and an
+  assumptions audit. Usable standalone (`/clarify`) or as the base other skills
+  build on.
+- **`promptimize` skill** — turns a rough prompt into one optimized,
+  model-agnostic prompt and returns only the prompt. Builds on `clarify`.
+- **Eye-verify harness for `frontend-quality`** — a shipped `scripts/lib.mjs`
+  helper library (`createChecker`, `capturePageIssues`, `withFailedRoute`) and a
+  `references/eye-verify.md` coverage-contract guide, so a project gets
+  browser-verification plumbing without building its own. `console.mjs` gained an
+  `--axe` accessibility/contrast pass, screen-reader-attribute leak scanning, and
+  application-request (xhr/fetch) failure gating.
+- **Dependency-aware spec workflow** — `write-spec` phases now declare an
+  immutable `ID` and `Depends:` edges; `implement-spec` computes each ready
+  "wave" and can implement independent phases in parallel under an explicit
+  opt-in, with write-disjoint and DAG-validation safeguards. Specs without the
+  new metadata fall back to the existing sequential behaviour.
+
+### Changed
+
+- **`interview` now builds on `clarify`** (declares `boost-requires: clarify`) —
+  the grilling disciplines live in one place instead of being duplicated across
+  skills.
+- **`migration-squash` is now invoke-only** (`disable-model-invocation: true`).
+  It no longer auto-activates on incidental mentions of migrations or
+  `schema:dump`; run it explicitly (`/migration-squash`) or by directly asking
+  for a squash. This matches its destructive nature — a squash deletes migration
+  files.
+
+### Internal
+
+- `validate-skills.php` now runs `node --check` over every shipped
+  `*/scripts/*.mjs` companion asset, not only the codex-review wrapper.
+- Documented the `boost-requires` skill-dependency system in the README.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.19.0...2.20.0
+
+## 2.19.0 - 2026-07-10
+
+<!-- verified-sha: c7eccb58ea36bf8d78d8384e7cb239ddf5d0e931 -->
+Activates the skill dependencies declared in 2.18.0. That release shipped the
+`metadata.boost-requires` declarations but they were inert on the engine
+available at the time; `boost-core 1.4.0` resolves them, so this release raises
+the floor to require it.
+
+### Changed
+
+- **Requires `sandermuller/boost-core ^1.4`** (raised from `^1.3`).
+  `boost-core 1.4.0` resolves `metadata.boost-requires`: whenever a skill ships,
+  every skill it hands off to ships too, and a required skill that a consumer's
+  tags would otherwise drop is rescued in (transitively, surfaced as an INFO
+  diagnostic). Pinning the floor here makes the co-shipping guarantee real for
+  every consumer instead of best-effort. `1.4.0` is additive and backward
+  compatible, and the catalog already required `^1.3`, so the step is small.
+  Authoring guidance for `boost-requires` lives in `boost-core`'s README.
+
+No skill content changed — the declarations themselves shipped in 2.18.0.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.18.0...2.19.0
+
+## 2.18.0 - 2026-07-10
+
+<!-- verified-sha: 9a01ee921389304f9eef3f3ffa73b6f13fe7bfd0 -->
+Six skills now declare their hard dependencies in frontmatter, dogfooding the
+skill-dependency system `boost-core` is building. Once that engine lands,
+selecting a skill will co-ship every skill it hands off to — a dependency the
+tag filter would otherwise drop gets rescued, so a skill never delegates to
+something that isn't there. This release ships the declarations only: they are
+**inert under the current engine** (`boost-core ^1.3` ignores the unknown
+`metadata.boost-requires` key, verified against the shipped engine), so it is
+safe ahead of the resolver and changes nothing for consumers until they run a
+dependency-aware `boost-core`. Everything is **additive** — no skill removed or
+renamed.
+
+### Added
+
+- **Skill dependency declarations (`metadata.boost-requires`).** Space-delimited
+  bare skill names, mirroring `boost-tags`. Six skills declare their hard
+  hand-offs:
+  
+  - `interview` → `write-spec`
+  - `bug-fixing` → `test-writing`
+  - `evaluate` → `code-review codex-review`
+  - `final-verification-review` → `evaluate codex-review pull-requests`
+  - `pre-release` → `readme release-notes upgrading`
+  - `jira-rework` → `jira-updates`
+  
+  Only **hard hand-offs** — where a skill's flow invokes another skill — are
+  declared. Conditional and routing references stay undeclared on purpose:
+  `jira-create` / `jira-updates` only cross-reference each other for routing,
+  and capability-gated mentions like `backend-quality` / `frontend-quality` are
+  scoped by tags, so declaring them would rescue tooling into projects that do
+  not want it.
+  
+
+The declarations were derived from a body-reference audit of the catalog and
+validated against `boost-core`'s ship-closure design, then dogfooded through
+this repository's own review flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.17.0...2.18.0
+
+## 2.17.0 - 2026-07-03
+
+<!-- verified-sha: d95543268942dfc269c6d04d09ab8dcedf2530a4 -->
+### Added
+
+- **A shipped eye-verify harness** (`frontend-quality/scripts/`, emitted as `boost-core` 1.3
+  companion assets). Three framework-agnostic tools so a project stops rebuilding the plumbing:
+  
+  - `screenshot.mjs` — navigate a running app, optionally crop to a `--selector` with ≥15px
+    padding (clamped to the page), save a PNG.
+  - `console.mjs` — record console errors/warnings, uncaught page errors, and failed requests;
+    `--text-pattern` scans rendered text for a project-supplied leak regex (e.g. untranslated-key
+    markers); `--fail-on-error` gates.
+  - `auth-capture.mjs` — the portable auth seam: open a headed browser, log in by hand, save a
+    Playwright `storageState` the other two reuse via `--storage-state`. Knows nothing about any
+    login form, so it works for any app.
+    Playwright is a project prerequisite (`npm i -D playwright && npx playwright install chromium`);
+    each tool fails fast with that hint if it's absent. What stays per-app is only genuinely
+    app-specific glue (programmatic SSO login, data seeding, domain drivers).
+  
+- **Catalog-consistency CI gate** (`.github/validate-catalog.php`). The format validator never
+  checked that the catalog's own tables agree with what ships; the new gate enforces README
+  Skills/Guidelines tags vs each skill's `metadata.boost-tags`, skill/guideline inventory,
+  the guideline tag sidecar, the documented tag vocabulary, `boost:conv` tokens vs real
+  `conventions-schema.json` slots, and `schema-required` vs conv usage.
+  
+- **On-demand design-verification reference** (`frontend-quality/references/design-verification.md`).
+  The full per-element scoring rubric — attributes incl. shadow/elevation, line-height,
+  letter-spacing, tap-area; the "undocumented difference is a finding, not a deviation" rule;
+  image-sampling to the nearest project token when there's no token spec; and a ✓/✗ scoring table.
+  
+
+### Changed
+
+- **`codex-review` replaced the plugin path with a bounded native-CLI wrapper.** The Codex
+  plugin's companion awaited a `turn/completed` event with no timeout and hung on stale broker
+  sessions. The skill now ships `scripts/run-codex-review.mjs` (a companion asset) that runs the
+  bare `codex` CLI under a hard timeout — it cannot hang and cannot read a stale prior run's
+  output. The wrapper adds an env-configurable timeout (`CODEX_REVIEW_TIMEOUT_MS`, floor 1000ms;
+  `--timeout-ms` wins) and a no-flag target fallback that infers the review target from the repo's
+  default branch. `codex.invocation_mode` is deprecated and ignored (retained in the schema so
+  existing configs keep validating).
+- **Eye-verify woven deeper.** `frontend-quality` gained a "seed the off-by-default state before
+  capturing" step and points at the shipped harness as the primary capture path; `pull-requests`
+  documents private-repo image embedding (a committed PNG's `?raw=true` blob URL renders inline
+  for authenticated members; a browser drag-drop `user-attachments` URL is the no-file fallback;
+  `data:` URIs are stripped by GitHub). The `javascript` guideline was slimmed to the always-on
+  principle plus a pointer, so the detailed rubric lives on-demand rather than in every project's
+  `CLAUDE.md`.
+
+### Fixed
+
+- **README tag/inventory drift**, surfaced by the new gate: `pre-release` now documents its
+  `release-automation` tag (a consumer declaring only `php`+`github` would not have received it);
+  `jira-updates` drops a `github` tag it never carried in frontmatter; and the shipped
+  `signed-commits` guideline gets its missing row in the Guidelines inventory.
+
+### Internal
+
+Repository-only; none ship to consumers (all under `export-ignore`d paths or dev config):
+
+- CI `composer install` runs `--no-scripts --no-plugins` on the fork-exposed `pull_request` job.
+- Dependabot now watches the `composer` ecosystem, not just GitHub Actions.
+- `stolt/skill-validator` pinned exactly (`0.0.1`; the `^0.0.1` caret resolved to the same version).
+- Removed a dead `.mcp.json` pointing at a `vendor/bin/testbench boost:mcp` command this package
+  does not provide.
+
+The codex, eye-verify, and design-verification work was sourced from the upstream catalog and
+production adoption feedback, then dogfooded through this repository's own evaluate and
+codex-review flow before shipping.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.16.1...2.17.0
+
 ## 2.16.1 - 2026-06-30
 
 <!-- verified-sha: b17d63530e47ca45aabd7025ec084c4283acdeea -->
@@ -398,6 +699,15 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -418,6 +728,15 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
+
+
 
 
 
@@ -500,6 +819,15 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -526,6 +854,15 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
+
+
 
 
 
@@ -618,6 +955,15 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -645,6 +991,15 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
+
+
 
 
 
@@ -744,6 +1099,15 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -811,6 +1175,15 @@ vendor/bin/boost validate
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -819,6 +1192,15 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
+
+
 
 
 
@@ -908,6 +1290,15 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -925,6 +1316,15 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1009,6 +1409,15 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1140,6 +1549,15 @@ vendor/bin/boost validate
 
 
 
+
+
+
+
+
+
+
+
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1158,6 +1576,15 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1346,6 +1773,15 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
+
+
+
+
+
+
+
+
 
 
 
