@@ -131,6 +131,7 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
 | `release-automation` | opt-in — release flow content: README authoring, release notes, UPGRADING, CI changelog automation | `boost-skills`, `package-boost-php` |
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
+| `voice`              | opt-in — route every writing surface to one voice rule (ASD-STE100 Simplified Technical English) | `boost-skills`      |
 
 **`github` and `github-issues` are independent.** `github` covers any GitHub-hosted repo (used by PR and release skills); `github-issues` is the narrower tag for projects that track issues in GitHub Issues specifically. A repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`. Both are independently declarable in `->withTags(...)`.
 
@@ -241,6 +242,7 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
+| `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |
 
 ## Editing skills and guidelines
 

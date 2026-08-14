@@ -38,5 +38,6 @@ return BoostConfig::configure()
         Tag::Github,
         Tag::Php,
         'release-automation',
+        'voice',
     ])
     ->withDisabledEmitters([]);
