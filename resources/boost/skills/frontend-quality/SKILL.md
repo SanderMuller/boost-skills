@@ -87,6 +87,10 @@ seeded), name the deferral in a NOT-VERIFIED list rather than reporting an unqua
 - When the change has an approved design, verify it **per element** and assert computed values
   rather than eyeballing the whole image — see
   [`references/design-verification.md`](references/design-verification.md).
+- Here the browser pass is one step of the gate; when a change deserves a full, mandatory
+  browser pass — resolving the testables from the PR/issue/spec, driving every one, and
+  publishing the proof screenshots to the PR or issue — run that as its own flow rather than
+  ad hoc: the `eye-verification` skill (`/eye-verification`), where the project ships it.
 
 See the `javascript` guideline ("Eye-verify frontend changes" and "Verify against the design, per element") for the why.
 

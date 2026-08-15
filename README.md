@@ -90,6 +90,7 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
+| `eye-verification`     | Command-only (`/eye-verification`): mandatory browser pass over a frontend change — resolve the testables, drive each one, publish the proof screenshots. | `frontend`      |
 | `final-verification-review` | Closeout verdict: run the full evaluate loop, dry-run the closeout preflight (PR flow *or* no-PR commit/release), report READY / NOT READY. | `github`        |
 | `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; browser eye-verify for UI changes, with a shipped harness. | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
