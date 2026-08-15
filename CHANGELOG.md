@@ -5,6 +5,35 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.27.0 - 2026-08-15
+
+<!-- verified-sha: f2994a085d448af311fd44b2f41b83044771361c -->
+A dedicated skill for the browser pass that `frontend-quality` can only afford to make one advisory step. Tag-gated on `frontend`; projects that do not declare it see no change.
+
+### Added
+
+- **`eye-verification` — a command-only browser verification flow (`/eye-verification`).** `frontend-quality` ends with an eye-verify step, but it sits behind type-check, lint, and tests, and is deliberately advisory: run it where a harness exists, defer it explicitly where none does. That framing is right for a quality gate and wrong for the moment the browser pass *is* the task — a UI change whose risk is entirely runtime, or work that has to leave proof behind for a reviewer and QA.
+  
+  The new skill is that flow, and it is mandatory end to end. It resolves the testables before driving anything, in a fixed priority chain: the PR body's testing section, then the tracker issue's QA testables or reproduction steps, then a spec's edge-case table, and — when none of those exist — gathered from the diff and listed back so the coverage is visible. A section left at its template placeholder yields nothing and falls through rather than passing as a source.
+  
+  It then drives every testable, including its edge cases, and reports **Pass / Fail / NOT VERIFIED** with the evidence that proves each one. A testable that could not be driven is named with its reason; an unqualified green over a partial pass is the failure mode the skill exists to prevent.
+  
+  The last step is the one that is usually skipped: **captured is not published**. A screenshot proving a testable is stored durably in the repo and attached to the PR or tracker issue that already exists, rather than left at whatever local path the capture wrote it to.
+  
+  Scope covers committed and uncommitted work both — this runs before the commit more often than after it, so a committed-only diff would report "nothing changed" over a full working tree of frontend edits.
+  
+  The skill carries the orchestration only. The harness, the coverage contract, the traps that fake a green run, fault injection, and per-element design verification stay in `frontend-quality`'s references and scripts, which it declares via `boost-requires` and points at rather than duplicating.
+  
+- **`frontend-quality` routes to it.** Its eye-verify step now names the dedicated flow for changes that deserve a full mandatory pass, where the project ships it.
+  
+
+### Notes
+
+- **Command-only.** `disable-model-invocation: true`, and the description carries no activation triggers, so agents that ignore that flag do not auto-activate it either. Invoke it deliberately.
+- **Tagged `frontend`,** the same tag as `frontend-quality` — a project that declares one gets both.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.26.0...2.27.0
+
 ## 2.26.0 - 2026-08-14
 
 <!-- verified-sha: bc41652dd2af9c13e766f3f234d7e44dde811431 -->
@@ -63,6 +92,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -746,6 +776,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -766,6 +797,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -870,6 +902,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -896,6 +929,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1010,6 +1044,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1037,6 +1072,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1158,6 +1194,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1236,6 +1273,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1244,6 +1282,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1355,6 +1394,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1372,6 +1412,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1467,6 +1508,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1620,6 +1662,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1638,6 +1681,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1837,6 +1881,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
