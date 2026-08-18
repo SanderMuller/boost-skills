@@ -102,10 +102,10 @@ Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoS
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
-| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit.                | `php` `github` `release-automation` |
+| `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
 | `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
-| `readme`               | Author and maintain a high-quality README for a Composer package — stub vs comprehensive shape, voice, staleness audit. | `release-automation` |
+| `readme`               | Author and maintain a high-quality README for a Composer package — stub, comprehensive, or docs-site shape, voice, staleness + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |

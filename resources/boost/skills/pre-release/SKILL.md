@@ -1,6 +1,6 @@
 ---
 name: pre-release
-description: "Pre-push / pre-release checklist. Runs Rector, Pint, full test suite, PHPStan, and audits README + `.ai/` docs for staleness. Activate before: pushing to remote, tagging a release, writing release notes, or when user mentions: pre-release, pre-push, release checklist, ship, cut release, release notes."
+description: "Pre-push / pre-release checklist. Runs Rector, Pint, full test suite, PHPStan, and audits README, the docs site (docs/ pages, index sync, local build), and `.ai/` docs for staleness. Activate before: pushing to remote, tagging a release, writing release notes, or when user mentions: pre-release, pre-push, release checklist, ship, cut release, release notes."
 metadata:
   boost-tags: "php github release-automation"
   boost-requires: "readme release-notes upgrading"
@@ -76,7 +76,7 @@ Must show 0 errors. Fix real issues — do not pad the baseline. See `backend-qu
 
 ### 5. Documentation freshness audit
 
-Release-worthy features change user-visible behavior, so `README.md` and the `.ai/` files we ship to downstream projects (via boost-core's `vendor/bin/boost sync`) can drift silently. Every release must audit both.
+Release-worthy features change user-visible behavior, so `README.md`, a `docs/` documentation site when the repo has one, and the `.ai/` files we ship to downstream projects (via boost-core's `vendor/bin/boost sync`) can drift silently. Every release must audit all of them.
 
 **Rule:** add or edit docs only where they reflect a real change. Do not bloat the README or skills. Delete stale content aggressively.
 
@@ -92,7 +92,13 @@ Pre-release-specific audit targets layered on top of `readme`'s generic pattern:
 
 If unsure whether a change warrants a README update: check whether a user reading the README after the release would see outdated advice. If yes, update.
 
-The `readme` skill is tagged `release-automation`; if your project doesn't declare that tag, the skill isn't synced and the inline targets above are the audit.
+**Docs-site repos** (a `docs/` directory that is a static-site generator's source — detection rules live in the `readme` skill's "Detecting the docs-site shape" section): the same freshness audit covers the docs pages. Against `git log <last-tag>..HEAD`:
+
+- Every release-worthy behavior change has its docs page(s) updated.
+- Run the `readme` skill's index-sync check with its per-surface rules: docs index and sidebar cover every page, the root README follows its declared policy (all pages or section entry points), a top nav bar is checked for dead entries only.
+- Run the `readme` skill's link audit (README → docs links and asset references resolve; site-internal links per the generator's routing).
+
+This skill normally ships alongside `readme` — pre-release declares it in `boost-requires`, and boost-core *rescues* a required skill into the sync even when tag filtering would drop it. The inline targets above exist for sync pipelines that don't honor `boost-requires` (for example laravel/boost standalone): there, treat this section as the audit and apply the `readme` skill's rules from its upstream source.
 
 #### 5b. boost-core skills + guidelines
 
@@ -113,6 +119,25 @@ git status --short .ai/
 ```
 
 Only the `.ai/` sources need committing. Generated files (`CLAUDE.md`, `.claude/skills/`, etc.) propagate to consumers on their next `composer install/update` via boost-core's plugin.
+
+#### 5c. Docs build gate (docs-site repos only)
+
+**Policy: the build *attempt* is mandatory whenever a build command is derivable AND the toolchain is available locally; a documented skip is allowed when either is missing; the manual link audit (5a) is the required fallback when no build runs.**
+
+Derive the command — never hardcode one:
+
+1. **Mirror the repo's docs deploy workflow** when one exists: same working directory, install command, and build command.
+2. Otherwise, only when `docs/package.json` declares a `build` script: pick the package manager from the lockfile in `docs/` (`package-lock.json` → npm, `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lock` or legacy `bun.lockb` → bun). Several lockfiles → ask, don't guess. A root-level workspace with no `docs/` lockfile falls under option 1 — do not invent a command.
+3. Neither source yields a command, or the toolchain is missing locally → **skip with an explicit note** in your report; the 5a link audit is then the only pre-push check for the link forms it covers.
+
+Example (npm layout, `|| true` capture per the repo convention):
+
+```bash
+npm ci --prefix docs || true
+npm run --prefix docs build || true
+```
+
+The build must succeed. When the generator fails the build on dead links (VitePress does by default), this catches broken cross-links before push instead of at deploy time.
 
 ### 6. CI green-light gate (after push, before release notes + tag)
 
@@ -144,7 +169,9 @@ failed=$(gh run list --commit "$SHA" --json conclusion,name -q '[.[] | select(.c
 [ "$failed" -eq 0 ] || { echo "CI red on $SHA"; gh run list --commit "$SHA"; exit 1; }
 ```
 
-Pass criteria: every run for this commit has `conclusion` in `{success, skipped}`. Skipped is fine — path-filtered workflows (e.g. `on: push: paths: ['**.php']`) are expected to skip when the release commit touches docs only.
+Pass criteria: every run for this commit has `conclusion` in `{success, skipped}`. A `skipped` conclusion is fine — a run reports it when its jobs were skipped by their job-level `if:` conditions. A `paths` filter that doesn't match behaves differently: the workflow produces **no run at all** for that push (nothing for `gh run list` to enumerate), which is equally fine — a push whose change set is docs-only is expected to leave `**.php`-filtered workflows absent.
+
+**Docs-site repos need no extra step-6 check.** By the same rule, a `paths: ['docs/**']` docs workflow creates no run when the pushed change set doesn't touch `docs/**` — correct, since that push needs no docs gate. When it does touch `docs/**`, a triggered docs run appears in the per-SHA enumeration and the loop above gates it like any other run. But this loop cannot prove the docs workflow ran — a disabled or misconfigured workflow also creates no run, and `total > 0` is satisfied by any other workflow. That's why step 5c's local build attempt is the mandatory docs check under 5c's policy (documented skip only when no command is derivable or the toolchain is missing); the CI docs run is additional coverage when it exists.
 
 **Don't rely on a "latest run" heuristic.** `gh run list --branch main --limit 1` may pick a run from a completely different push — the commit-SHA filter is the only reliable anchor.
 
@@ -165,7 +192,7 @@ On failure:
 
 This is where agents most commonly slip: running the local gauntlet (steps 1-5), then jumping straight to `Write internal/release-notes-<version>.md` without committing, pushing, or watching CI. **Do not do that.** Notes claim CI-matrix facts; CI must have produced those facts first.
 
-**Structure / voice / breaking-change callouts / what-to-omit rules come from the `release-notes` skill.** That skill owns the canonical body shape (Breaking / Added / Fixed / Internal sections, past-tense voice, PR-linking conventions, migration code blocks for breaking changes). Pre-release's role here is timing + scrubbing — *when* notes get drafted (only after step-6 CI green) and *what internal noise to scrub before saving*. The `release-notes` skill is tagged `release-automation`; if your project doesn't declare that tag, follow the inline guidance below.
+**Structure / voice / breaking-change callouts / what-to-omit rules come from the `release-notes` skill.** That skill owns the canonical body shape (Breaking / Added / Fixed / Internal sections, past-tense voice, PR-linking conventions, migration code blocks for breaking changes). Pre-release's role here is timing + scrubbing — *when* notes get drafted (only after step-6 CI green) and *what internal noise to scrub before saving*. The `release-notes` skill ships alongside this one via `boost-requires`; on a sync pipeline that doesn't honor `boost-requires`, follow the inline guidance below.
 
 **For breaking changes in particular**: the `upgrading` skill carries the canonical UPGRADING.md structure. If this release is breaking (MAJOR or pre-1.0 minor with breaking change), run `upgrading` to append the migration entry — release notes and UPGRADING.md cross-reference each other.
 
@@ -358,8 +385,9 @@ Wait until terminal. If red:
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
 | 3. Tests           | `vendor/bin/pest \|\| true`                                                                    | 0 failures                                    |
 | 4. PHPStan         | `vendor/bin/phpstan analyse --memory-limit=2G \|\| true`                                       | 0 errors                                      |
-| 5a. README         | manual scan vs `git log <last-tag>..HEAD`                                                      | no stale claims; all changed rules listed     |
+| 5a. README + docs  | manual scan vs `git log <last-tag>..HEAD` (docs-site repos: docs pages, index sync, link audit) | no stale claims; indexes agree; links resolve |
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
+| 5c. Docs build     | derived command (mirror docs workflow, else lockfile + `build` script), docs-site repos only   | build succeeds, or documented skip + 5a link audit |
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |
 | 6. CI green-light  | `gh run list --commit "$(git rev-parse HEAD)"` all complete + no failure                       | every run for the SHA in `{success, skipped}` |
 | 7. Release notes   | delete any pre-green/placeholder notes → preflight (clean tree + **merged** + CI green on release commit) → `Write internal/release-notes-<version>.md` | first line is `<!-- verified-sha: $real-green-SHA -->` (never a placeholder) |
