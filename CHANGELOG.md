@@ -5,6 +5,20 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.29.0 - 2026-08-19
+
+<!-- verified-sha: 3633150869e897ea557903e07440486003bd3bab -->
+For docs-site packages, the README now links to the published documentation site with absolute URLs instead of to the repo's markdown sources. This flips a convention `2.28.0` introduced. Packages without a `docs/` site see no change.
+
+### Changed
+
+- **`readme`: README links point at the published site, not `docs/*.md`.** The docs-site shape's link mechanics now require absolute published-site URLs (for example `https://acme.github.io/example-package/installation`). This is the ecosystem convention — spatie/laravel-permission, spatie/laravel-medialibrary, livewire/livewire, inertiajs/inertia, and laravel/framework all link their READMEs to the published site, none to repo markdown. Absolute URLs also render everywhere the README lands: GitHub, Packagist, IDE package viewers, forks, and the installed vendor copy, where `docs/` is `export-ignore`d and a repo-relative link resolves to nothing. At most one repo-relative pointer to `docs/` as the source location stays allowed; repo-relative links to individual pages are now flagged as the non-recommended form. The `NN-` prefix and rewrites layout is unchanged — it governs filenames, not link form.
+- **`readme`: the link audit validates README links against routes, not the filesystem.** README site links cannot resolve on disk, so the audit now checks each one against a route the generator actually produces (the source page after slug and rewrite normalization). On-disk resolution still applies to the single `docs/` source pointer and to non-docs repo links such as `UPGRADING.md`. The URL-stability section adds the consequence: a slug rename now breaks README links too, not only external inbound links.
+- **`readme`: the site-URL-once rule is scoped to prose.** A Documentation section made of site links repeats the site root by design. The rule now reads: state the root URL once in running text; page links are navigation and do not count.
+- **`pre-release`: step 5a owns the README link check.** The 5a link audit mirrors the new link classes. It also states explicitly that step 5c builds `docs/` only and never checks README links, because the README sits outside `docs/` — so 5a is the only check for them in both the build and the documented-skip path.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.28.0...2.29.0
+
 ## 2.28.0 - 2026-08-18
 
 <!-- verified-sha: 16304b656a38f1e8e5a888292ea2673181c7133a -->
@@ -109,6 +123,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -796,6 +811,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -816,6 +832,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -924,6 +941,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -950,6 +968,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1068,6 +1087,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1095,6 +1115,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1220,6 +1241,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1300,6 +1322,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1308,6 +1331,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1423,6 +1447,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1440,6 +1465,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1537,6 +1563,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1694,6 +1721,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1712,6 +1740,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -1913,6 +1942,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
