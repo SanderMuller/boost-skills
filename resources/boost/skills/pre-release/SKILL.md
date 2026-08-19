@@ -96,7 +96,7 @@ If unsure whether a change warrants a README update: check whether a user readin
 
 - Every release-worthy behavior change has its docs page(s) updated.
 - Run the `readme` skill's index-sync check with its per-surface rules: docs index and sidebar cover every page, the root README follows its declared policy (all pages or section entry points), a top nav bar is checked for dead entries only.
-- Run the `readme` skill's link audit (README → docs links and asset references resolve; site-internal links per the generator's routing).
+- Run the `readme` skill's link audit: README → docs links are absolute site URLs and validate against the routes the generator produces, not against the filesystem; repo-relative pointers and asset references resolve on disk; site-internal links follow the generator's routing. Step 5c builds `docs/` only — it never checks README links, because the README sits outside `docs/`. So 5a owns the README link check in both the build and the documented-skip path.
 
 This skill normally ships alongside `readme` — pre-release declares it in `boost-requires`, and boost-core *rescues* a required skill into the sync even when tag filtering would drop it. The inline targets above exist for sync pipelines that don't honor `boost-requires` (for example laravel/boost standalone): there, treat this section as the audit and apply the `readme` skill's rules from its upstream source.
 
@@ -385,7 +385,7 @@ Wait until terminal. If red:
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
 | 3. Tests           | `vendor/bin/pest \|\| true`                                                                    | 0 failures                                    |
 | 4. PHPStan         | `vendor/bin/phpstan analyse --memory-limit=2G \|\| true`                                       | 0 errors                                      |
-| 5a. README + docs  | manual scan vs `git log <last-tag>..HEAD` (docs-site repos: docs pages, index sync, link audit) | no stale claims; indexes agree; links resolve |
+| 5a. README + docs  | manual scan vs `git log <last-tag>..HEAD` (docs-site repos: docs pages, index sync, link audit) | no stale claims; indexes agree; README site links match generator routes; repo-relative + asset links resolve |
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
 | 5c. Docs build     | derived command (mirror docs workflow, else lockfile + `build` script), docs-site repos only   | build succeeds, or documented skip + 5a link audit |
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |

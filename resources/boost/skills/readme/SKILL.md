@@ -37,7 +37,7 @@ metadata:
 - One-paragraph pitch + a copy-pasteable teaser example
 - Install + requirements
 - One minimal usage example
-- Documentation section: the published site URL stated exactly once, plus links to every page or to section entry points (pick one policy — see the index-sync rules below — and the link mechanics)
+- Documentation section: the published site root URL stated once in prose, plus links to every page or to section entry points (pick one policy — see the index-sync rules below — and the link mechanics). Page links are navigation and do not count against the once rule
 - Standard footer: contributing, changelog, security, credits, license
 
 Pick one shape consistently. Don't mix tiers in the same README.
@@ -56,9 +56,13 @@ A plain-markdown `docs/` matching none of these is the comprehensive shape with 
 
 **No duplication.** Deep content lives in `docs/`; the README links to it, never restates it. If a section grows past a teaser, move it to a docs page and link.
 
-**Link mechanics.** README → docs links use repo-relative paths to the actual source pages (for example `docs/01-installation.md`) so GitHub renders them. The recommended layout — a numeric `NN-` filename prefix so GitHub lists `docs/` in reading order, with generator rewrites stripping the prefix so published URLs stay stable when pages are reordered — is this skill's recommended layout (implemented with VitePress rewrites), not a requirement on link form: link whatever the source pages are actually named.
+**Link mechanics.** README → docs links use absolute published-site URLs (for example `https://acme.github.io/example-package/installation`), not repo-relative paths to `docs/*.md`. This is the ecosystem convention — spatie/laravel-permission, spatie/laravel-medialibrary, livewire/livewire, inertiajs/inertia, and laravel/framework all link their READMEs to the published site. Absolute URLs render everywhere the README lands: GitHub, Packagist, IDE package viewers, forks, and the installed vendor copy — where `docs/` is export-ignored and a repo-relative link is dead.
 
-**URL stability.** Prefix-stripping rewrites keep a published URL stable when only the `NN-` prefix changes (a reorder). They do NOT keep it stable when the slug itself changes — a slug rename needs an explicit legacy rewrite/redirect for the old route, or an accepted URL break.
+Keep at most one repo-relative pointer to `docs/` as the source location (for example `[docs/](docs/README.md)`). Repo-relative links to individual pages are the non-recommended form — flag them in the audit.
+
+The recommended `docs/` layout — a numeric `NN-` filename prefix so GitHub lists `docs/` in reading order, with generator rewrites stripping the prefix so published URLs stay stable when pages are reordered — is this skill's recommended layout (implemented with VitePress rewrites). It is about filenames, not link form.
+
+**URL stability.** Prefix-stripping rewrites keep a published URL stable when only the `NN-` prefix changes (a reorder). They do NOT keep it stable when the slug itself changes — a slug rename needs an explicit legacy rewrite/redirect for the old route, or an accepted URL break. Because README links are absolute site URLs, a slug rename breaks them too, not only external inbound links.
 
 **Index sync.** Every index/navigation surface the repo actually has must agree on the page inventory:
 
@@ -71,7 +75,7 @@ The full triple-index layout (README section + docs index + sidebar) is the reco
 
 **Link audit.** Three link classes resolve differently — don't conflate them:
 
-- **README → docs links** target source files (GitHub rendering) and must resolve on disk.
+- **README → docs links** are absolute site URLs. They cannot be validated on disk — check each one against a route the generator actually produces (the source page after slug and rewrite normalization). On-disk resolution still applies to the single repo-relative `docs/` source pointer and to non-docs repo links (`UPGRADING.md`, `CONTRIBUTING.md`, `LICENSE.md`). Flag repo-relative links to individual docs pages as the non-recommended form.
 - **Site-internal links inside `docs/`** resolve through the generator's routing. Under active rewrites a valid link may name the rewritten route, not an existing file — the docs build is authoritative for these; manually flag only links that match neither a source file nor a configured route.
 - **Asset references** follow the generator's asset rules.
 
@@ -91,7 +95,7 @@ In-page anchors are best-effort. Dead external URLs belong to the staleness audi
 - Examples that don't actually run (always copy-pasteable)
 - Stale "TODO" sections — delete them before publishing
 - Duplicating CHANGELOG content in README
-- (Docs-site shape) Restating a docs page's content in the README, or stating the site URL more than once
+- (Docs-site shape) Restating a docs page's content in the README, or stating the site root URL more than once in prose (page links to the site don't count)
 
 ## Staleness audit
 
@@ -102,7 +106,7 @@ For the docs-site shape, the audit also covers `docs/`:
 
 - The same staleness scan over every docs page
 - The index-sync check (all existing surfaces agree on the inventory)
-- The link audit (README → docs links and asset references resolve; site-internal links per the generator's routing)
+- The link audit (README site links match generator routes; repo-relative pointers and asset references resolve; site-internal links per the generator's routing)
 
 ## See also
 
