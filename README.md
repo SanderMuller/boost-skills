@@ -11,53 +11,24 @@
 
 The package carries no runtime code; it's pure Markdown. A sync engine ([`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) or [`laravel/boost`](https://github.com/laravel/boost)) reads these skills and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest).
 
-## Where do skills come from?
-
-Anywhere you want. Skill sources stack — mix and match freely:
-
-- **Your own `.ai/skills/` folder**, hand-authored next to the rest of the project. Same convention `laravel/boost` and `boost-core` both pick up automatically.
-- **A Composer-installed catalog package**. Any package that ships `resources/boost/skills/` works. Sander publishes his personal catalog at [`sandermuller/boost-skills`](https://github.com/sandermuller/boost-skills) (this repo) — adopt it if your preferences align with Sander's, or use it as a template for your own private/public catalog.
-- **External, non-Composer sources** via `boost-core`'s `withRemoteSkills()`. Pull GitHub-published `.skill` bundles or single-skill repos straight from a URL.
-- **`laravel/boost`'s bundled Laravel skills** — Laravel-specific skills shipped by Laravel via `laravel/boost` (Laravel apps only).
-
-`withAllowedVendors()` gates Composer-scanned vendors (source 2) only. `withTags()` filters sources 2, 3, and 4 (Composer vendors, remote skills, `laravel/boost` bundle). Host `.ai/skills/` (source 1) bypasses **both** gates — your project authored those skills, so the engine treats them as canonical and applies neither filter.
-
-## The boost family
-
-If you adopt `sandermuller/boost-skills` (or any Composer-distributed catalog), pair it with the sync engine that matches your role:
-
-- [`sandermuller/package-boost-php`](https://github.com/sandermuller/package-boost-php) if you write framework-agnostic Composer packages
-- [`sandermuller/package-boost-laravel`](https://github.com/sandermuller/package-boost-laravel) if you write Laravel packages
-- [`sandermuller/project-boost-php`](https://github.com/sandermuller/project-boost-php) if you build a PHP application
-- [`sandermuller/project-boost-laravel`](https://github.com/sandermuller/project-boost-laravel) if you build a Laravel application (coexists with `laravel/boost` — adds nine-agent fanout, tag filter, vendor allowlist, remote skills)
-
-The four `sandermuller/*` packages bundle the [`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) sync engine, so you rarely install `boost-core` yourself. [`laravel/boost`](https://github.com/laravel/boost) (Laravel's own engine, MCP server, and docs API) coexists with `project-boost-laravel` in Laravel apps — the family-package layers the nine-agent fanout and filters on top. If you'd rather skip the family controls and use `laravel/boost` standalone, it reads any Composer-distributed catalog (including this one) just as well; follow its setup for that one. Project-convention slots that `boost-core` would inline still read cleanly under `laravel/boost` — the skills carry visible defaults (see [Project Conventions schema](#project-conventions-schema)), so you get sensible default wording even though `laravel/boost` doesn't resolve the slots. If none of these fit (a non-PHP package, say), install `boost-core` directly.
+**Documentation: <https://sandermuller.github.io/boost-core/packages/boost-skills/>**
 
 ## Install
 
-If you adopt `sandermuller/boost-skills` as your catalog, install it together with the family package for your engine role. For a framework-agnostic package author, that is `package-boost-php`:
+Install the catalog next to the family package for your role:
 
 ```bash
 composer require --dev sandermuller/boost-skills sandermuller/package-boost-php
 ```
 
-Swap `package-boost-php` for `package-boost-laravel` or `project-boost` to match your role. The steps below use the `boost-core` engine's commands; on `laravel/boost`, follow [its own setup](https://github.com/laravel/boost) instead and ensure `sandermuller/boost-skills` is among the packages it syncs.
-
-`boost-core`, pulled in by the family package, ships an interactive setup command:
-
-```bash
-vendor/bin/boost install
-```
-
-`boost install` generates a `boost.php` in your project root and lets you pick target agents and allowlisted vendors. Skills sync only from allowlisted vendors, so make sure `sandermuller/boost-skills` is selected. The result looks like:
+Swap `package-boost-php` for the member that matches your project — the
+[picker](https://sandermuller.github.io/boost-core/guide/which-package) decides
+it in two questions. Then allowlist this vendor, because a catalog ships nothing
+until you name it:
 
 ```php
 return BoostConfig::configure()
-    ->withAgents([
-        Agent::CLAUDE_CODE,
-        Agent::COPILOT,
-        Agent::CODEX,
-    ])
+    ->withAgents([Agent::CLAUDE_CODE, Agent::COPILOT, Agent::CODEX])
     ->withAllowedVendors([
         'sandermuller/boost-skills',
         'sandermuller/package-boost-php',
@@ -65,15 +36,34 @@ return BoostConfig::configure()
     ->withTags(['php', 'github']);
 ```
 
-Declare your project's capabilities in `->withTags(...)` — tagged skills and guidelines sync only to projects that opt in. Common starters are `'php'` and `'github'`; see the [Tags](#tags) registry for the full vocabulary. After a sync, `vendor/bin/boost tags` shows which tagged content is currently filtered out vs synced — handy for spotting capabilities you may want to declare.
-
-Then fan the skills out:
-
 ```bash
+vendor/bin/boost install   # the picker offers this vendor; select it
 vendor/bin/boost sync
 ```
 
-Re-sync after edits by running `vendor/bin/boost sync`, or wire the [`BoostAutoSync` callback](https://github.com/sandermuller/boost-core#auto-sync-on-composer-install) into your `composer.json`'s `post-install-cmd` / `post-update-cmd` to re-sync automatically on every `composer install` / `composer update`. The generated agent directories (`.claude/skills/`, `.github/skills/`, and the rest) stay out of version control; `boost-core` manages that `.gitignore` block.
+`vendor/bin/boost tags` shows which tagged content is filtered out, so you can
+see what declaring one more tag would unlock.
+
+Under `laravel/boost` instead of the family engine, follow
+[its own setup](https://github.com/laravel/boost) and make sure this package is
+among the ones it syncs. Tag filtering and Project Conventions slots go inert
+there; the skills carry visible defaults, so a slot still reads as sensible
+wording.
+
+## Documentation
+
+| Topic | Page |
+|---|---|
+| Adopting the catalog, editing a skill | [Overview](https://sandermuller.github.io/boost-core/packages/boost-skills/) |
+| The same inventory, rendered | [Skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) |
+| Where skills come from, and which gates apply | [Skill sources](https://sandermuller.github.io/boost-core/guide/skill-sources) |
+| How tags and `boost-requires` work | [Tags and dependencies](https://sandermuller.github.io/boost-core/guide/tags-and-dependencies) |
+| The conventions slot mechanism | [Project Conventions](https://sandermuller.github.io/boost-core/guide/conventions) |
+| Shipping scripts beside a skill | [Skill assets](https://sandermuller.github.io/boost-core/guide/skill-assets) |
+| Re-syncing on `composer install` | [Automating the sync](https://sandermuller.github.io/boost-core/guide/automating-sync) |
+
+The rest of this README is the inventory: what this catalog ships, under which
+tags.
 
 ## Skills
 
@@ -140,102 +130,6 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 **`github` and `github-issues` are independent.** `github` covers any GitHub-hosted repo (used by PR and release skills); `github-issues` is the narrower tag for projects that track issues in GitHub Issues specifically. A repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`. Both are independently declarable in `->withTags(...)`.
 
 A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
-
-## Skill dependencies
-
-Some skills hand off to others: `interview` and `promptimize` both build on `clarify`, `interview` then hands to `write-spec`, `evaluate` runs `code-review` and `codex-review`, `pre-release` drafts docs via `readme` / `release-notes` / `upgrading`, `pull-requests` / `pr-review-feedback` / `jira-rework` each run their base-sync merge through `resolve-conflicts`, and `pr-review-feedback` flips a PR between draft and ready through `pull-requests`. A skill declares these hard hand-offs in its `SKILL.md` frontmatter (`metadata.boost-requires`, space-delimited skill names). Whenever the skill syncs, every skill it requires syncs too. That includes one your `withTags(...)` would otherwise filter out, which `boost-core` pulls in anyway (a "rescue") so the dependent never delegates to a skill that isn't there. Resolution is transitive and cycle-tolerant.
-
-Like the tag mechanism, this is family-canonical: `boost-core` (`^1.4`) resolves `boost-requires` at sync time and surfaces the pulled-in dependencies; `boost doctor` reports any that are unsatisfied. On older engines or under `laravel/boost` the key is inert. Only genuine hand-offs are declared; conditional ("delegate where synced") and routing ("NOT for X — use Y") references are not. See [`boost-core`'s README](https://github.com/sandermuller/boost-core) for the authoring guidance.
-
-## Project Conventions schema
-
-Some vendor skills in this catalog reference project-specific values — Jira project key, GitHub owner / repo, branch-naming patterns, PR title format, test framework, codex review setup doc, MCP server-name mappings. Rather than baking those values into vendor skill bodies (which would force every consumer to shadow the skill to override the embedded value), `boost-skills 1.7.0+` ships a **JSONSchema vocabulary** at `resources/boost/conventions-schema.json` that names the slots. Consumers declare values in `boost.php` via `->withConventions([...])`; `boost sync` inlines each slot value directly into the skill bodies at sync time (2.0+; the `1.7`–`1.9` line instead rendered a `## Project Conventions` block that skills read at agent runtime).
-
-**Requires** `sandermuller/boost-core ^1.4` — the floor was raised to `1.4` for [skill-dependency resolution](#skill-dependencies). The prior `1.3` floor came from the `codex-review` skill shipping its wrapper as a **companion asset** that `boost-core` only emits beside `SKILL.md` since `1.3`. Slot-aware skills also carry **paired visible-default tokens** — `<!--boost:conv path="…" mode="…"-->default words<!--boost:conv:end-->` — which `boost-core` resolves at sync time, replacing the whole span with the configured value (or the schema default, or the visible default as fallback). The visible default is what makes the catalog usable under **any** engine: one that doesn't resolve `boost:conv` — notably `laravel/boost`, which installs `SKILL.md` and preserves the markers verbatim — leaves the default *value* sitting in the text as readable content (`Write tests in …Pest…`), rather than trapped inside a comment `fallback=` attribute where the prior bare-token form hid it. The surrounding `<!--boost:conv …-->` / `<!--boost:conv:end-->` markers stay as inert noise the agent reads past; in `mode="yaml"` fenced blocks they show inside the code fence, so the default value is still present, just wrapped. The paired form was added in `boost-core 1.2.1` (the `1.2.0` tag shipped without it and is skipped); an older engine would emit both the resolved value and the visible default, hence the `^1.2.1` minimum for conv-token resolution (the overall package floor is `^1.4`, raised by the skill-dependency resolution requirement above). (Earlier the catalog used bare `<!--boost:conv … fallback="…"-->` tokens — resolver since `0.15.0`, `mcp.*` sub-keys since `0.16.0` — whose fallback lived inside the comment and so vanished under `laravel/boost`; the paired form is the cross-engine fix.)
-
-Skill bodies inline slots via paired `<!--boost:conv path="jira.project_key" mode="inline"-->default<!--boost:conv:end-->` tokens, resolved at sync time; the `boost slots` command lists the same slots in dotted form (`jira.project_key`). The `path=` and dotted forms name the same slot.
-
-Declare conventions in `boost.php`:
-
-```php
-return BoostConfig::configure()
-    ->withAgents([Agent::CLAUDE_CODE, Agent::COPILOT, Agent::CODEX])
-    ->withAllowedVendors(['sandermuller/boost-skills', /* ... */])
-    ->withTags([Tag::Php, Tag::Github, Tag::Laravel])
-    ->withConventions([
-        'schema-version' => 1,
-        'jira' => [
-            'project_key' => 'HPB',
-        ],
-        'github' => [
-            'owner' => 'my-org',
-            'repo' => 'my-app',
-        ],
-        // … other slot groups consumer needs …
-    ]);
-```
-
-`boost sync` renders the array into a marker-bounded YAML block under `## Project Conventions` in `CLAUDE.md` (agent-read surface). `boost.php` is the single source of truth; edit there, run `boost sync`, the rendered block updates automatically.
-
-### Slot taxonomy
-
-Two patterns:
-
-- **Value slots** — scalar / array / path values. Vendor skill reads and uses directly. Example: `jira.project_key` is a string; vendor `jira-create` substitutes it into mutation calls.
-- **Policy slots** — typed-object arrays with a `type:` discriminator. Vendor dispatches on the discriminator. Example: `pr.gates` is a list of typed gates (`skill_invoked` / `shell_command` / `mcp_tool`); vendor `pull-requests` enforces each in declared order.
-
-Missing-slot behavior is per-slot: value slots prompt the user once per session; policy slots are skipped silently (no enforcement) when absent.
-
-### Slot groups (v1)
-
-| Group | Purpose | Used by skills |
-|---|---|---|
-| `jira` | Jira issue tracker — project key, refuse-other-projects policy, description-format doc | `jira-create`, `jira-rework`, `jira-updates` |
-| `github` | GitHub repo identity — owner, repo, default base branch | `pull-requests`, `pr-review-feedback`, `github-issue-updates` |
-| `branches` | Branch-name patterns + per-pattern base resolution (typed-object array) | `pull-requests` |
-| `pr` | PR conventions — title format, template path, pre-PR gates, risk-tier routing (`pr.risk`), mandatory PR labels (`pr.labels`) | `pull-requests`, `final-verification-review` |
-| `testing` | Test framework conventions — `phpunit` / `pest`, forbid list | `bug-fixing`, `test-writing`, `backend-quality` |
-| `quality` | Automated code-quality tooling (optional) — `rector` opt-in (Rector before Pint at completion / PR preflight) | `backend-quality`, `pull-requests` |
-| `codex` | Codex review — optional project setup doc (`invocation_mode` is deprecated and ignored) | `codex-review` |
-| `spec` | Spec-file conventions — filename pattern, research docs | `write-spec`, `implement-spec`, `interview` |
-| `mcp` | Project-specific MCP server-name mappings (open vocabulary) | `jira-*`, `pull-requests` (when MCP-mediated) |
-| `translations` | DB-driven translation-key validation (optional; DB-stored keys only) — per-consumer key pattern + file-based exemptions | `evaluate` |
-| `fixtures` | Test-fixture / code-sample anonymization gate (optional) — guideline pointer, scan scope (`src/` + `tests/`), optional denylist | `evaluate` |
-| `review` | PR review-feedback conventions (optional) — extra bot-reviewer logins + colleague-gate on/off toggle | `pr-review-feedback` |
-
-All 12 groups are root-optional — only `schema-version: 1` is root-required. A consumer without (say) a Jira tracker simply doesn't declare the `jira` group; no scaffold noise, no forced placeholder. Inside each declared group, leaves with `required` semantics must be present (e.g. `jira.project_key` is required if `jira` is declared at all). The full machine-readable contract lives in [`resources/boost/conventions-schema.json`](resources/boost/conventions-schema.json).
-
-### Tooling
-
-| Command | What it does |
-|---|---|
-| `vendor/bin/boost validate` | Validates the `->withConventions([...])` declaration in `boost.php` against allowlisted vendors' schemas. Surfaces missing-required, unknown-slot, schema-version mismatches as `SyncResult::diagnostics`. |
-| `vendor/bin/boost slots [--vendor=X] [--missing] [--filled] [--json]` | Lists declared slots across allowlisted vendors; flags filter to missing / filled subsets. |
-| `vendor/bin/boost doctor --check-conventions` | Adds conventions-validation to the existing doctor report. |
-| `vendor/bin/boost convert-conventions` | One-time migration: extracts a `1.7.x`-era hand-edited YAML block from `CLAUDE.md` and writes it into `boost.php`'s `->withConventions([...])` array. See [Migrating from 1.7.x](#migrating-from-17x). |
-| `vendor/bin/boost paths --managed` | Lists agent-managed paths (for vendor skills resolving `since_last_code_change` window semantics in `pr.gates`). |
-
-### Schema-versioning
-
-Vendor skills declare `metadata.schema-required` in their frontmatter — a Composer-style semver range naming which `schema-version` they consume. boost-skills' v1 vocabulary is `schema-version: 1`; current slot-aware skills declare `schema-required: ^1` (e.g. `jira-create`, `pull-requests`). A future v2 schema is published via a vendor minor bump; consumers update their host `schema-version` declaration when their full vendor lineup supports it. Skills with mismatched `schema-required` skip-write with a warning; no broken syncs.
-
-### Vendor schema vs catalog vocabulary
-
-The mechanism (JSONSchema validation, `->withConventions([...])` builder method, `boost-core` engine surface) is family-canonical — defined by `boost-core` and applies to any vendor catalog. The slot vocabulary above is THIS catalog's choice; other Composer-distributed catalogs can ship their own schemas at `resources/boost/conventions-schema.json` and contribute to the host's combined slot vocabulary (subject to the engine's collision-handling rules: first-allowlisted wins on same-type, throws on type-mismatch).
-
-### Migrating from 1.7.x
-
-If you adopted `boost-skills 1.7.0` / `1.7.1` / `1.7.2`, your `## Project Conventions` block lived as a hand-edited YAML region inside `CLAUDE.md` (the `boost-core 0.8.x` shape). Under `boost-core 0.9.0`+, `boost.php` becomes the single source of truth; the YAML block in `CLAUDE.md` is regenerated from `boost.php` at every sync.
-
-One-command migration:
-
-```bash
-vendor/bin/boost convert-conventions
-```
-
-This reads the existing YAML block from `CLAUDE.md`, decodes it, and writes the values into `boost.php`'s `->withConventions([...])` array (or appends the method to the existing builder chain if absent). After conversion, `boost sync` rerenders the block from the new source. CLAUDE.md remains tracked in git; no `git rm --cached` step is needed (the `0.8.3` tracking decision carries through 0.9.0).
-
-If `boost.php` already declares `->withConventions([...])` and the CLAUDE.md block also has non-empty content that differs, `convert-conventions` fails closed and asks the operator to reconcile manually — never silently destroys either source. After reconciliation, re-run.
 
 ## Guidelines
 
