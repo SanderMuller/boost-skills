@@ -42,6 +42,28 @@ Before running checks, review the current conversation for recent quality check 
 
 **If any doubt**, run the checks. It's better to re-run than to miss a failure.
 
+**A recorded pipeline run counts as evidence, and beats your own recollection.** When the project
+runs `sandermuller/boost-pipeline`, ask it rather than reconstructing what changed since which
+check:
+
+```bash
+php artisan pipeline:verify || true
+```
+
+Exit 0 means a run verified **the code currently on disk** — the tree is fingerprinted, so this is
+a comparison rather than a judgement, which is exactly what criterion 3 above asks you to do from
+memory. Skip the mechanical checks that run covered and say so:
+
+> "Skipping code style, static analysis and tests — `pipeline:verify` exit 0, so a recorded run
+> verified this exact tree. Continuing to the review phases."
+
+Any non-zero exit means run the checks normally: no run recorded, a run against different code, or
+a run that did not verify every step. Do not read the reason as a reason to skip anything.
+
+This is the whole point of the split — the pipeline owns mechanical checks, this skill owns
+judgement. Without it both run the same formatter, analyser and suite, and the project pays twice
+for one answer.
+
 **Otherwise**, run checks based on which files were changed:
 - **Backend files changed** — use the `backend-quality` skill
 - **JS/TS files changed** — use the `frontend-quality` skill

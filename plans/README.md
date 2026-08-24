@@ -28,16 +28,39 @@ row when done.
 | 005  | `skill-validator` constraint states its real intent (exact pin) | P2 | S | — (pairs with 004) | DONE (working tree, uncommitted) |
 | 006  | Remove the dead `.mcp.json` | P3 | S | — | DONE (working tree, uncommitted) |
 | 007  | `pr.labels` — configurable mandatory-PR-label policy for `pull-requests` | P1 | M | — | DONE (Step 5 implemented; CHANGELOG left to CI — see note) |
+| 008  | The pipeline-receipt skip never fires for a sequencing pipeline | P2 | S | `pipeline:verify --server-run-only` — see plan | BLOCKED (handoff spec written in `boost-pipeline`, waiting on it to ship) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 
 **007 has a different provenance from 001–006.** It is not an audit finding but a
-consumer request, handed off from a session in `blinqx-vh/mijntp` on 2026-08-05
+consumer request, handed off from a consumer session on 2026-08-05
 against commit `e7dde00`. That consumer has a department mandate to label every
 PR by authorship provenance and no slot to express it, so the rule currently
 lives in their always-loaded guideline layer, costing tokens in every session.
 The plan adds the mechanism only — the label names stay consumer configuration.
 Read its "Consumer contract" section before changing the schema shape.
+
+**008 shares 007's provenance shape.** Also consumer feedback, handed off
+2026-08-24 against commit `870e300`. It is not a
+request for a new mechanism: the receipt integration in `evaluate` Phase 1 was
+already in progress (uncommitted at `870e300`, authored by a concurrent session),
+and the consumer found that it cannot fire for them at all, because their
+walk sequences agent work and so can never satisfy the all-or-nothing exit code the
+skip is gated on. The evidence they need is already in the receipt per step. Read
+the plan's "Design" section first — the recommended option starts with a request to
+`sandermuller/boost-pipeline`, not a change here.
+
+**008 is BLOCKED by design, not by drift.** Option A was chosen on 2026-08-24 and
+handed off as `specs/verifying-what-the-server-ran.md` in
+`sandermuller/boost-pipeline`, against that repo's commit `83d7c58`. The handoff
+corrects the plan's own sketch twice: `--step=<id>` was rejected, because a step id
+is project-chosen and no skill can name one generically, and a tag-scoped query was
+rejected after that, because it makes `pipeline:verify` execute consumer config to
+answer a question about a JSON file. The affordance is
+`pipeline:verify --server-run-only` — exit 0 when the walk finished and every verdict
+the server produced is a pass, acknowledgements excluded. Nothing changes in this
+repo until that ships; then run steps 2 to 4 (step 5 drops — the CHANGELOG is
+CI-managed).
 
 **Implemented 2026-08-05** on `feature/007-pr-labels-convention`, against
 commit `e7dde00` (drift check clean). `pr.labels` added to
