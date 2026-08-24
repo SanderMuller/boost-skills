@@ -289,13 +289,17 @@
         },
         "quality": {
             "type": "object",
-            "description": "Optional automated code-quality tooling conventions. Used by backend-quality and pull-requests skills. ABSENT ⇒ no Rector step (no behavior change).",
+            "description": "Optional automated code-quality tooling conventions. Used by the backend-quality, pull-requests and evaluate skills. Every property is independently optional. ABSENT ⇒ no Rector step, and evaluate asks the pipeline without `--pipeline` (no behavior change).",
             "additionalProperties": false,
             "properties": {
                 "rector": {
                     "type": "boolean",
                     "default": false,
                     "description": "When true, backend-quality Tier 2 (at completion) and the pull-requests preflight run `vendor/bin/rector process` to completion BEFORE Pint, then always run Pint afterward (Rector output is not style-clean). Absent/false ⇒ no Rector step (no behavior change). Opt in explicitly here — skills do NOT auto-detect Rector from a `rector.php` config or a `vendor/bin/rector` binary, so adopting this catalog never changes an existing project's flow until it declares `quality.rector: true`."
+                },
+                "pipeline": {
+                    "type": "string",
+                    "description": "Which `sandermuller/boost-pipeline` pipeline the evaluate skill asks about. Evaluate appends `--pipeline=<value>` to `pipeline:verify --server-verified` whenever this is set, on any project. Only a project that declares several pipelines needs it. A name the project does not declare makes the command fail, so leave it absent unless it is needed. ABSENT ⇒ evaluate asks without `--pipeline`. A project declaring several pipelines then gets an error naming them, and evaluate runs its checks normally instead of guessing which one to trust. No behavior change for a project that declares one pipeline, or none."
                 }
             }
         },

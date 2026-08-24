@@ -42,29 +42,62 @@ Before running checks, review the current conversation for recent quality check 
 
 **If any doubt**, run the checks. It's better to re-run than to miss a failure.
 
-**A recorded pipeline run counts as evidence, and beats your own recollection.** When the project
-runs `sandermuller/boost-pipeline`, ask it rather than reconstructing what changed since which
-check:
+**When the project runs `sandermuller/boost-pipeline`**, a recorded run counts as evidence, and
+beats your own recollection. This applies only then — a project without the package runs its
+checks as below, and a package repo usually has no `php artisan` to call.
+
+Then ask it rather than reconstructing what changed since which check:
 
 ```bash
-php artisan pipeline:verify || true
+status=0; php artisan pipeline:verify --server-verified || status=$?; echo "exit: $status"
 ```
 
-Exit 0 means a run verified **the code currently on disk** — the tree is fingerprinted, so this is
-a comparison rather than a judgement, which is exactly what criterion 3 above asks you to do from
-memory. Skip the mechanical checks that run covered and say so:
+Keep the exit code visible, and keep the step from aborting. `|| true` reports 0 for a missing
+command and for a failed check alike, and the rules below turn on that number. A bare `;` before
+the `echo` loses the status under `set -e`.
 
-> "Skipping code style, static analysis and tests — `pipeline:verify` exit 0, so a recorded run
-> verified this exact tree. Continuing to the review phases."
+**Ask `--server-verified`, never the bare call.** The bare call asks whether the whole tree is
+verified, which is a gate's question. A walk that sequences agent steps can never answer yes: an
+acknowledged step is a self-report, and the server never counts one as verified. This skill asks
+the narrower question it can answer — what has already been checked.
 
-Any non-zero exit means run the checks normally: no run recorded, a run against different code, or
-a run that did not verify every step. Do not read the reason as a reason to skip anything.
+**When the project declares several pipelines**, name the one to ask about:
+<!--boost:conv path="quality.pipeline" mode="inline"-->not configured — ask without `--pipeline`<!--boost:conv:end-->.
+Append `--pipeline=<name>` when a name is set. When none is set the command reports an error that
+names the pipelines it found. Run the checks normally then, and never guess which one to trust.
+
+Exit 0 means every check the pipeline ran passed against **the code currently on disk**. The tree
+is fingerprinted, so this is a comparison rather than a judgement. It answers criterion 3 above
+with a measurement instead of your memory. The message names the steps it counted:
+
+> Run [r-4f2a] passed all 5 step(s) the server verified against this tree: [phpstan],
+> [pint-test], [typecheck], [test-js], [lint-all].
+
+Skip the mechanical checks those names cover, and run every check they do not. Deciding which
+check an id covers is judgement, and judgement is this skill's half of the split. Do not add a
+mapping, and do not read `receipt.json`. Say what was skipped and on whose authority:
+
+> "Skipping code style, static analysis, type checking, linting and tests — `pipeline:verify
+> --server-verified` exit 0 names [pint-test], [phpstan], [typecheck], [lint-all] and [test-js]
+> as verified against this exact tree. Continuing to the review phases."
+
+Name only what the message named. A check the names do not cover is a check nobody ran.
+
+**Exit 0 is never a claim that the pipeline holds the checks you care about.** A pipeline that
+declares no static analysis exits 0 without any. A step that rewrites the tree — a formatter, for
+example — is left out of the names on purpose: it reports that it ran, never that the result is
+correct. Skip only what the names cover.
+
+Any non-zero exit means run the checks normally. It reports evidence too weak to skip anything
+on. The causes differ — no run recorded, a run against different code, a walk that did not
+finish, a step the server ran and failed, a run that verified nothing, or several pipelines with
+none named. Treat them alike. Do not read the reason as a reason to skip anything.
 
 This is the whole point of the split — the pipeline owns mechanical checks, this skill owns
 judgement. Without it both run the same formatter, analyser and suite, and the project pays twice
 for one answer.
 
-**Otherwise**, run checks based on which files were changed:
+**For every check still to run**, choose by which files changed:
 - **Backend files changed** — use the `backend-quality` skill
 - **JS/TS files changed** — use the `frontend-quality` skill
 

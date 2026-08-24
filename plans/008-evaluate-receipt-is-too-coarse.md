@@ -16,6 +16,12 @@
 
 ## Status
 
+> **SUPERSEDED by plan 009.** Everything this plan was blocked on has shipped,
+> and `boost-pipeline` v0.10.0 added a fourth change it never anticipated. Plan
+> 009 is self-contained — execute that. Read this one only for why Option A was
+> chosen over Option B, and why a tag-scoped query and a `--step=<id>` flag were
+> both rejected.
+
 - **Priority**: P2
 - **Effort**: S (this repo) + a dependency decision (see Design)
 - **Risk**: LOW — the change only widens when a skip is allowed; it never skips more than the evidence covers
@@ -126,6 +132,77 @@ Two ways forward. The executor picks one and records the choice in the status ro
 > This plan stays BLOCKED until that ships. Steps 2 to 5 below then apply, reading
 > `--server-run-only` wherever step 1's sketch said `--step=<id>`. Step 5 drops:
 > the CHANGELOG is CI-managed in this repo too.
+
+> **Shipped, 2026-08-24 — `boost-pipeline` v0.8.0. Unblocked, with one caveat.**
+> Verified by driving a real sequencing walk in the consumer.
+>
+> - **The flag is `--server-verified`, not `--server-run-only`.** Renamed before
+>   release for the reason the decision above cares about: `serverRun()` answers
+>   *who produced* a verdict and is true for `failed` too, so naming the flag after
+>   it invites the conflation the README calls the easiest way to launder a claim.
+>   `isVerified()` is the predicate it actually uses. Read `--server-verified`
+>   wherever the block above says `--server-run-only`.
+> - **It works.** Six shell steps passed, two agent steps acknowledged: exit 0, with
+>   a message that refuses to overclaim — "this is not a claim that the tree is
+>   verified."
+> - **Both guards shipped, and a third.** Probed individually, each exits 1: a run
+>   abandoned mid-walk ("the steps behind the cursor never ran"), a receipt written
+>   before the `coverage` key existed ("unknown coverage is not clean coverage"), a
+>   stale tree, and an unreadable receipt. Absence fails closed.
+>
+> **The caveat, which is new and is not a package defect.** Exit 0 reports on the
+> steps the pipeline *ran*. It does not say which checks those were. A pipeline
+> holding no static-analysis step still exits 0 — confirmed by probe, a walk of two
+> `echo` steps exits 0. If Phase 1 reads that as "static analysis is covered, skip
+> it", it skips a check nobody ran, and the skip is silent.
+>
+> So step 2 below cannot be "skip the mechanical checks on exit 0". It needs a way
+> to know **what** the run covered. The two obvious routes are already closed by the
+> decision above — a tag-scoped query (rejected: makes `verify` execute consumer PHP)
+> and a check-to-step-id mapping (rejected as Option B). What is left, cheapest
+> first:
+>
+> 1. **Have the command name what it counted.** It already prints "passed all 6
+>    step(s)"; printing the step ids alongside makes the output itself the evidence,
+>    with no JSON parsing in this repo and no config anywhere. Needs a small package
+>    change; ask before assuming it is wanted.
+> 2. **Skip only what the consumer declares its pipeline covers.** Back to a mapping,
+>    with the failure mode the decision already named.
+> 3. **Accept it**, and say plainly in Phase 1 that exit 0 means the pipeline's own
+>    steps passed, not that any particular check ran — leaving the reader to judge.
+>
+> Resolve that before writing step 2. It is the difference between a skip that is
+> evidence-backed and one that is a guess with a receipt attached.
+
+> **Route 1 shipped, 2026-08-24 — `boost-pipeline` v0.9.0.** The success message now
+> names the ids it counted, verified on the consumer's walk:
+>
+> ```
+> passed all 6 step(s) the server verified against this tree: [rector], [pint],
+> [lint-all], [typecheck], [phpstan], [test-js]. 2 step(s) were only acknowledged…
+> ```
+>
+> So step 2 can be written: run `--server-verified`, read the named ids, and skip a
+> check only when a step covering it is in that list. The mapping problem does not
+> disappear — nothing says `phpstan` covers "static analysis" — but it moves from
+> config or memory into the command's own output, where a reader can settle it. That
+> is the difference this plan was blocked on.
+>
+> v0.9.0 also closed two false greens worth knowing about, because both are shapes a
+> skill could otherwise trust: a walk holding only a `->mutating()` step reported a
+> verified step while having checked nothing (`asserted` now records which verdicts
+> asserted something about the tree), and a receipt with no fingerprint passed while
+> claiming "against this tree". Probed both; each exits 1.
+>
+> **Still open, and it is now the only thing between this plan and step 2:**
+> `evaluate` Phase 1 calls **bare** `pipeline:verify` (line 52). A pipeline that
+> sequences agent work can never make that exit 0, which is the entire finding this
+> plan opened with. Changing that one call to `--server-verified` is the fix.
+>
+> **Still not composing:** `--only=<tag> --server-verified` ignores the second flag
+> and answers the bare question. Re-confirmed at v0.9.0, order-independent. Not
+> needed for this plan now that route 1 shipped; reported here so it is not
+> rediscovered.
 
 ## Scope
 

@@ -28,7 +28,8 @@ row when done.
 | 005  | `skill-validator` constraint states its real intent (exact pin) | P2 | S | — (pairs with 004) | DONE (working tree, uncommitted) |
 | 006  | Remove the dead `.mcp.json` | P3 | S | — | DONE (working tree, uncommitted) |
 | 007  | `pr.labels` — configurable mandatory-PR-label policy for `pull-requests` | P1 | M | — | DONE (Step 5 implemented; CHANGELOG left to CI — see note) |
-| 008  | The pipeline-receipt skip never fires for a sequencing pipeline | P2 | S | `pipeline:verify --server-run-only` — see plan | BLOCKED (handoff spec written in `boost-pipeline`, waiting on it to ship) |
+| 008  | The pipeline-receipt skip never fires for a sequencing pipeline | P2 | S | `boost-pipeline` >= v0.8.0 | SUPERSEDED by 009 — read only for decision history |
+| 009  | `evaluate` Phase 1 asks the question the pipeline can answer | P2 | S | `boost-pipeline` >= v0.10.0 | DONE (working tree, uncommitted; `quality.pipeline` shipped with it) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 
@@ -50,17 +51,14 @@ skip is gated on. The evidence they need is already in the receipt per step. Rea
 the plan's "Design" section first — the recommended option starts with a request to
 `sandermuller/boost-pipeline`, not a change here.
 
-**008 is BLOCKED by design, not by drift.** Option A was chosen on 2026-08-24 and
-handed off as `specs/verifying-what-the-server-ran.md` in
-`sandermuller/boost-pipeline`, against that repo's commit `83d7c58`. The handoff
-corrects the plan's own sketch twice: `--step=<id>` was rejected, because a step id
-is project-chosen and no skill can name one generically, and a tag-scoped query was
-rejected after that, because it makes `pipeline:verify` execute consumer config to
-answer a question about a JSON file. The affordance is
-`pipeline:verify --server-run-only` — exit 0 when the walk finished and every verdict
-the server produced is a pass, acknowledgements excluded. Nothing changes in this
-repo until that ships; then run steps 2 to 4 (step 5 drops — the CHANGELOG is
-CI-managed).
+**008 is superseded by 009, and its blocker is gone.** The affordance it asked
+for shipped as `--server-verified` in `boost-pipeline` v0.8.0; the caveat it
+stopped on — that exit 0 never said *which* checks ran — was closed in v0.9.0,
+which names the step ids in the message. v0.10.0 then added named pipelines and
+made a bare `pipeline:verify` an error for a project declaring several, so the
+command the skill runs today needs changing on those projects regardless. 009 is
+self-contained and folds all three in; 008 is kept for the reasoning behind the
+option that was chosen and the two that were not.
 
 **Implemented 2026-08-05** on `feature/007-pr-labels-convention`, against
 commit `e7dde00` (drift check clean). `pr.labels` added to
