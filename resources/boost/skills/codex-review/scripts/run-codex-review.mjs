@@ -250,9 +250,12 @@ function buildCodexArgs(options, resultFile) {
         if (options.model) {
             args.push('--model', options.model);
         }
-        args.push(buildFocusedReviewPrompt(options, prompt));
-
-        return args;
+        // The prompt travels on stdin, never argv. The codex binary is SIGKILLed by
+        // the OS at exec time when any single argument exceeds ~1010 bytes — before
+        // it runs a line of its own code, so there is no error to read: zero stdout,
+        // zero stderr, signal SIGKILL. A focused review prompt is always larger than
+        // that, so every real review died while a short smoke-test prompt passed.
+        return { args, stdin: buildFocusedReviewPrompt(options, prompt) };
     }
 
     const args = ['exec', 'review', '--json', '--ephemeral', '--output-last-message', resultFile];
@@ -270,7 +273,7 @@ function buildCodexArgs(options, resultFile) {
         args.push('--model', options.model);
     }
 
-    return args;
+    return { args, stdin: null };
 }
 
 function latestFinalMessage(eventsFile) {
@@ -396,7 +399,7 @@ async function runCodexReview(options) {
     const resultFile = path.join(runDir, 'result.md');
     const eventsFile = path.join(runDir, 'events.jsonl');
     const stderrFile = path.join(runDir, 'stderr.log');
-    const args = buildCodexArgs(options, resultFile);
+    const { args, stdin: stdinPrompt } = buildCodexArgs(options, resultFile);
 
     const eventsStream = fs.createWriteStream(eventsFile, { flags: 'a' });
     const stderrStream = fs.createWriteStream(stderrFile, { flags: 'a' });
@@ -409,8 +412,16 @@ async function runCodexReview(options) {
         cwd: process.cwd(),
         detached: true,
         env: process.env,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: [stdinPrompt === null ? 'ignore' : 'pipe', 'pipe', 'pipe'],
     });
+
+    if (stdinPrompt !== null) {
+        // A codex that fails fast (bad auth, untrusted directory) exits before it
+        // reads the prompt, and the unhandled EPIPE would take the wrapper down with
+        // it — losing the report that says what went wrong.
+        child.stdin.on('error', () => {});
+        child.stdin.end(stdinPrompt);
+    }
 
     child.stdout.pipe(eventsStream);
     child.stderr.pipe(stderrStream);
