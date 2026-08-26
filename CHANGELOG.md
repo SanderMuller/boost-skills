@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `evaluate` Phase 1 now asks `pipeline:verify --server-verified` instead of the bare call. The bare call exits 0 only when the server verified every step in the walk, which a pipeline that sequences agent work can never satisfy — an acknowledged step is a self-report and is never counted as verified — so the skip never fired for those projects at all.
 - The skip is now driven by the step ids the success message names: `evaluate` skips the mechanical checks those names cover and runs every check they do not. No step mapping and no receipt parsing live in the skill. Exit 0 is never read as a claim that the pipeline holds a check it does not declare, and a step that rewrites the tree is excluded from the names on purpose — a formatter reports that it ran, never that the result is correct.
-- Requires `sandermuller/boost-pipeline` v0.10.0 or later for the flag. On an older version the command reports an unknown option, which `evaluate` treats like any other non-zero exit: it runs its checks normally.
+- Needs `sandermuller/boost-pipeline` v0.9.0 or later to skip anything, and v0.10.0 or later when `quality.pipeline` is set. The flag itself shipped in v0.8.0, but that release names no step ids, so `evaluate` finds nothing to skip and runs its checks — safe, just no benefit. On v0.7.0 and earlier the option does not exist and the command reports an unknown option, which `evaluate` treats like any other non-zero exit.
 
 ### Added
 

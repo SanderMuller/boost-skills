@@ -29,7 +29,7 @@ row when done.
 | 006  | Remove the dead `.mcp.json` | P3 | S | — | DONE (working tree, uncommitted) |
 | 007  | `pr.labels` — configurable mandatory-PR-label policy for `pull-requests` | P1 | M | — | DONE (Step 5 implemented; CHANGELOG left to CI — see note) |
 | 008  | The pipeline-receipt skip never fires for a sequencing pipeline | P2 | S | `boost-pipeline` >= v0.8.0 | SUPERSEDED by 009 — read only for decision history |
-| 009  | `evaluate` Phase 1 asks the question the pipeline can answer | P2 | S | `boost-pipeline` >= v0.10.0 | DONE (working tree, uncommitted; `quality.pipeline` shipped with it) |
+| 009  | `evaluate` Phase 1 asks the question the pipeline can answer | P2 | S | `boost-pipeline` >= v0.9.0 | DONE (`89dba5d`, released in 2.31.0; `quality.pipeline` shipped with it) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 

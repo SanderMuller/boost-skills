@@ -21,11 +21,13 @@
 - **Effort**: S (this repo only — the package side has shipped)
 - **Risk**: LOW — the change only widens when a skip is allowed, and adds a
   degrade path for a case that currently produces a confusing error
-- **Depends on**: `sandermuller/boost-pipeline` >= **v0.10.0**
+- **Depends on**: `sandermuller/boost-pipeline` >= **v0.9.0** to skip anything (the flag
+  shipped in v0.8.0 but names no step ids there, so the skill finds nothing to skip);
+  >= **v0.10.0** only when `quality.pipeline` is set, which is what needs `--pipeline`
 - **Category**: correctness / DX
 - **Supersedes**: plan 008, which is now DONE-BY-DEPENDENCY on the package side.
   Read 008 only for the decision history; everything needed to execute is here.
-- **Planned at**: commit `9006ec5`, 2026-08-25
+- **Planned at**: commit `9006ec5`, 2026-08-25 · **Done at**: commit `89dba5d`, released in 2.31.0
 
 ## Why this matters
 
@@ -198,19 +200,19 @@ Absent is the safe default and changes nothing for a single-pipeline project.
 
 ## Implementation
 
-- [ ] Swap the Phase 1 command to `--server-verified`, keeping the existing
+- [x] Swap the Phase 1 command to `--server-verified`, keeping the existing
       exit-code capture verbatim.
-- [ ] Rewrite the exit-0 paragraph: name the ids as the evidence, skip only the
+- [x] Rewrite the exit-0 paragraph: name the ids as the evidence, skip only the
       checks they cover, and state that exit 0 never claims the pipeline holds a
       check it does not declare.
-- [ ] Separate "no evidence" from "partial evidence" in the non-zero paragraph,
+- [x] Separate "no evidence" from "partial evidence" in the non-zero paragraph,
       without inviting the reader to mine a failure message for permission.
-- [ ] Add `quality.pipeline` to `resources/boost/conventions-schema.json` and
+- [x] Add `quality.pipeline` to `resources/boost/conventions-schema.json` and
       render it in the skill; append `--pipeline=` when set, degrade when not.
-- [ ] Keep the whole section conditional on the project actually running the
+- [x] Keep the whole section conditional on the project actually running the
       package. It must never read as a required step.
-- [ ] Update `plans/README.md`: this plan's row, and mark 008 superseded.
-- [ ] Tests — none; skill prose has no automated coverage. Verify by reading,
+- [x] Update `plans/README.md`: this plan's row, and mark 008 superseded.
+- [x] Tests — none; skill prose has no automated coverage. Verify by reading,
       against a real consumer (see below). CHANGELOG is CI-managed in this repo.
 
 ## Test plan
