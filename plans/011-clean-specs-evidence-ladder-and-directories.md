@@ -125,9 +125,12 @@ The spec names files and symbols. Resolve them against `origin/<base>`:
 - **every** symbol the spec says it adds (a class, a method, a test name, a
   migration) is present there — one absent symbol fails the rung, because a
   partly-shipped spec is live work, and
-- **at least one** of those symbols was **absent when the spec was written**.
-  A symbol that already existed proves nothing; the spec asked for something
-  new, so something new has to have appeared.
+- **every task line contributes at least one candidate that was absent when the
+  spec was written.** A symbol that already existed proves nothing; the spec
+  asked for something new, so something new has to have appeared. Per task, not
+  per spec — a spec-wide check lets one finished task carry an unfinished one
+  that names only its pre-existing edit target. (Tightened after the first field
+  report; see the shipped skill for the full rule and its cost.)
 
 ```bash
 # the cited path is still on the base branch

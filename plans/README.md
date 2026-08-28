@@ -146,6 +146,16 @@ spec can never be `DELETE-ELIGIBLE`. Enumeration is one NUL-delimited `find`
 pass consumed by `read -d ''`, with no associative array — bash 3.2 is still the
 default shell on macOS.
 
+**Followed up in `2.32.1`.** A field report from a consuming project found
+Rung A's condition 2 normative but unsourced: it said "every symbol the spec
+says it adds" without saying where that set comes from, and a hand-rolled
+pattern produced false negatives on specs that had shipped. The set is now
+derived from the `## Implementation` task lines — every backticked token, any
+case or punctuation, paths included — each candidate tagged symbol or path
+because the kind picks the check, and condition 3 applies per task rather than
+per spec. The same report caught a `for x in $LIST` shorthand that silently
+checks one item under zsh, which is the default shell on macOS.
+
 Hardening from the same rounds: the checkbox greps use `[[:space:]]` instead of
 `\s` (POSIX ERE does not define `\s`, so an indented unchecked task could go
 unseen on a strict grep), and `spec.directories` carries `minItems: 1` +

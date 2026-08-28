@@ -140,9 +140,12 @@ veto_paths() {
     || { echo VETO_UNEVALUABLE >&2; return 1; }
   [ "$(printf '%s\n' "$PRS" | grep -c .)" -ge 100 ] \
     && { echo VETO_UNEVALUABLE >&2; return 1; }      # truncated — stop, don't continue
-  for N in $PRS; do
+  while IFS= read -r N; do                            # not `for N in $PRS` — zsh
+    [ -n "$N" ] || continue                           # does not word-split it
     gh pr diff "$N" --name-only || { echo VETO_UNEVALUABLE >&2; return 1; }
-  done
+  done <<EOF
+$PRS
+EOF
 }
 OPEN_PATHS="$(veto_paths)" || { echo KEEP; exit 0; }
 
@@ -159,18 +162,42 @@ Every failure path must **return**, not merely print: `VETO_UNEVALUABLE` ends th
 
 The strongest proof, and the only one that works with no PR and no issue key. The spec names files and symbols; resolve them against `origin/<base>`.
 
+#### Where the symbol set comes from — read it, don't sample it
+
+The conditions below are only as sound as the set of symbols they run on, so **derive that set, never guess at it**. A pattern invented on the spot (say, backticked CamelCase words of six characters or more) produces a *biased sample*, and a biased sample fails in both directions: it misses declared work and reports **KEEP** on a spec that shipped, and — worse — it can match only names that already existed and report a false positive on one that did not.
+
+The set comes from the spec's **`## Implementation` task lines**. That is where the declared work lives, written to be specific, and Step 2 already reads those lines for the checkoff test, so nothing extra is parsed.
+
+- **Every backticked token on a task line is a candidate.** No case filter, no length filter, no punctuation filter. `PublishState`, `markPublished()`, `published_at`, `PUBLISH_COLUMNS`, and `App\Enums\PublishState::Draft` are all candidates. A `::`, an underscore, or a leading lowercase letter is exactly what a real declared name looks like, and a CamelCase-only pattern is blind to most of them.
+- **A backticked path is a candidate too**, checked for presence rather than content: a spec that says it adds `config/publishing.php` or `scripts/backfill.sh` is proved partly by that file existing on the base branch. Condition 1 covers paths the spec *cites*; this covers paths it *creates*.
+- **Drop what is not a declaration** — a backticked command, flag, or vendor symbol the spec merely mentions (`composer install`, `--force`, `Illuminate\Support\Str`). When in doubt, keep the candidate: an extra symbol can only make the rung stricter.
+- **Every task line must yield at least one candidate — not just the section as a whole.** A section-level check passes a spec whose first task names a class in backticks and whose second describes unshipped behaviour in plain prose: the set looks healthy, the named class is present, and the unnamed work is never tested. A task line with no backticked token — or whose only tokens were dropped as non-declarations — is unfalsifiable, so the spec is **KEEP**, reason `"a task names nothing checkable — manual review"`. Never keep a command or flag as a candidate just to satisfy this rule: that trades a KEEP for a check that passes on nothing. This is the same deletion-biased gap one level down, and it is the one that survives a well-formed set.
+- **No `## Implementation` section, or no backticked tokens in it** → the set cannot be derived at all. **KEEP**, reason `"spec names nothing checkable — manual review"`. It is never a partial pass on whatever few names happened to match.
+
+**Tag each candidate as a symbol or a path** — the kind picks the command in conditions 2 and 3, and a path checked as a symbol silently reads as new. State the whole set in the report, kinds included. A reader who can see the set can see the sampling error; a verdict alone hides it.
+
 **All three conditions must hold:**
 
 1. every `file:line`-cited path in the spec still exists on the base branch — necessary, never sufficient;
-2. **every** symbol the spec says it adds (a class, a method, a test name, a migration) is present there — one absent symbol fails the rung, because a partly-shipped spec is live work;
-3. **at least one** of those symbols was **absent at the spec's baseline** — its creation commit's parent. A symbol that already existed proves nothing: the spec asked for something new, so something new has to have appeared.
+2. **every** candidate in the derived set — a class, a method, a column, a constant, a file the spec creates — is present there. One absent candidate fails the rung, because a partly-shipped spec is live work;
+3. **every task line contributes at least one candidate that was absent at the spec's baseline** — the baseline being its creation commit's parent. A candidate that already existed proves nothing; a file the spec creates satisfies this the same way a symbol does: absent at the baseline, present now.
+
+   **Per task, not per spec — this is the load-bearing part.** A spec-wide "at least one new candidate" is satisfied by a single finished task while an unfinished one rides along on its edit target: a task that says *modify* `PublishState` names a class that already exists, condition 2 confirms it still exists, and nothing ever tests whether the modification happened. One shipped task then carries a partly-shipped spec to `DELETE-ELIGIBLE`. Requiring each task to show its own new candidate closes that.
+
+   The cost is real and deliberate: a task that only modifies existing code names nothing new, so Rung A cannot prove it — **KEEP**, reason `"a task's evidence is all pre-existing — manual review"`. Rung A proves additive work; a modification-only spec needs Rung C or a human. An unprovable spec kept is a follow-up sweep, while an unprovable spec deleted is lost work.
 
 ```bash
 # 1 — the cited path is still on the base branch
 git cat-file -e "origin/<base>:$CITED_PATH" && echo PRESENT || echo ABSENT
 
-# 2 — the symbol is on the base branch now
-git grep -q "$CITED_SYMBOL" origin/<base> -- "$CITED_PATH" && echo NOW_PRESENT || echo ABSENT
+# 2 — the candidate is on the base branch now. $KIND picks the command:
+#     a symbol is checked by content, a created path by existence.
+if [ "$KIND" = path ]; then
+  out="$(git ls-tree --name-only "origin/<base>" -- "$CANDIDATE")" \
+    && { [ -n "$out" ] && echo NOW_PRESENT || echo ABSENT; } || echo CHECK_FAILED
+else
+  git grep -qF "$CANDIDATE" origin/<base> && echo NOW_PRESENT || echo ABSENT
+fi
 
 # 3 — and it was NOT there when the spec was written.
 #     Use the PARENT of the spec's creation commit: a spec committed together
@@ -179,8 +206,22 @@ SPEC_BORN="$(git log --follow --diff-filter=A -1 --format=%H -- "$SPEC")"
 BASE_REV="$(git rev-parse --verify -q "${SPEC_BORN}^")" || BASE_REV=""
 if [ -z "$SPEC_BORN" ] || [ -z "$BASE_REV" ]; then
   echo NO_BASELINE
+elif [ "$KIND" = path ]; then
+  # A created file is dated by whether it EXISTED, never by a content grep:
+  # a file almost never contains its own path, so grepping for it reports NEW
+  # on a file that has been there all along.
+  #
+  # `git cat-file -e` cannot be used here: it exits 128 for a missing path AND
+  # for a bad revision, so "absent" and "broken" are indistinguishable and the
+  # error reads as evidence. `ls-tree` separates them — exit 0 with empty output
+  # means absent, a non-zero exit means the check failed.
+  out="$(git ls-tree --name-only "$BASE_REV" -- "$CANDIDATE")"; rc=$?
+  if [ "$rc" -ne 0 ]; then echo NO_BASELINE
+  elif [ -n "$out" ]; then echo PRE_EXISTING
+  else echo NEW
+  fi
 else
-  git grep -q "$CITED_SYMBOL" "$BASE_REV"; rc=$?
+  git grep -qF "$CANDIDATE" "$BASE_REV"; rc=$?
   case $rc in
     0) echo PRE_EXISTING ;;   # not evidence
     1) echo NEW ;;            # the rung's positive result
@@ -188,6 +229,14 @@ else
   esac
 fi
 ```
+
+**Each candidate carries its kind, and the kind picks the command.** A symbol is checked by content (`git grep -qF`), a created path by existence (`git cat-file -e`) — at *both* the base branch and the baseline. Mixing them is a live defect, not a nicety: grepping the tree for `config/publishing.php` finds nothing even when that file has existed for years, because a file rarely contains its own path, so the candidate reads `NEW` and dates a spec that shipped nothing.
+
+**Match symbols as fixed strings, never as patterns.** `git grep` reads its argument as a regular expression, so a candidate like `Article.Status` matches `ArticleXStatus` — verified. Pass `-F`. Where one candidate is a substring of another name, check the boundary too, or two different symbols read as one.
+
+**Both greps run repository-wide, and that pairing is deliberate.** Scoping the "present now" check to a cited path would miss a symbol that landed in a file the spec never cited by `file:line`. Widening it alone would be reckless — but condition 3 runs repository-wide too, so a candidate that existed *anywhere* at the baseline is `PRE_EXISTING` and proves nothing. A name absent from the whole tree at the baseline and present now is genuinely new, which is the claim the rung needs. Report the file each candidate matched in, so the reader sees where the evidence came from.
+
+**Iterate the sets with a `while IFS= read -r` loop, never `for x in $LIST`.** The shorthand relies on word-splitting an unquoted expansion, which **zsh does not do** — and zsh is the default shell on macOS. There the whole list arrives as a single string, every spec reports exactly one path or one symbol checked, and the run looks plausible while under-checking. It fails silently in the direction that deletes work.
 
 **Fail closed on every error.** `git grep` exits `1` for "no match" and other nonzero statuses for real errors — only `1` may mean `NEW`. `--diff-filter=A` returns nothing on a shallow clone (hence `--follow` for a renamed spec), and a spec added in the repository's root commit has no parent. Each of those is `NO_BASELINE` → **KEEP**, reason `"no baseline to date the spec against — manual review"`. A one-line `[ -n "$X" ] && git grep … || echo NEW` chain turns every one of those errors into the positive result; do not write it that way.
 
