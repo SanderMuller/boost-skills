@@ -330,6 +330,19 @@
                     "default": "specs/{slug}.md",
                     "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = full Jira key (e.g. 'HPB-1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
                 },
+                "directories": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "render": [
+                        "inline",
+                        "bullets"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Ordered list of directories that hold spec files. Default when unset: the literal path prefix of 'filename_pattern' before the first {\u2026} placeholder. Repository-relative paths only. A listed directory may be untracked (gitignored) \u2014 clean-specs sweeps those but deletes from them only through its separate irreversible-deletion path, because git cannot restore them. The 'filename_pattern' prefix must appear in this list; a configuration where it does not is an error, not a silent redirect. write-spec searches every listed directory for duplicates and writes new specs to the 'filename_pattern' directory. Each path is validated for existence by 'boost doctor --check-conventions'."
+                },
                 "research_docs": {
                     "type": "array",
                     "render": ["inline", "bullets"],

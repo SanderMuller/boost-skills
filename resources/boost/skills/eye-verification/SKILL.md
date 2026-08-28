@@ -71,8 +71,12 @@ from the branch name, and the PR for the current branch through the host's CLI (
    prerequisites. Translate QA vocabulary into concrete browser steps (which record, which
    screen, which control, which expected visible result).
 3. **Neither** → look for a **spec** matching the branch/feature under the project's spec
-   convention (<!--boost:conv path="spec.filename_pattern" mode="inline"-->specs/{slug}.md<!--boost:conv:end-->). Take its edge-case table (each row is a
-   scenario plus expected handling) and its acceptance / user-flow scenarios.
+   convention (<!--boost:conv path="spec.filename_pattern" mode="inline"-->specs/{slug}.md<!--boost:conv:end-->). Resolve **where** to look the same way
+   `clean-specs` and `pull-requests` do: `spec.directories` when configured —
+   <!--boost:conv path="spec.directories" mode="inline"-->specs/<!--boost:conv:end--> — searching every entry; otherwise the single directory derived
+   from the pattern, its literal prefix before the first `{…}` placeholder. Take its
+   edge-case table (each row is a scenario plus expected handling) and its acceptance /
+   user-flow scenarios.
 4. **None of the above** → **gather the testables from the diff yourself** before verifying.
    Per changed surface: the happy path, the boundary/empty/error states, the
    permission-denied path, and both sides of any toggle. Keep each concrete (named record,

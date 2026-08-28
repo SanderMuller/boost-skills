@@ -53,6 +53,15 @@ If the user insists on writing immediately, capture each unresolved item in `## 
 
 Resolve the spec file path via the filename pattern above. Apply the placeholder-substitution rules above to produce the final path.
 
+### More than one spec directory
+
+A project may hold specs in several directories — <!--boost:conv path="spec.directories" mode="inline"-->specs/<!--boost:conv:end-->. When it does, two rules apply and they pull in opposite directions on purpose:
+
+- **Search every listed directory** before creating or converting a spec. The duplicate check below is only sound if it covers all of them; a search limited to the write target grows two specs for one feature in two places. More than one candidate → stop and ask which is authoritative.
+- **Write to one.** The write target is the directory of `spec.filename_pattern`. The list is ordered, and its first entry is the default write target when the project has not configured a pattern of its own.
+
+If the `filename_pattern` prefix is **not** in the configured list, the configuration is inconsistent — there is no defined way to re-root a pattern like `docs/specs/{slug}.md` under a different directory. **Stop and ask** for the correct location; do not silently write the pattern's filename into the first listed directory. `boost doctor --check-conventions` reports the same configuration as an error.
+
 Subdirectories for related specs are fine — if the filename pattern doesn't model the subdir convention, place spec files manually under the resolved parent dir:
 
 ```
@@ -79,7 +88,7 @@ This lets `implement-spec` detect when cited code has drifted before it builds a
 
 ## If a Spec File Already Exists
 
-Before writing from a fresh template, check whether a spec for this work already exists at (or under) the resolved path — an earlier `write-spec` run, or a requirements doc the `interview` skill's output was saved into. If one exists, read it and classify before doing anything:
+Before writing from a fresh template, check whether a spec for this work already exists at (or under) the resolved path — and under **every** configured spec directory, not only the write target — an earlier `write-spec` run, or a requirements doc the `interview` skill's output was saved into. If one exists, read it and classify before doing anything:
 
 | What you find | Action |
 |---|---|

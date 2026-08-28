@@ -31,6 +31,7 @@ row when done.
 | 008  | The pipeline-receipt skip never fires for a sequencing pipeline | P2 | S | `boost-pipeline` >= v0.8.0 | SUPERSEDED by 009 — read only for decision history |
 | 009  | `evaluate` Phase 1 asks the question the pipeline can answer | P2 | S | `boost-pipeline` >= v0.9.0 | DONE (`89dba5d`, released in 2.31.0; `quality.pipeline` shipped with it) |
 | 010  | Strip the `verified-sha` pin before it reaches the changelog | P3 | S | — | TODO (hygiene; nobody has ever seen the pin — it renders as nothing) |
+| 011  | `clean-specs` proves shipping more than one way, and sweeps more than one directory | P2 | M | — | DONE (working tree, uncommitted) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 
@@ -98,6 +99,64 @@ bad `boost:conv` slots, and undocumented tags; `composer validate` → valid; th
 workflow runs both gates in order and parses as YAML. **Not committed** — left
 for the operator to review, branch, and commit. Plan 002's design was researched
 first (see `plans/002-research-notes.md`).
+
+
+**011 is an investigation write-up**, dated 2026-08-28 against commit
+`e2a671d`. Not an audit finding: it asks why `clean-specs` never deletes
+anything and finds two independent causes — the skill accepts only one kind of
+proof (a merged PR carrying an issue key, which a keyless project can never
+produce), and it looks in exactly one directory, which is empty in this
+repository. Read its "Decisions taken before planning" section first; the
+untracked-directory deletion path (§3) was decided by the operator and is not
+open for re-litigation, but it must not ship without §2.
+
+
+**Implemented 2026-08-28** against commit `e2a671d` (drift check clean).
+`spec.directories` added to `conventions-schema.json` (`schema-version` still
+`1`); `clean-specs` rewritten — the stated bar in the frontmatter, intro,
+definition and "When to Use" now matches the procedure, Step 1 sweeps every
+configured directory and classifies tracked/untracked **per file**, Step 3 no
+longer hard-stops on a missing issue key, Step 4 is the Rung A / Rung C ladder
+behind an open-PR veto, Step 5 reports three verdicts with their evidence, and
+Step 6 splits into a PR path and an irreversible per-file path. `write-spec`
+searches every directory and writes to one; `pull-requests` step 11 and
+`eye-verification` search all. `implement-spec` was checked and left alone — it
+resolves a spec by path argument and derives no directory.
+
+Verified: `validate-skills.php` → 33/33 skills + 1/1 tag manifests, exit 0;
+`validate-catalog.php` → passes (invariant-F negative test run on the new
+`spec.directories` token — caught, then restored); `composer validate` → valid;
+schema parses. Rendered through `vendor/bin/boost sync` in a throwaway host
+project in all three states — no `spec.directories`, one directory, and two
+with one gitignored — with `boost doctor --check-conventions` clean in each.
+The evidence commands were then walked against constructed git states: 18
+scenario checks (root-commit spec, renamed spec, untracked spec, `git grep`
+error versus miss, NUL-vs-line enumeration, symlink escape, hash drift between
+confirmation and `rm`, and three open-PR enumeration failures) all landed on
+the safe side.
+
+Four details the plan left to the implementation, settled by review rounds on
+the change itself: the keyless veto compares the open PRs' paths with the spec's
+cited paths (enumerating them is not the veto); the branch-name PR lookup runs
+`--state all`, so a merged PR whose key lives only in its branch is visible; the
+Rung C `--json` list carries `title` and `body`, without which a title match
+cannot be told from a body mention; and Rung A on an **untracked** spec runs
+degraded — no baseline exists, so it tops out at `PROPOSED` and an untracked
+spec can never be `DELETE-ELIGIBLE`. Enumeration is one NUL-delimited `find`
+pass consumed by `read -d ''`, with no associative array — bash 3.2 is still the
+default shell on macOS.
+
+Hardening from the same rounds: the checkbox greps use `[[:space:]]` instead of
+`\s` (POSIX ERE does not define `\s`, so an indented unchecked task could go
+unseen on a strict grep), and `spec.directories` carries `minItems: 1` +
+`uniqueItems: true`. An empty list was observed to resolve as *missing* rather
+than as "sweep nothing", so the constraint is belt-and-braces; a duplicate entry
+is rejected and the slot falls back to the pattern.
+
+One deviation: **no commit-ancestor rung.** The handoff proposed one; the plan
+rejects it on evidence (it cannot prove causation and cannot survive a revert
+without inspecting commit content, which is Rung A). Rung A covers the
+direct-to-base case it was meant for.
 
 ## Dependency notes
 
