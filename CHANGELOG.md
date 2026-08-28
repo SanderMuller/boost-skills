@@ -5,6 +5,29 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.32.0 - 2026-08-28
+
+<!-- verified-sha: 583c5ed06c9467d2d820ea1a166b68e793427da9 -->
+`clean-specs` could prove a spec had shipped in exactly one way — a merged PR carrying the spec's issue key — and it looked in exactly one directory. A project that commits straight to its base branch, or names specs without an issue key, got "keep everything" on every run. This release gives the skill a second proof and a `spec.directories` slot, and splits deletion by whether git can undo it.
+
+### Added
+
+- **`spec.directories` — a project may hold specs in several directories.** An ordered list of repository-relative paths, defaulting to the prefix of `spec.filename_pattern`, so a project that configures nothing sees no change. `clean-specs` sweeps every entry and reports each one separately: an empty directory is reported rather than passed over silently, and a configured directory that does not exist is a loud warning. That case used to read as a clean sweep — the most misleading output a housekeeping tool can produce. `write-spec`, `pull-requests`, and `eye-verification` resolve the list the same way; `write-spec` searches all of them for duplicates and writes to one.
+- **`clean-specs`: proof by implementation, not only by paperwork (Rung A).** A spec is now provably shipped when every path and symbol it names is present on the base branch and at least one of those symbols was absent at the spec's baseline — its creation commit's parent. This needs no PR and no issue key, so the skill finally works in a keyless project and for work pushed straight to the base branch. The merged-PR path stays as the second proof and now re-checks that the implementation is still present, because a `Revert "…"` title match misses a manual removal.
+- **`clean-specs`: a third verdict, `PROPOSED`.** `DELETE-ELIGIBLE` keeps its meaning — proof, and a deletion a revert can undo. `PROPOSED` is for a deletion that cannot be taken back, and it is answered one file at a time with the evidence shown. Weak or unevaluated evidence is still `KEEP`.
+
+### Changed
+
+- **`clean-specs`: a missing issue key no longer stops the sweep.** It removes the merged-PR proof only; the spec continues to the implementation proof.
+- **`clean-specs`: an open or draft PR outranks every proof.** Without an issue key the veto matches the spec's cited paths against open PR diffs. Enumerating the PRs is not the veto — the overlap is — and every enumeration failure, including a truncated result, ends in `KEEP`. A lookup that errored must never read as "no PR found".
+- **`clean-specs`: deletion splits by whether git can undo it, decided per file.** A directory can hold both tracked and untracked Markdown, so the classification is per file, and it branches on the exit status rather than on truthiness — a git error stops the run instead of routing the file into the irreversible path. Tracked specs still leave through a reviewable PR. An untracked spec has no baseline to date its evidence against and no way back after `rm`, so it can never be `DELETE-ELIGIBLE`: it is confirmed per file, behind a regular-file check, path confinement to the repository and a configured directory, and a content-hash re-check immediately before deletion.
+
+### Internal
+
+- Plan `011` records the design, including the commit-ancestor proof that was considered and rejected: it cannot show that a commit caused the spec's work to land, and a revert commit becomes the last commit touching the file, so the proof survives its own undoing.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.31.0...2.32.0
+
 ## 2.31.0 - 2026-08-25
 
 <!-- verified-sha: 89dba5dcbf6db5440a4039b9ad0c4939aee7ae60 -->
@@ -152,6 +175,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -845,6 +869,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -865,6 +890,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -979,6 +1005,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1005,6 +1032,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1129,6 +1157,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1156,6 +1185,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1287,6 +1317,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1370,6 +1401,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1378,6 +1410,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1499,6 +1532,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1516,6 +1550,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1616,6 +1651,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1779,6 +1815,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1797,6 +1834,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -2001,6 +2039,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
