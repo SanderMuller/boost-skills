@@ -5,6 +5,23 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.32.1 - 2026-08-28
+
+<!-- verified-sha: 228f398030de8f32555baed055f9ad6fa9b407ad -->
+`2.32.0` gave `clean-specs` a proof by implementation: every symbol a spec says it adds must be present on the base branch and absent when the spec was written. It never said **where that symbol set comes from**, so each run invented a pattern. Adoption feedback found one that reported KEEP on two specs that had fully shipped — and the same class of pattern fails the other way, matching only names that already existed and proving a spec that never landed. This release sources the set, and fixes three ways the checks around it could read an error as evidence.
+
+### Fixed
+
+- **The symbol set is derived from the spec, not sampled by a pattern.** It comes from the `## Implementation` task lines — the section Step 2 already reads for the checkoff test. Every backticked token is a candidate, with no case, length, or punctuation filter, so qualified names (`App\Enums\PublishState::Draft`), `snake_case` columns, and `SCREAMING_CASE` constants stop being invisible to a CamelCase-shaped guess. A backticked path the spec creates is a candidate too. The full set, with each candidate's kind, is stated in the report: a reader who can see the set can see a sampling error that a bare verdict hides.
+- **Each candidate carries its kind, and the kind picks the check.** A symbol is checked by content, a created path by existence. Grepping the tree for `config/publishing.php` finds nothing even when that file has existed for years — a file rarely contains its own path — so a path checked as a symbol read as new and dated a spec that shipped nothing.
+- **Symbols match as fixed strings.** `git grep` read a candidate as a regular expression, so `Article.Status` matched `ArticleXStatus`. Both conditions could pass while the declared symbol was absent.
+- **Path checks use `git ls-tree`, not `git cat-file -e`.** `cat-file` exits 128 for a missing path and for a bad revision alike, so "absent" and "the check broke" were indistinguishable and the error became positive evidence. `ls-tree` separates them: a non-zero exit is now `NO_BASELINE`, which keeps the spec.
+- **Condition 3 applies per task, not per spec.** A spec-wide "at least one new symbol" let a finished task carry an unfinished one that named only its pre-existing edit target — condition 2 confirmed the target still existed, and nothing tested whether the modification happened. Each task must now show its own candidate that was absent at the baseline. The cost is deliberate: a task that only modifies existing code names nothing new, so Rung A keeps the spec and leaves it to the merged-PR proof or to a human.
+- **Lists are iterated with `while IFS= read -r`, never `for x in $LIST`.** zsh does not word-split an unquoted expansion, and zsh is the default shell on macOS: the whole list arrived as one string, every spec reported exactly one item checked, and the run looked plausible while under-checking — the direction that deletes work. The skill's own open-PR veto loop had this bug.
+- **`pull-requests`: a resolved spec directory that does not exist is now a warning.** The spec-leak check globs an empty path in that case and reports nothing, which reads exactly like "no spec leaked" on a branch whose whole purpose was removing one.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.32.0...2.32.1
+
 ## 2.32.0 - 2026-08-28
 
 <!-- verified-sha: 583c5ed06c9467d2d820ea1a166b68e793427da9 -->
@@ -175,6 +192,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -870,6 +888,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -890,6 +909,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1006,6 +1026,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1032,6 +1053,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1158,6 +1180,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1185,6 +1208,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1318,6 +1342,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1402,6 +1427,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1410,6 +1436,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1533,6 +1560,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1550,6 +1578,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1651,6 +1680,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1816,6 +1846,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1834,6 +1865,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -2039,6 +2071,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
