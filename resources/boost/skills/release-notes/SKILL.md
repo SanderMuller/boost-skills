@@ -148,6 +148,28 @@ Run this against the drafted file. Any `no` is a rewrite, not a judgment call.
 
 The two numbers are not comparable, and the second is the one a draft is judged on. A draft at 60+ words per bullet on either measure is narrating.
 
+## Name what a regression would look like
+
+The omit-list above says to leave quality-gate counts out. This is what to write instead.
+
+A consumer cannot check `387 tests, 937 assertions`. They can check a behaviour. For a fix worth
+explaining, one clause naming the observable that would change if it regressed is worth more than
+any aggregate:
+
+- ❌ `Verified: 387 tests, 937 assertions. PHPStan level max, CI green across the matrix.`
+- ✅ `Regressed, this reports the omitted line count and names no path to the output.`
+
+The test: could a reader who installed the package confirm this from outside, without the suite? A
+Composer dist usually ships `src/` only, so a consumer reasons about a fix's *class* rather than
+reading its test — the clause is the only part that reaches them. The aggregate is checkable by
+nobody, and it appears in every release, which is what makes it noise rather than evidence.
+
+Not every bullet needs one. A renamed method or a doc correction has no observable to name. Reach
+for it where a reader might reasonably ask "did that actually get fixed" — the bug classes that
+recur, and the ones whose symptom is silence.
+
+This is not an invitation to describe the test. Name the behaviour, not the assertion.
+
 ## Verified-sha line
 
 Pre-release tooling (`pre-release` skill, step 7) requires the first line of the notes file to be an HTML comment recording the green CI SHA:
