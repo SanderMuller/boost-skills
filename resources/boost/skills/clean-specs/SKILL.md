@@ -29,7 +29,7 @@ Anything that fails either test, or that cannot be evaluated, is **kept and repo
 | Verdict | Meaning | What may act on it |
 |---|---|---|
 | `DELETE-ELIGIBLE` | The skill has proof, **and** the deletion is recoverable — a tracked spec, removed through a reviewable PR a revert undoes. | One batch confirmation covering the group. |
-| `PROPOSED` | An **untracked** spec — the deletion cannot be taken back — with either a positive rung or a positive **degraded Rung A** (its conditions 1 and 2, the baseline unavailable). Never a home for missing, indeterminate, or failed evidence; that is `KEEP`. | A per-file confirmation, one file at a time, with the evidence shown. |
+| `PROPOSED` | Proof exists but does not cover everything, or the deletion cannot be taken back. Two ways in: an **untracked** spec (positive rung, or a positive **degraded Rung A** with the baseline unavailable), and a spec carrying an **unprovable task** — one Rung A could not check. Never a home for missing, indeterminate, or failed evidence; that is `KEEP`. | A per-file confirmation, with the evidence and the unprovable tasks listed. |
 | `KEEP` | Live work, or the evidence could not be evaluated. | Nothing. It is reported with its reason. |
 
 Ambiguity always resolves downward: `DELETE-ELIGIBLE` → `PROPOSED` → `KEEP`.
@@ -171,8 +171,8 @@ The set comes from the spec's **`## Implementation` task lines**. That is where 
 - **Every backticked token on a task line is a candidate.** No case filter, no length filter, no punctuation filter. `PublishState`, `markPublished()`, `published_at`, `PUBLISH_COLUMNS`, and `App\Enums\PublishState::Draft` are all candidates. A `::`, an underscore, or a leading lowercase letter is exactly what a real declared name looks like, and a CamelCase-only pattern is blind to most of them.
 - **A backticked path is a candidate too**, checked for presence rather than content: a spec that says it adds `config/publishing.php` or `scripts/backfill.sh` is proved partly by that file existing on the base branch. Condition 1 covers paths the spec *cites*; this covers paths it *creates*.
 - **Drop what is not a declaration** — a backticked command, flag, or vendor symbol the spec merely mentions (`composer install`, `--force`, `Illuminate\Support\Str`). When in doubt, keep the candidate: an extra symbol can only make the rung stricter.
-- **Every task line must yield at least one candidate — not just the section as a whole.** A section-level check passes a spec whose first task names a class in backticks and whose second describes unshipped behaviour in plain prose: the set looks healthy, the named class is present, and the unnamed work is never tested. A task line with no backticked token — or whose only tokens were dropped as non-declarations — is unfalsifiable, so the spec is **KEEP**, reason `"a task names nothing checkable — manual review"`. Never keep a command or flag as a candidate just to satisfy this rule: that trades a KEEP for a check that passes on nothing. This is the same deletion-biased gap one level down, and it is the one that survives a well-formed set.
-- **No `## Implementation` section, or no backticked tokens in it** → the set cannot be derived at all. **KEEP**, reason `"spec names nothing checkable — manual review"`. It is never a partial pass on whatever few names happened to match.
+- **Every task line must yield at least one candidate — not just the section as a whole.** A section-level check passes a spec whose first task names a class in backticks and whose second describes unshipped behaviour in plain prose: the set looks healthy, the named class is present, and the unnamed work is never tested. A task line with no backticked token — or whose only tokens were dropped as non-declarations — is unfalsifiable. It is an **unprovable task** under condition 3: named in the report, capping the spec at `PROPOSED`. Never keep a command or flag as a candidate just to make a task look provable: that trades an honest "unprovable" for a check that passes on nothing. This is the same deletion-biased gap one level down, and it is the one that survives a well-formed set.
+- **No `## Implementation` section, or no backticked tokens in it** → the set cannot be derived at all, so **Rung A returns nothing and the spec falls through to Rung C** — the same outcome as a spec whose every task is unprovable. It is never a partial pass on whatever few names happened to match, and it is only `KEEP` once no rung has proved it.
 
 **Tag each candidate as a symbol or a path** — the kind picks the command in conditions 2 and 3, and a path checked as a symbol silently reads as new. State the whole set in the report, kinds included. A reader who can see the set can see the sampling error; a verdict alone hides it.
 
@@ -180,11 +180,23 @@ The set comes from the spec's **`## Implementation` task lines**. That is where 
 
 1. every `file:line`-cited path in the spec still exists on the base branch — necessary, never sufficient;
 2. **every** candidate in the derived set — a class, a method, a column, a constant, a file the spec creates — is present there. One absent candidate fails the rung, because a partly-shipped spec is live work;
-3. **every task line contributes at least one candidate that was absent at the spec's baseline** — the baseline being its creation commit's parent. A candidate that already existed proves nothing; a file the spec creates satisfies this the same way a symbol does: absent at the baseline, present now.
+3. **every task line is classified, and every task that declares something new shows a candidate absent at the spec's baseline** — the baseline being its creation commit's parent. A candidate that already existed proves nothing; a file the spec creates satisfies this the same way a symbol does: absent at the baseline, present now.
 
-   **Per task, not per spec — this is the load-bearing part.** A spec-wide "at least one new candidate" is satisfied by a single finished task while an unfinished one rides along on its edit target: a task that says *modify* `PublishState` names a class that already exists, condition 2 confirms it still exists, and nothing ever tests whether the modification happened. One shipped task then carries a partly-shipped spec to `DELETE-ELIGIBLE`. Requiring each task to show its own new candidate closes that.
+   **Classify per task, in three buckets.** Run condition 3 over each task line separately, never over the spec as a whole:
 
-   The cost is real and deliberate: a task that only modifies existing code names nothing new, so Rung A cannot prove it — **KEEP**, reason `"a task's evidence is all pre-existing — manual review"`. Rung A proves additive work; a modification-only spec needs Rung C or a human. An unprovable spec kept is a follow-up sweep, while an unprovable spec deleted is lost work.
+   | Task | What its candidates look like | Effect |
+   |---|---|---|
+   | **Proved** | at least one candidate absent at the baseline, present now | contributes proof |
+   | **Unprovable** | candidates all pre-existing, or none checkable | named in the report; caps the spec at `PROPOSED` |
+   | — | *(a spec with no proved task at all)* | **Rung A returns nothing.** Not a verdict — fall through to Rung C |
+
+   The last row is a rung outcome, not a `KEEP`. A modification-only spec proves nothing *by implementation*, which is exactly the case a merged PR can still prove: if Rung C comes back positive the spec is classified on that, and only a spec that no rung could prove is `KEEP`.
+
+   **Why per task.** A spec-wide "at least one new candidate" is satisfied by a single finished task while an unfinished one rides along on its edit target: a task that says *modify* `PublishState` names a class that already exists, condition 2 confirms it still exists, and nothing ever tests whether the modification happened. One shipped task then carries a partly-shipped spec.
+
+   **Why an unprovable task caps rather than kills.** Field data from a consuming project: making every task show a new candidate rejected **6 of 6** real specs. The failing tasks were not sloppy — they were the ordinary modification half of feature work: a docblock correction, a column removed from an existing constant, an edit to an existing runbook, and nearly every `Tests — …` line, since tests exercise symbols that already exist. A rung that only clears a purely additive spec with no test tasks is decorative, and a decorative rung is the PR-keyed dead end this ladder replaced.
+
+   So an unprovable task does not delete the spec's evidence — it **names itself in the report and lowers the ceiling**. A spec with any unprovable task is `PROPOSED`, never `DELETE-ELIGIBLE`: the user sees a short list of exactly which tasks Rung A could not check, and decides on that. Nothing is ever deleted in a batch on a modification task's word, which is the property that matters, and the automatic verdict is still reserved for a spec whose every task proved itself.
 
 ```bash
 # 1 — the cited path is still on the base branch
@@ -238,7 +250,7 @@ fi
 
 **Iterate the sets with a `while IFS= read -r` loop, never `for x in $LIST`.** The shorthand relies on word-splitting an unquoted expansion, which **zsh does not do** — and zsh is the default shell on macOS. There the whole list arrives as a single string, every spec reports exactly one path or one symbol checked, and the run looks plausible while under-checking. It fails silently in the direction that deletes work.
 
-**Fail closed on every error.** `git grep` exits `1` for "no match" and other nonzero statuses for real errors — only `1` may mean `NEW`. `--diff-filter=A` returns nothing on a shallow clone (hence `--follow` for a renamed spec), and a spec added in the repository's root commit has no parent. Each of those is `NO_BASELINE` → **KEEP**, reason `"no baseline to date the spec against — manual review"`. A one-line `[ -n "$X" ] && git grep … || echo NEW` chain turns every one of those errors into the positive result; do not write it that way.
+**Fail closed on every error.** `git grep` exits `1` for "no match" and other nonzero statuses for real errors — only `1` may mean `NEW`. `--diff-filter=A` returns nothing on a shallow clone (hence `--follow` for a renamed spec), and a spec added in the repository's root commit has no parent. Each of those is `NO_BASELINE`, which **ends Rung A for that spec — it does not end the evaluation.** Rung A returns nothing and the spec falls through to Rung C; if that cannot prove it either, the spec is **KEEP**, reason `"no baseline to date the spec against — manual review"`. A failed check may never *prove* anything, but it also must not hide a proof another rung can supply. A one-line `[ -n "$X" ] && git grep … || echo NEW` chain turns every one of those errors into the positive result; do not write it that way.
 
 **An untracked spec has no creation commit, and no substitute for one.** An mtime is not a baseline: a copy, a checkout, or a restore carries an old timestamp forward, and a baseline that is too old fails open — every symbol introduced since then reads as `NEW`. So condition 3 is unsatisfiable for an untracked spec, and Rung A runs **degraded**: conditions 1 and 2 only, with no way to date the evidence.
 
@@ -247,7 +259,7 @@ fi
 **What Rung A is, exactly: a text match, reported as one.** `git grep` proves matching text exists on the base branch — not that it is this spec's implementation. The match can sit in a comment, in documentation, in dead code, or in an unrelated symbol sharing the name. So:
 
 - **The report shows the evidence, not the verdict alone** — the symbol matched, the file it matched in, and the baseline commit it was absent at. The user confirms on something checkable in seconds.
-- **A spec that names nothing resolvable is KEEP**, reason `"spec names nothing checkable — manual review"`. That is a useful signal about the spec, not a fault in the sweep.
+- **A spec that names nothing resolvable returns nothing from this rung** and falls through to Rung C; if that cannot prove it either, it is **KEEP**, reason `"spec names nothing checkable — manual review"`. That is a useful signal about the spec, not a fault in the sweep.
 
 Rung A is naturally revert-proof: a reverted implementation is an absent symbol, and an absent symbol fails the rung.
 
@@ -299,23 +311,31 @@ Print the results **grouped by directory, then by tracked/untracked**, so the re
 For each directory: the count found (including `0`), and how those files split between tracked and untracked — the classification is per file, so a single directory can appear in both groups. Then, within it:
 
 - **Delete-eligible** (tracked only) — one line per spec: filename, the rung that proved it, and its evidence — the symbol matched and where, or the merged PR number(s).
-- **Proposed** — an **untracked** spec with a positive rung, or a positive degraded Rung A (marked `PROPOSED-DEGRADED (no baseline)`). `PROPOSED` is not a bucket for weak evidence: a spec whose evidence was missing, indeterminate, or produced by a failed command is **KEEP**, exactly as it would be if it were tracked. The only thing `PROPOSED` adds over `DELETE-ELIGIBLE` is that the deletion cannot be undone, so it is answered per file. One line per spec, with the same evidence shown.
+- **Proposed** — an **untracked** spec with a positive rung or a positive degraded Rung A (marked `PROPOSED-DEGRADED (no baseline)`), and any spec carrying unprovable tasks. **List those tasks verbatim**, so the user reviews a short named list instead of re-reading the spec. `PROPOSED` is not a bucket for weak evidence: a spec whose evidence was missing, indeterminate, or produced by a failed command is **KEEP**. `PROPOSED` differs from `DELETE-ELIGIBLE` in two ways, and either one is enough to earn it: the deletion cannot be undone (an untracked spec), or the proof does not cover every task (a spec with unprovable tasks, tracked or not). Both are answered one spec at a time rather than in the batch. One line per spec, plus its unprovable tasks where it has them.
 - **Kept** — one line per spec: filename + the specific reason from Steps 2–4.
 
 Ask the user to confirm before deleting. If the argument scoped a single spec, just report that one's verdict.
 
 ### Step 6 — Delete (only after confirmation)
 
-**Re-verify eligibility against fresh state first.** The dry-run report may be minutes or hours old, and an open/draft PR could have appeared since — deleting on a stale decision is itself a wrong deletion. Re-run Step 0 (fetch the base) and Steps 2–4 for every spec about to be deleted, and drop any no longer eligible. Only the survivors proceed.
+**Re-verify eligibility against fresh state first.** The dry-run report may be minutes or hours old, and an open/draft PR could have appeared since — deleting on a stale decision is itself a wrong deletion. Re-run Step 0 (fetch the base) and Steps 2–4 for every spec about to be deleted.
 
-The two groups then take **different paths, and never share a confirmation** — one "yes" must not cover both, because their consequences differ.
+**A confirmation covers the verdict and evidence it was given for, and nothing else.** Drop any spec no longer eligible — and treat a spec whose **verdict or evidence changed** as unconfirmed, even when it is still eligible. A `DELETE-ELIGIBLE` spec that re-verifies as `PROPOSED` (re-reading its tasks surfaced an unprovable one) has not been confirmed: it stays eligible, so a "drop what is no longer eligible" rule lets it ride the batch "yes" into deletion under a verdict the user never saw. Re-ask under the new verdict's route below. Only specs whose verdict and evidence still match what was confirmed proceed on that confirmation.
+
+Then route by **verdict first, and recoverability second** — one "yes" must never cover two different consequences:
+
+- `DELETE-ELIGIBLE` (tracked, every task proved) → **6a**, in one batch.
+- `PROPOSED` on a **tracked** spec (it carries unprovable tasks) → **6a's** PR path, because git can still undo it, but confirmed **one spec at a time** with its unprovable tasks listed. It never rides along in the batch.
+- `PROPOSED` on an **untracked** spec → **6b**, always per file.
+
+The three confirmations stay separate.
 
 #### 6a — Tracked specs: a reviewable PR
 
 Removing tracked files is a change to the base branch, so it ships via a PR like any other change — never delete straight on a protected branch.
 
 1. Branch from an up-to-date base (name it per the project's branch conventions — a keyless housekeeping change, so the project's no-issue/`chore` pattern where one exists; the Step 5 confirmation is the go-ahead).
-2. `git rm -- "$SPEC"` for each surviving spec.
+2. `git rm -- "$SPEC"` for each surviving spec — the batch-confirmed `DELETE-ELIGIBLE` ones, plus any `PROPOSED` spec the user confirmed individually.
 3. Commit with a message that names the housekeeping (e.g. `Remove specs for features shipped to <base>`).
 4. Create the PR via the **`pull-requests`** skill (never a direct `gh pr create`). It is a docs-only change with no behavioural effect — low risk — and the PR body lists the removed specs and the evidence that shipped each.
 
@@ -341,7 +361,7 @@ The `pull-requests` skill removes a spec **when its PR is created**, on the assu
 
 - **A verdict is a proposal, not a certainty.** Rung A is a text match: it proves matching text is on the base branch and was not there when the spec was written, not that the text is this spec's implementation. Rung C infers shipped-state from PR metadata. Both are imperfect, so the real safety net is the layering: report-first, evidence shown, explicit confirmation, and — for tracked specs — removal through a reviewable PR that a revert undoes. Lean **KEEP** on any ambiguity: a kept spec costs a follow-up sweep; a wrongly-deleted one costs lost work.
 - **Recoverability decides the verdict ceiling.** A tracked spec can reach `DELETE-ELIGIBLE`. An untracked spec cannot — it has no baseline to date its evidence against and no way back after `rm`, so it tops out at `PROPOSED` and is answered one file at a time.
-- **Every failed command means KEEP.** An unrunnable check is not a passed check. A `gh` that errors, a `git grep` that returns a status other than `0` or `1`, a spec with no resolvable baseline — each is an indeterminate result, and indeterminate is always KEEP.
+- **A failed command never counts as evidence.** An unrunnable check is not a passed check: a `git grep` that returns a status other than `0` or `1`, or a spec with no resolvable baseline, ends *that rung* with nothing and never with a positive result. The spec still gets every other rung, and is **KEEP** once none of them proved it. The open-PR veto is the exception that outranks this — a `gh` enumeration that fails takes the whole spec to KEEP immediately, because an unevaluable veto cannot be worked around by another rung.
 - **Never delete on an unproven assumption.** Both tests must pass with evidence (all boxes checked; a rung positive with its own falsifiable check).
 - **Report before deleting** by default. The dry-run is the safe mode; deletion is opt-in per run.
 - **`origin/<base>` must be freshly fetched** (Step 0) or the presence and ancestor checks read a stale baseline and can wrongly mark in-flight work as shipped.

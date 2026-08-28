@@ -156,6 +156,17 @@ because the kind picks the check, and condition 3 applies per task rather than
 per spec. The same report caught a `for x in $LIST` shorthand that silently
 checks one item under zsh, which is the default shell on macOS.
 
+**Corrected in `2.32.2`.** `2.32.1` made condition 3 per task and required
+every task to show a new candidate. A second field report measured that against
+a real corpus: it rejected **6 of 6** specs. The failing tasks were the ordinary
+modification half of feature work — a docblock correction, a column dropped from
+an existing constant, an edit to an existing runbook, and nearly every test task,
+since tests exercise symbols that already exist. The rule did not reject sloppy
+specs; it rejected the shape a real spec has. An unprovable task now names itself
+in the report and caps the spec at `PROPOSED` instead of keeping the whole spec,
+which holds the property that mattered — nothing is deleted in a batch on a
+modification task's word — without the rung going 0-for-6.
+
 Hardening from the same rounds: the checkbox greps use `[[:space:]]` instead of
 `\s` (POSIX ERE does not define `\s`, so an indented unchecked task could go
 unseen on a strict grep), and `spec.directories` carries `minItems: 1` +
