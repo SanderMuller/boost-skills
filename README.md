@@ -95,7 +95,7 @@ tags.
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
 | `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
-| `readme`               | Author and maintain a high-quality README for a Composer package — stub, comprehensive, or docs-site shape, voice, staleness + docs index/link audits. | `release-automation` |
+| `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |

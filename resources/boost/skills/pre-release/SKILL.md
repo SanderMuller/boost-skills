@@ -82,7 +82,12 @@ Release-worthy features change user-visible behavior, so `README.md`, a `docs/` 
 
 #### 5a. README
 
-Consult the `readme` skill's staleness-audit section against `git log <last-tag>..HEAD`. The `readme` skill owns the canonical authoring checklist (required sections, voice, anti-patterns, staleness-audit pattern); pre-release just orchestrates the timing — README freshness is audited at every release, not quarterly.
+Consult the `readme` skill's staleness-audit section — **both halves of it**, and note that they scan different sets:
+
+- **Staleness** runs against `git log <last-tag>..HEAD`: what changed since the last release is what can have gone stale.
+- **Verbosity** runs against the **current README and every current docs page**, whatever the diff touched. A page that went over budget three releases ago never appears in a diff range again, so a history-scoped audit would pass it forever. This is a whole-corpus measurement — word counts and prose-run lengths — not a review of the change.
+
+Docs rot by growing as well as by aging: every release adds a paragraph and nothing removes one. The `readme` skill owns the canonical authoring checklist (required sections, voice, anti-patterns, staleness-audit pattern); pre-release just orchestrates the timing — README freshness is audited at every release, not quarterly.
 
 Pre-release-specific audit targets layered on top of `readme`'s generic pattern:
 
@@ -205,9 +210,9 @@ This is where agents most commonly slip: running the local gauntlet (steps 1-5),
 
 **What to write instead:**
 
-- Generic adoption framing: "sourced from production dogfood", "real-world adoption feedback", "consumer usage audit".
+- Nothing, when the alternative is process framing. A change that came from dogfooding is written as the change, never as its origin story: "sourced from production dogfood" is process noise scrubbed to a public-safe phrase, and the `release-notes` skill drops it too.
 - Named public contributors only: GitHub usernames / real-name contributors who filed issues, PRs, or are otherwise publicly part of the conversation. If you have an external user or named downstream app that consented to being credited, name them. Otherwise, stay generic.
-- The technical reasoning (why the decision was made) without tying it to internal process detail.
+- Only what a consumer sees. Reasoning, root cause, and mechanism belong in the PR, not the notes — see the `release-notes` skill, which owns that rule.
 
 **Scope of the rule:** applies to every file written under `internal/release-notes-<version>.md`, since that body text flows directly to the public GitHub release + CHANGELOG. Internal planning files (`internal/roadmap.md`, `internal/specs/*.md`) CAN reference internal identifiers — those stay out of the package's git history (`internal/` is gitignored).
 
@@ -242,10 +247,12 @@ Draft into `internal/release-notes-<version>.md`. The user reads the draft, crea
 ```markdown
 <!-- verified-sha: 4387b6845b45def9c6ad80e638990f81b74bfb19 -->
 
-# <version>
+## Fixed
 
-...
+- ...
 ```
+
+The body starts at the first `## ` section. No version heading — the `release-notes` skill owns the body shape.
 
 The SHA in that line is the exact `git rev-parse HEAD` that step 6 proved green. Step 8's pre-tag gate fails closed if the SHA in the notes file does not match the current HEAD (i.e. someone landed more commits between notes draft and tag).
 
@@ -385,7 +392,7 @@ Wait until terminal. If red:
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
 | 3. Tests           | `vendor/bin/pest \|\| true`                                                                    | 0 failures                                    |
 | 4. PHPStan         | `vendor/bin/phpstan analyse --memory-limit=2G \|\| true`                                       | 0 errors                                      |
-| 5a. README + docs  | manual scan vs `git log <last-tag>..HEAD` (docs-site repos: docs pages, index sync, link audit) | no stale claims; indexes agree; README site links match generator routes; repo-relative + asset links resolve |
+| 5a. README + docs  | staleness: manual scan vs `git log <last-tag>..HEAD`; verbosity: word count + prose-run scan over **every current** README/docs page (docs-site repos: docs pages, index sync, link audit) | no stale claims; every verbosity-audit item clean on every page (budget, paragraph cap, prose-majority, gratuitous rationale, uncollapsed long tail, detail written above its tier); indexes agree; README site links match generator routes; repo-relative + asset links resolve |
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
 | 5c. Docs build     | derived command (mirror docs workflow, else lockfile + `build` script), docs-site repos only   | build succeeds, or documented skip + 5a link audit |
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |
