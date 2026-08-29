@@ -15,7 +15,7 @@ metadata:
 
 ## Structure
 
-The whole body is a list of bullets under `## ` sections. Nothing else.
+The whole body is a list of bullets under `## ` sections. The only other elements allowed anywhere: fenced code blocks under a bullet, the optional adoption block, the changelog link, and the first-line `verified-sha` comment that `pre-release` requires. Nothing else — no intro, no `###`, no paragraphs.
 
 ```
 ## Breaking
@@ -47,7 +47,8 @@ Hard rules. Each one is checkable — do not reason around them.
 - **No `###` heading anywhere.** A change is a bullet, never a titled subsection. A `###` per change is what turns notes into essays.
 - **No prose before the first `## ` section.** No intro paragraph, ever — not for context, not for an upgrade decision, not for a bug class. If a reader needs it to upgrade, it is one bullet under `## Breaking` or `## Changed`.
 - **No paragraph anywhere.** Only bullets, code fences, the optional adoption block, and the changelog link. The adoption block sits after the last section and before the changelog link; nothing else goes between sections.
-- **One bullet per change, one line, 20 words or less.** A second line, or a fenced migration block under the bullet, is allowed only for an operational consequence: a migration command, a version floor, a deprecation date. Never for context or reasoning.
+- **One bullet per change, one line, 20 words or less.** A second line, or a fenced migration block under the bullet, is allowed only for an operational consequence: a migration command, a version floor, a deprecation date. Never for context or reasoning. **On a critical bullet the continuation may be ordinary prose** — a data-loss condition or an exposure statement does not always fit a command — but it stays a continuation of that bullet.
+- **Critical content is exempt from the word limits, and from nothing else.** A breaking change's migration, a security fix's impact and affected versions, a data-loss or irreversibility warning, an accessibility regression or requirement, and a required prerequisite or version floor are written in full — over 20 words if completeness takes it — and are excluded from the average. They stay **inside a bullet or its indented continuation**: the bullets-only shape, the section list, and the no-`###` rule bind them like everything else. Completeness buys words, never a paragraph. This body becomes the `CHANGELOG.md` entry a consumer reads to decide whether to upgrade; a rule that trims it is a rule that hurts them. Everything else obeys the budget.
 - **Budget: 15 words per bullet on average.** That average is the binding rule and never scales. Count bullets only — code fences, the adoption block, the changelog link, and the verified-sha comment do not count. A typical release of up to 10 bullets therefore lands under 150 words; a release with 30 real changes is allowed 30 bullets. Over the average means the changes are over-explained, never that the release is big.
 
 ## Voice
@@ -82,12 +83,12 @@ Always callout breaking changes explicitly, with the migration the consumer has 
 
 ## Security fixes
 
-A security fix is a `## Fixed` bullet that links the advisory and names the affected versions. The advisory holds impact, exploit conditions, and credit — do not restate them here.
+A security fix is a `## Fixed` bullet that names **what an attacker could do, who is exposed, and which versions are affected**, and links the advisory. A reader of `CHANGELOG.md` must be able to judge urgency without leaving the file. The advisory holds the rest — reproduction, exploit conditions, credit, timeline — and that is what is not restated here.
 
 ```
 ## Fixed
 
-- Fixed unescaped output in `Renderer::render()`. Affects 1.0.0–1.4.2. See GHSA-xxxx-xxxx-xxxx.
+- Fixed stored XSS via unescaped output in `Renderer::render()`: any user-supplied string rendered to a page could execute script. Affects 1.0.0–1.4.2, all installs using the renderer. See GHSA-xxxx-xxxx-xxxx.
 ```
 
 ## Adoption / upgrade block (optional)
@@ -136,11 +137,16 @@ Run this against the drafted file. Any `no` is a rewrite, not a judgment call.
 1. Zero `###` headings?
 2. Zero prose lines outside a bullet, a code fence, the adoption block, the changelog link, or the first-line verified-sha comment?
 3. Every `## ` heading one of Breaking / Added / Changed / Fixed / Internal?
-4. Every bullet 20 words or less? A second line, or a fenced migration block under a `## Breaking` bullet, carries only a command, code, a version, or a date?
-5. Bullets averaging 15 words or less?
-6. Does every bullet outside `## Internal` name what a consumer sees, with no clause explaining the cause, the mechanism, or the measurement? (`## Internal` names the dev-only change itself, under the same word budget.)
+4. Every non-critical bullet 20 words or less? A second line or a fenced block — allowed under a bullet in any section — carries only a command, code, a version, or a date, unless the bullet is critical, where prose is allowed?
+5. **Non-critical** bullets averaging 15 words or less? (Critical bullets — breaking migration, security impact, data-loss warning, accessibility regression, required prerequisite — are excluded from the count, never shortened to pass it.)
+6. Does every bullet outside `## Internal` name what a consumer sees, with no clause explaining the cause, the mechanism, or the measurement? (`## Internal` names the dev-only change itself, under the same word budget. A **security** bullet is exempt: attacker capability, exposure, affected versions — and the mechanism where it is what tells a reader whether they are exposed — are required, not narration.)
 
-15 words is this package family's budget. It was set against a measurement, recorded here so a later reader can redo it: on 2026-08-29, for each of `phpstan/phpstan`, `rectorphp/rector`, `livewire/livewire` and `spatie/laravel-data`, the five most recent releases were read from the GitHub releases API, and each body's whitespace-split word count was divided by its count of lines starting `- ` or `* `. Nineteen of the twenty releases landed between 10 and 17; the highest was 30. The measure is crude and those repos do publish longer bodies, so treat it as calibration, not a standard: a draft at 60+ words per bullet is narrating.
+15 words is this package family's budget. Its calibration and its operational rule are measured differently, and conflating them is how a draft passes on paper:
+
+- **The calibration** divided each release body's *whole* word count by its bullet count, across the five most recent releases of `phpstan/phpstan`, `rectorphp/rector`, `livewire/livewire` and `spatie/laravel-data` on 2026-08-29. Nineteen of twenty landed between 10 and 17 words per bullet; the highest was 30. It is crude — headings, code, and links inflate it — and those repos do publish longer bodies, so treat it as a sanity range, not a standard.
+- **The rule to apply** counts bullet words only. Deterministically: take the lines starting `- ` or `* ` and their indented continuations, drop every critical bullet, strip fenced blocks, and `wc -w` what remains — a markdown link counts as its visible text plus its URL, a code span as its words, exactly as `wc -w` sees them. Divide by the number of bullets kept.
+
+The two numbers are not comparable, and the second is the one a draft is judged on. A draft at 60+ words per bullet on either measure is narrating.
 
 ## Verified-sha line
 
