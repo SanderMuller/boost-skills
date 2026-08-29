@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: "Draft GitHub release bodies for Composer packages. Covers structure, voice, breaking-change callouts, and what to omit."
+description: "Draft GitHub release bodies for Composer packages. Covers structure, length budget, voice, breaking-change callouts, and what to omit. Activates when release notes read too long, too verbose, or over-explained."
 metadata:
   boost-tags: "release-automation"
 ---
@@ -15,12 +15,12 @@ metadata:
 
 ## Structure
 
-Top-level sections at `## `; no umbrella heading. Omit any section with no entries.
+The whole body is a list of bullets under `## ` sections. Nothing else.
 
 ```
 ## Breaking
 
-- (only if MAJOR or pre-1.0 minor with breaking change — be explicit)
+- (any breaking change, whatever the version bump — be explicit)
 
 ## Added
 
@@ -36,29 +36,37 @@ Top-level sections at `## `; no umbrella heading. Omit any section with no entri
 
 ## Internal
 
-- (refactors, dev-only changes, dep bumps — keep terse)
+- (refactors, dev-only changes, dep bumps — one line each, three bullets at most)
 
 **Full changelog:** v1.2.3...v1.3.0
 ```
 
-**No leading version heading** (`# 1.2.3`). The GitHub release page already shows the version as its title; repeating it in the body is duplicate.
+Hard rules. Each one is checkable — do not reason around them.
 
-**No marketing-tone, audit-narration, or framework-fold-in intro paragraphs.** Don't lead with "This release ships X, Y, Z..." (summarizes; the section list already covers it), "Polish-tier patch bundling..." (internal classification), "Validates the asymmetric-cadence frame..." (internal pattern-tracking), or audit-narration of how the work was produced.
-
-A short opening paragraph (or a `## Why this matters` / `## Background` section) IS OK when the release closes a non-obvious bug class, changes user-visible behavior in a way the section-list can't fully explain, or names the upgrade-decision context (e.g. "Operators on Laravel projects who wired X experienced silent Y"). The test: does the paragraph give a reader information they need to decide whether/how to upgrade, beyond what the section list already conveys? If yes, keep it terse and informational. If no, drop it.
-
-**Bullets by default, paragraphs only when justified.** A bullet should be one line. If a change needs context that doesn't fit, the bullet can include a second sentence; a full paragraph is justified only when a behavior or migration genuinely needs prose explanation. Long prose embedded in bullets reads as audit-narration, not release notes.
+- **Only these five sections**, in this order, at `## `. Omit any section with no entries. Do not invent a section (`## Performance`, `## Why this matters`, `## Background`, `## Validation`, `## Acknowledgments`). A performance change is an `## Added` or `## Changed` bullet.
+- **No `###` heading anywhere.** A change is a bullet, never a titled subsection. A `###` per change is what turns notes into essays.
+- **No prose before the first `## ` section.** No intro paragraph, ever — not for context, not for an upgrade decision, not for a bug class. If a reader needs it to upgrade, it is one bullet under `## Breaking` or `## Changed`.
+- **No paragraph anywhere.** Only bullets, code fences, the optional adoption block, and the changelog link. The adoption block sits after the last section and before the changelog link; nothing else goes between sections.
+- **One bullet per change, one line, 20 words or less.** A second line, or a fenced migration block under the bullet, is allowed only for an operational consequence: a migration command, a version floor, a deprecation date. Never for context or reasoning.
+- **Budget: 15 words per bullet on average.** That average is the binding rule and never scales. Count bullets only — code fences, the adoption block, the changelog link, and the verified-sha comment do not count. A typical release of up to 10 bullets therefore lands under 150 words; a release with 30 real changes is allowed 30 bullets. Over the average means the changes are over-explained, never that the release is big.
 
 ## Voice
 
 - Past tense ("added X", "fixed Y")
-- One entry per change, one line each. If it needs two lines, the second one carries operational consequence (migration step, version requirement, deprecation timeline), not narrative context.
+- Say the delta the consumer sees. Not the cause, not the mechanism, not the measurement.
 - Link PR numbers: `Added foo (#42)`
 - Credit external contributors: `Added foo (#42) — thanks @contributor`
 
+```
+❌ `SyncCommand` compared paths with a string cast, so a Windows host resolved a
+   different destination than the one the emitter reported. A shared normalizer
+   now runs first, which makes both sites agree. Measured against 6 real repos.
+✅ Fixed `SyncCommand` writing to the wrong destination on Windows (#42).
+```
+
 ## Breaking changes
 
-Always callout breaking changes explicitly with migration code:
+Always callout breaking changes explicitly, with the migration the consumer has to make. Usually that is code, but a removal, a version floor, or a replacement name works the same way:
 
 ```
 ## Breaking
@@ -70,6 +78,16 @@ Always callout breaking changes explicitly with migration code:
   // after
   $foo->newMethod($arg);
   ```
+```
+
+## Security fixes
+
+A security fix is a `## Fixed` bullet that links the advisory and names the affected versions. The advisory holds impact, exploit conditions, and credit — do not restate them here.
+
+```
+## Fixed
+
+- Fixed unescaped output in `Renderer::render()`. Affects 1.0.0–1.4.2. See GHSA-xxxx-xxxx-xxxx.
 ```
 
 ## Adoption / upgrade block (optional)
@@ -85,8 +103,6 @@ If adoption is the same as the prior version (just `composer update`), omit the 
 
 ## Anti-patterns
 
-Conceptual quality issues — see "What to omit" below for the specific structural things to leave out.
-
 - "Various improvements" — useless. Be specific.
 - Marketing tone ("massive new feature!") — let users decide what's massive.
 - Burying breaking changes in "Internal".
@@ -94,22 +110,37 @@ Conceptual quality issues — see "What to omit" below for the specific structur
 
 ## What to omit
 
-**Omit needless words** — aggressively. Release notes are for developers checking what changed; everything else is bloat.
+**Omit needless words** — aggressively. Release notes are for developers checking what changed; everything else is bloat. The PR and the commit carry the story.
 
 **Always omit:**
 
 - **Leading `# <version>` heading** — release title covers it.
-- **Marketing-tone / audit-narration / framework-fold-in opening paragraphs** before the first `## ` section. A short value-add intro explaining a non-obvious bug class or upgrade-decision context is fine — see "No marketing-tone..." in Structure above.
+- **Every opening paragraph.** Marketing tone, audit narration, framework fold-in, bug-class framing, upgrade framing. There is no case where prose before `## Breaking` earns its place.
+- **Mechanism narration** — why the old code was wrong, what it compared against, how the fix works inside, what it was measured on, how many cases it rejected. State the delta; the PR holds the diagnosis.
+- **Root-cause and discovery stories** ("Surfaced from a production import profiling…", "Bug surfaced during a consumer's adoption cycle…"). Bullet the FIX.
+- **Tables** explaining a decision matrix or a benchmark grid. A table in a release body is an essay in disguise. (An exception: a block a tool injects between markers, for example `<!-- benchmark-start -->`. That is tooling output, not drafting.)
 - **`## Requires` / `## Dependencies` saying "unchanged from prior".** If nothing changed, don't write the section.
-- **`## Validation` / quality-gate counts** ("27/27 skills + 1/1 guideline manifest valid", "PHPStan baseline drift: none"). CI green is implied; consumers don't read release notes for QA evidence.
-- **`## Acknowledgments` / pattern-tracking sections** ("Ships absorption-pattern data point #2", "Validates the asymmetric-cadence frame"). Internal observation — belongs in strategy docs or internal notes.
-- **`## Internal` quality-gate detail** ("No PHPStan baseline drift, no schema changes"). Same — implied by passing CI.
-- **Dogfooding narrative** ("Bug surfaced during proving consumer's adoption cycle when..."). Bullet the FIX; don't narrate the discovery.
-- **Process choreography** (named release cadences, "Per the load-bearing-only floor-pin rule we codified..."). Internal framework, not developer-facing.
+- **`## Validation` / quality-gate counts** ("27/27 skills valid", "PHPStan baseline drift: none"). CI green is implied.
+- **`## Acknowledgments` / pattern-tracking sections** ("Ships absorption-pattern data point #2"). Internal observation — belongs in strategy docs.
+- **`## Internal` quality-gate detail** and refactor essays. Internal entries are one line each, three at most, or the section goes.
+- **Process choreography** (named release cadences, "Per the load-bearing-only floor-pin rule we codified…").
 - **Peer-handle credits / internal session IDs.** Real-name or @-handle credits OK; internal peer codes (`b020i4st` etc.) never.
 - **Dependency bumps to other packages** unless they affect users — then callout the implication, not the bump.
 - **Internal test refactors, README typo fixes.**
-- **"Unchanged from prior" segments** in any section. If it's unchanged, don't list it.
+- **"Unchanged from prior" segments** in any section.
+
+## Pre-publish gate
+
+Run this against the drafted file. Any `no` is a rewrite, not a judgment call.
+
+1. Zero `###` headings?
+2. Zero prose lines outside a bullet, a code fence, the adoption block, the changelog link, or the first-line verified-sha comment?
+3. Every `## ` heading one of Breaking / Added / Changed / Fixed / Internal?
+4. Every bullet 20 words or less? A second line, or a fenced migration block under a `## Breaking` bullet, carries only a command, code, a version, or a date?
+5. Bullets averaging 15 words or less?
+6. Does every bullet outside `## Internal` name what a consumer sees, with no clause explaining the cause, the mechanism, or the measurement? (`## Internal` names the dev-only change itself, under the same word budget.)
+
+15 words is this package family's budget. It was set against a measurement, recorded here so a later reader can redo it: on 2026-08-29, for each of `phpstan/phpstan`, `rectorphp/rector`, `livewire/livewire` and `spatie/laravel-data`, the five most recent releases were read from the GitHub releases API, and each body's whitespace-split word count was divided by its count of lines starting `- ` or `* `. Nineteen of the twenty releases landed between 10 and 17; the highest was 30. The measure is crude and those repos do publish longer bodies, so treat it as calibration, not a standard: a draft at 60+ words per bullet is narrating.
 
 ## Verified-sha line
 
@@ -138,17 +169,18 @@ Section order follows the Structure list (Breaking → Added → Changed → Fix
 
 ## Added
 
-- `CONTRIBUTING.md` patterns section codifying the wording-revert-as-regression-test pattern and the meta-rule for when to codify patterns (wait for 2-3 occurrences across distinct contexts).
+- Added a `--dry-run` flag to `boost sync` (#118).
 
 ## Changed
 
-- Diagnostics header renamed to `Diagnostics` (from the legacy conventions-only label). Now covers conventions, stale-removal info, Copilot strip info, and render-fail warnings.
+- Renamed the sync report header to `Diagnostics`, which now also lists stale removals (#121).
 
 ## Fixed
 
-- `SyncCommand` now renders diagnostics before the error short-circuit. Previously, top-level errors hid the safety-gate reassurance alongside them.
+- Fixed diagnostics being hidden when sync exited on a top-level error (#124).
+- Fixed `SyncCommand` writing to the wrong destination on Windows (#126).
 
 **Full Changelog**: https://github.com/SanderMuller/boost-core/compare/0.9.3...0.9.4
 ```
 
-Versus the verbose shape that triggered this guidance — same release, ~3× the length, opens with a 4-line audit paragraph, embeds dogfooding narrative inside `## Fixed`, ships an `## Internal` section consisting of "no drift, no changes, no surface changes" tautologies. Same information density, ~30% as readable.
+That is 4 changes in 44 bullet words. The published prose version of that release ran 392 words: a 5-line opening paragraph, a `###` heading per change, the root cause and discovery story of each one, and an `## Internal` section of "no drift, no schema changes" tautologies. Same four changes, 392 words of body against 44.
