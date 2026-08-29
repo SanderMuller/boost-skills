@@ -5,6 +5,20 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.32.2 - 2026-08-29
+
+<!-- verified-sha: 0e65227c09236b61833a70c9c33a7f52efcc42c4 -->
+`2.32.1` required every task line in a spec's `## Implementation` section to name something that did not exist when the spec was written. Measured against a real corpus, that rejected six specs out of six. The failing tasks were not sloppy — they were the modification half of ordinary feature work: a docblock correction, a column dropped from an existing constant, an edit to an existing runbook, and nearly every test task, since tests exercise symbols that already exist. The rule rejected the shape a real spec has, and a rung that only clears a purely additive spec is the dead end this ladder was built to replace.
+
+### Fixed
+
+- **An unprovable task caps the verdict instead of discarding the spec's evidence.** Each task is classified on its own: one that shows a candidate absent at the spec's baseline proves itself; one whose candidates all pre-date the spec, or that names nothing checkable, is listed in the report and caps the spec at `PROPOSED`. The property that mattered is unchanged — nothing is deleted in a batch on a modification task's word — but the user now reviews a short named list of what could not be checked, instead of a spec that reports `KEEP` for reasons it does not show.
+- **A rung that cannot answer no longer ends the evaluation.** A spec with no proved task, or with no resolvable baseline, is a *Rung A outcome*: Rung A returns nothing and the spec falls through to the merged-PR proof. Only a spec that no rung could prove is `KEEP`. A failed check may never prove anything, and it must not hide a proof another rung can supply. The open-PR veto stays the exception: an enumeration that fails takes the spec to `KEEP` at once, because no other rung can stand in for a veto nobody could evaluate.
+- **A confirmation covers the verdict and evidence it was given for.** Re-verification runs after the user confirms, and a spec can move from `DELETE-ELIGIBLE` to `PROPOSED` there. It is still "eligible", so the previous rule — drop whatever is no longer eligible — let it ride the batch confirmation into deletion under a verdict the user never saw. Such a spec is now unconfirmed and is asked again under its new verdict's route.
+- **Degraded Rung A does not classify tasks.** The buckets all turn on a baseline, which is exactly what an untracked spec lacks. The report says the baseline is missing rather than listing every task as unprovable, which would read as a finding about the spec instead of a limit of the check.
+
+**Full Changelog**: https://github.com/SanderMuller/boost-skills/compare/2.32.1...2.32.2
+
 ## 2.32.1 - 2026-08-28
 
 <!-- verified-sha: 228f398030de8f32555baed055f9ad6fa9b407ad -->
@@ -192,6 +206,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -889,6 +904,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -909,6 +925,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1027,6 +1044,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1053,6 +1071,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1181,6 +1200,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1208,6 +1228,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1343,6 +1364,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel project
 
 
 
+
 ```
 Per `0.10.0`'s entry-point-mismatch banner: Laravel projects currently wired to the bare-CLI hook in `composer.json` scripts should swap to `@php artisan project-boost:sync` to close the cross-agent symmetry gap. `boost doctor` flags the mismatch automatically once `boost-core 0.10` is installed alongside `project-boost-laravel`.
 
@@ -1428,6 +1450,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1436,6 +1459,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1561,6 +1585,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1578,6 +1603,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1680,6 +1706,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1847,6 +1874,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1865,6 +1893,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -2071,6 +2100,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
