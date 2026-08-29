@@ -1,6 +1,6 @@
 ---
 name: readme
-description: "Author and maintain a concise, high-quality README for a Composer package. Covers stub, comprehensive, and docs-site shapes (thin README + a docs/ site, for example VitePress on GitHub Pages), length budgets, curated coverage, voice, staleness audits, and docs index/link sync. Activates when: writing or auditing a README or a docs page, or when the user says the docs are too long, too verbose, over-explained, or asks to shorten or trim them."
+description: "Author and maintain a concise, high-quality README for a Composer package. Covers stub, comprehensive, and docs-site shapes (thin README + a docs/ site, for example VitePress on GitHub Pages), length budgets, curated coverage, voice, the agent-facing surface (llms.txt, llms-full.txt, per-page markdown, robots.txt), staleness audits, and docs index/link sync. Activates when: writing or auditing a README or a docs page, or when the user says the docs are too long, too verbose, over-explained, or asks to shorten or trim them."
 metadata:
   boost-tags: "release-automation"
 ---
@@ -140,6 +140,7 @@ The recommended `docs/` layout — a numeric `NN-` filename prefix so GitHub lis
 - The **canonical inventory** is the markdown pages in `docs/`, minus the index page itself and any files the generator config excludes from the site. Compare by source page after route normalization — a rewrite renames the published URL, it never drops a page.
 - The **docs index** (`docs/README.md` or `docs/index.md`, when present) and an explicit **sidebar config** (when the generator uses one) must each cover the full inventory.
 - A **top nav bar** lists sections/entry points by design — check it only for dead entries, never for full coverage.
+- **`llms.txt`** covers the full inventory too. Generated from the page list it cannot drift, so the check is that it is generated rather than hand-maintained; a hand-written link list is the finding.
 - The **root README Documentation section** links every page, or only section entry points when the page count makes a full list unreadable — be consistent about which.
 
 The full triple-index layout (README section + docs index + sidebar) is the recommended VitePress shape; a generator that auto-generates navigation or has no docs index page is checked only on the surfaces it has.
@@ -151,6 +152,33 @@ The full triple-index layout (README section + docs index + sidebar) is the reco
 - **Asset references** follow the generator's asset rules.
 
 In-page anchors are best-effort. Dead external URLs belong to the staleness audit below.
+
+## The agent-facing surface
+
+A docs site is read by agents as well as people, and they need different files. Three artifacts, all published at the site root:
+
+| File | Built how | Holds |
+|---|---|---|
+| `llms.txt` | link list generated, preamble optional and hand-written | the index: what the package is, the rules an agent must not get wrong, then one line per page |
+| `llms-full.txt` | generated | every page in reading order, so an agent takes the documentation in one fetch instead of crawling nav chrome |
+| `<slug>.md` | generated, one per page | the single page an agent actually wants, without the HTML around it |
+
+**Generate the link list; hand-write only the preamble.** The list of pages is exactly what drifts (add a page, forget the index), so build it from the same page list that drives the sidebar. What a generator cannot write is the paragraph an agent needs first: the constraints that make it use the package wrongly if it misses them.
+
+Write that preamble when the package has semantics an agent will misread. The test is whether a wrong reading produces confident bad advice:
+
+- A result that means "not determined" but reads like "nothing found".
+- A default that is off, opt-in, or environment-gated, where assuming it is on gives wrong instructions.
+- A feature with a blast radius: one that exposes data, deletes, or changes runtime behaviour.
+- A platform limit: unsupported under a runtime, framework-only, one framework version.
+
+A package with none of these is fine with the generated header alone: an H1 and the description as a blockquote.
+
+**A page's index line is not its sidebar line.** A sidebar blurb sells the next page to a reader who is already browsing; an index line helps an agent decide whether this page answers the question it holds. Keep a separate agent-facing description where the two differ, and fall back to the blurb where they do not.
+
+**Ship `robots.txt` with a `Sitemap:` line.** Both crawlers and agents use it to enumerate rather than guess.
+
+**Document the agent surface the package itself ships.** A package that installs agent skills, or exposes an MCP server, has a capability a reader cannot discover from its API. It needs its own page, or at least a section: what gets installed, how it is invoked, what it does. A skill nobody knows about is a skill nobody runs.
 
 ## Voice
 
@@ -190,6 +218,15 @@ Run this with the staleness scan — docs rot by growing, not only by aging. Eve
 
 Deleting text is the deliverable here. A page that only ever grows is a page people stop reading.
 
+### Agent-surface audit
+
+For a docs-site repo, check the published site rather than the sources. These are build outputs, and a config change can silently drop one:
+
+- `llms.txt`, `llms-full.txt` and one `<slug>.md` all return 200.
+- `llms.txt` lists every current page.
+- The preamble still matches the package: a caveat that no longer applies is worse than none, because an agent will act on it.
+- A package shipping agent skills or an MCP server still documents them, and the commands it names still exist.
+
 For the docs-site shape, the audit also covers `docs/`:
 
 - The same staleness scan over every docs page
@@ -198,6 +235,7 @@ For the docs-site shape, the audit also covers `docs/`:
 
 ## See also
 
+- [llmstxt.org](https://llmstxt.org) for the `llms.txt` format itself
 - `humanizer` skill for the prose-level AI tells (inflated significance, hedging, rule-of-three) this skill's budgets don't catch
 - `release-notes` skill for GitHub release body writing
 - `upgrading` skill for UPGRADING.md structure
