@@ -7,24 +7,19 @@
 [![License](https://img.shields.io/packagist/l/sandermuller/boost-skills.svg?style=flat-square)](LICENSE)
 [![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg?style=flat-square)](https://github.com/laravel/boost)
 
-`sandermuller/boost-skills` is one example of a Composer-distributed AI-skill catalog. It ships a curated mix of generic workflow skills (code review, bug fixing, spec-driven implementation, release checklists, Jira workflows, deployment, and more), tag-gated framework-specific extras, and always-on [guidelines](#guidelines) — see the full [Skills](#skills) and [Guidelines](#guidelines) inventories below.
-
-The package carries no runtime code; it's pure Markdown. A sync engine ([`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) or [`laravel/boost`](https://github.com/laravel/boost)) reads these skills and writes them into each AI agent directory you've configured (Claude Code, Cursor, Copilot, Codex, Gemini, and the rest).
+No runtime code — pure Markdown. A sync engine ([`sandermuller/boost-core`](https://github.com/sandermuller/boost-core) or [`laravel/boost`](https://github.com/laravel/boost)) reads the [skills](#skills) and always-on [guidelines](#guidelines) below and writes them into every AI agent directory you have configured: Claude Code, Cursor, Copilot, Codex, Gemini, and the rest.
 
 **Documentation: <https://sandermuller.github.io/boost-core/packages/boost-skills/>**
 
 ## Install
 
-Install the catalog next to the family package for your role:
+Install the catalog beside the family package for your role — the [picker](https://sandermuller.github.io/boost-core/guide/which-package) settles which in two questions:
 
 ```bash
 composer require --dev sandermuller/boost-skills sandermuller/package-boost-php
 ```
 
-Swap `package-boost-php` for the member that matches your project — the
-[picker](https://sandermuller.github.io/boost-core/guide/which-package) decides
-it in two questions. Then allowlist this vendor, because a catalog ships nothing
-until you name it:
+**Then allowlist the vendor — a catalog ships nothing until you name it:**
 
 ```php
 return BoostConfig::configure()
@@ -41,14 +36,9 @@ vendor/bin/boost install   # the picker offers this vendor; select it
 vendor/bin/boost sync
 ```
 
-`vendor/bin/boost tags` shows which tagged content is filtered out, so you can
-see what declaring one more tag would unlock.
+`vendor/bin/boost tags` lists what a further tag would unlock.
 
-Under `laravel/boost` instead of the family engine, follow
-[its own setup](https://github.com/laravel/boost) and make sure this package is
-among the ones it syncs. Tag filtering and Project Conventions slots go inert
-there; the skills carry visible defaults, so a slot still reads as sensible
-wording.
+Under `laravel/boost` instead, follow [its setup](https://github.com/laravel/boost) and include this package in what it syncs. Tag filtering and Project Conventions slots are inert there; skills carry visible defaults, so a slot still reads sensibly.
 
 ## Documentation
 
@@ -62,10 +52,12 @@ wording.
 | Shipping scripts beside a skill | [Skill assets](https://sandermuller.github.io/boost-core/guide/skill-assets) |
 | Re-syncing on `composer install` | [Automating the sync](https://sandermuller.github.io/boost-core/guide/automating-sync) |
 
-The rest of this README is the inventory: what this catalog ships, under which
-tags.
-
 ## Skills
+
+The inventory below is the catalog's contract — CI checks it against the shipped skills and their tags, so it stays exact. The same list, rendered, is on the [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page.
+
+<details>
+<summary>33 skills — click to expand the inventory</summary>
 
 | Skill                  | What it does                                                                                         | Tags            |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
@@ -103,13 +95,13 @@ tags.
 | `ux-review`            | Weigh UX/UI options for a new feature, recommend an approach, and document the decision.             | —               |
 | `write-spec`           | Write implementation-ready specification files with progress-trackable phases.                       | —               |
 
+</details>
+
 ## Tags
 
-Most skills and guidelines are universal — they sync to every project. Some carry **capability tags** naming what the project needs (or has opted in to) for the content to be useful. A project declares its capabilities in `boost.php` via `->withTags(...)`, and only matching content syncs.
+Most content is universal. The rest carries **capability tags** — a project declares what it has in `boost.php` via `->withTags(...)`, and only matching content syncs. A skill with two tags needs both. **Owner** is the family package that ships the content using the tag.
 
-The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`, `metadata.boost-tags` in skill frontmatter, the `.boost-tags.yaml` sidecar manifest for guidelines) is family-canonical — defined by `boost-core` and applies to any Composer-distributed catalog. The tag **vocabulary** below is one catalog's choice — Sander's mix of capabilities surfaced by skills and guidelines `boost-skills` ships. Other catalogs may organize differently. **Owner** names which boost-family package ships the content using each tag.
-
-`boost-core` ships a broader `Tag` enum (`SanderMuller\BoostCore\Enums\Tag`) with cases not bound to any skill in this catalog — `Tag::Filament`, `Tag::Livewire`, `Tag::Volt`, `Tag::Inertia`, `Tag::Flux`, `Tag::Pest`, `Tag::Tailwind`, and others. These are forward-compatible slots in the family vocabulary. Declaring them in your `withTags(...)` is harmless today (no shipped skill targets them yet) and survives `boost install` picker re-runs per `boost-core`'s declared-but-undiscovered preservation rule. The table below covers only the tags `boost-skills` itself currently ships content under; see `Tag::*` in `boost-core` for the full enum vocabulary.
+`github` and `github-issues` are independent: `github` is any GitHub-hosted repo (PR and release skills), `github-issues` only projects tracking issues there. A GitHub repo using Jira declares `github` alone.
 
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
@@ -127,15 +119,14 @@ The tag **mechanism** (subset-AND match, `withTags()` declaration in `boost.php`
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
 | `voice`              | opt-in — route every writing surface to one voice rule (ASD-STE100 Simplified Technical English) | `boost-skills`      |
 
-**`github` and `github-issues` are independent.** `github` covers any GitHub-hosted repo (used by PR and release skills); `github-issues` is the narrower tag for projects that track issues in GitHub Issues specifically. A repo hosted on GitHub but tracking issues in Jira declares `github` but not `github-issues`. Both are independently declarable in `->withTags(...)`.
-
-A skill or guideline can carry more than one tag, and then applies only where the project declares *all* of them — `jira-rework` is `jira` + `github`. Skill tags live inline in the skill's `SKILL.md` frontmatter (`metadata.boost-tags`); guideline tags live in a sidecar `.boost-tags.yaml` manifest (guidelines stay frontmatter-free for `laravel/boost` compatibility). Filtering needs `boost-core` 0.5+ for skills and 0.6+ for the guideline manifest; on older versions or under `laravel/boost`, the tags are inert and everything in this package syncs.
+`boost-core` also ships forward-compatible enum cases no skill here targets yet (`Tag::Filament`, `Tag::Livewire`, `Tag::Pest`, and more). Declaring one is harmless and survives picker re-runs; see `Tag::*` in `boost-core`.
 
 ## Guidelines
 
-Alongside skills, the package ships **guidelines** under `resources/boost/guidelines/` — short Markdown files of project-wide conventions that the sync engine folds into `CLAUDE.md` / `AGENTS.md`. Unlike skills, guidelines are always active — no on-demand activation.
+Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGENTS.md`. Unlike skills they are always active — no on-demand activation. They are tagged like skills, but from a sidecar `.boost-tags.yaml` manifest, since a guideline file stays frontmatter-free for `laravel/boost` compatibility.
 
-Guidelines can be tagged, like skills, so one ships only to projects with the matching capability. But a guideline file stays frontmatter-free (for `laravel/boost` compatibility — it has no guideline frontmatter parser), so the tags live in a sidecar `resources/boost/guidelines/.boost-tags.yaml` manifest instead. `boost-core` 0.6.0+ reads it; on older `boost-core` and under `laravel/boost` the manifest is inert and every guideline ships.
+<details>
+<summary>9 guidelines — click to expand</summary>
 
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
@@ -149,9 +140,13 @@ Guidelines can be tagged, like skills, so one ships only to projects with the ma
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 | `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |
 
+</details>
+
 ## Editing skills and guidelines
 
-Each skill is a Markdown file at `resources/boost/skills/<name>/SKILL.md` with YAML frontmatter — `name` and `description`, plus optional `metadata` (a skill's `boost-tags` live here) and `argument-hint`. Guidelines are plain Markdown at `resources/boost/guidelines/<name>.md` with **no** frontmatter — they must start directly at a heading, so they render correctly under both `boost-core` and `laravel/boost`. Edit both here in this repository, not in a consuming project's synced copy, which `boost-core` overwrites on the next sync. The `ai-guidelines` skill documents the frontmatter contract and authoring conventions.
+Skills are `resources/boost/skills/<name>/SKILL.md` with `name` + `description` frontmatter. Guidelines are `resources/boost/guidelines/<name>.md` with **no** frontmatter — they must open at a heading to render under both engines.
+
+**Edit them here, never in a consuming project's synced copy** — `boost-core` overwrites that on the next sync. The `ai-guidelines` skill carries the frontmatter contract.
 
 ## Changelog
 
