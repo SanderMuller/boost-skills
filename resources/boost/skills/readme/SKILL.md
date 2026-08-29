@@ -123,6 +123,20 @@ Everything else gets the *what* and stops. "`--format=json` prints machine-reada
 
 ## Docs-site conventions
 
+**Three pages open every site, in this order.** A reader arrives knowing nothing and leaves able to use the package:
+
+| Page | Answers |
+|---|---|
+| **Why \<package\>** | What problem it solves, what it refuses to do, and when a different tool is the right one. |
+| **Installation** | Install command, requirements, and any publish or config step. Nothing else. |
+| **Getting started** | The single most common use case, end to end, in code the reader can paste and run. |
+
+**Getting started is not a tour.** One scenario, the one most people arrive for, carried from nothing to a working result. No option tables, no alternatives, no "you could also". Every branch belongs on a later page, and a link is how the reader gets there. If the page cannot be followed start to finish without a decision, it is a topic page wearing the wrong title.
+
+A topic page that happens to come third is not this page. "Checkpoints", "Payload capture" and "Basic usage" each teach a feature; a reader who has just installed the package still does not know what to type first.
+
+
+
 **No duplication.** Deep content lives in `docs/`; the README links to it, never restates it. If a section grows past a teaser, move it to a docs page and link.
 
 **A docs site is not a licence to write more.** Moving content out of the README does not exempt it from the budgets above — the page limit, the ~100-word paragraph cap, the coverage tiers, and the why-rule all apply per docs page, and a site makes them matter more: a reader lands on one page from a search result and needs their answer on it. One page, one job. A page past ~800 words is usually two pages, or one page plus a collapsed reference table.
@@ -209,6 +223,7 @@ A package with none of these is fine with the generated header alone: an H1 and 
 
 Run this with the staleness scan — docs rot by growing, not only by aging. Every release adds a paragraph, and nothing ever removes one.
 
+- **A missing opening page** — no Why, no Installation, or no Getting started, or a topic page sitting in the Getting-started slot.
 - **Over budget** — a README or docs page past its word budget. Cut or split; do not leave it because "it is all true".
 - **Prose-majority sections** — paragraph words exceeding the section's code, table and list words. Convert or cut. Exempt: a page with no task in it (concept, security, accessibility, troubleshooting), where prose is the right form.
 - **Paragraphs past ~100 words** — count words between blank lines; a line-based check misses a soft-wrapped wall entirely.
