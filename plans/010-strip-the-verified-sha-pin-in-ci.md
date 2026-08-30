@@ -156,15 +156,36 @@ skill every consumer runs. Plan it separately, with its own STOP conditions.
 
 ## Steps
 
-- [ ] Add the strip step and repoint `release-notes`, per section 1.
-- [ ] Verify the regex against a real body before trusting it (see Test plan).
-- [ ] Scrub `CHANGELOG.md` per section 2, in the same commit or a follow-up —
+- [x] Add the strip step and repoint `release-notes`, per section 1.
+- [x] Verify the regex against a real body before trusting it (see Test plan).
+- [x] Scrub `CHANGELOG.md` per section 2, in the same commit or a follow-up —
       never before step 1 lands.
-- [ ] Leave the release bodies alone; record that as a decision here rather than
+- [x] Leave the release bodies alone; record that as a decision here rather than
       a task nobody did.
-- [ ] Update this plan's row in `plans/README.md`.
-- [ ] Tests — none; this is CI config. CHANGELOG is CI-managed in this repo, so
+- [x] Update this plan's row in `plans/README.md`.
+- [x] Tests — none; this is CI config. CHANGELOG is CI-managed in this repo, so
       do not hand-write an entry for it.
+
+> **Executed 2026-08-26** against commit `e2a671d`, in the working tree. Workflow
+> first, then the scrub — the order the sibling repo learned the hard way, and
+> both land together so the scrub cannot ship without the fix that keeps it.
+>
+> - The step is the sibling's verbatim apart from the heredoc marker. A `diff`
+>   against `boost-pipeline`'s workflow shows those two lines and nothing else.
+> - Regex verified against the `2.31.0` body before it was trusted: 15 lines
+>   before, 14 after, so exactly one line removed (STOP 1).
+> - The scrub removed 51 lines and added none. 2192 → 2141 lines, every deleted
+>   line matching the anchored pattern, and the prose mention survived — now at
+>   `CHANGELOG.md:1455`.
+> - STOP 3 needed no assumption: `boost-pipeline` carries this exact step, has 0
+>   pins in its changelog, and released `v0.10.1` after adopting it, so
+>   `changelog-updater-action` demonstrably accepts a multi-line step output.
+> - **Decision on the 53 release bodies: left alone**, per section 3. They are
+>   published artifacts, the comment is already invisible in them, and editing
+>   53 of them buys no reader anything.
+> - The `pre-release` skill was not touched, so the pre-tag gate still greps the
+>   pin from the notes file (STOP 2). The out-of-scope idea — stripping the pin
+>   at upload time so bodies stay clean too — remains unplanned.
 
 ## Test plan
 

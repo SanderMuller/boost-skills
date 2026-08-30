@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.33.0 - 2026-08-29
 
-<!-- verified-sha: 59fa59fcb036735fe3f71d6721cb8cce89aca925 -->
 ### Added
 
 - `readme`: word budgets per surface, counted as `wc -w` on the whole file.
@@ -30,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.32.2 - 2026-08-29
 
-<!-- verified-sha: 0e65227c09236b61833a70c9c33a7f52efcc42c4 -->
 `2.32.1` required every task line in a spec's `## Implementation` section to name something that did not exist when the spec was written. Measured against a real corpus, that rejected six specs out of six. The failing tasks were not sloppy — they were the modification half of ordinary feature work: a docblock correction, a column dropped from an existing constant, an edit to an existing runbook, and nearly every test task, since tests exercise symbols that already exist. The rule rejected the shape a real spec has, and a rung that only clears a purely additive spec is the dead end this ladder was built to replace.
 
 ### Fixed
@@ -44,7 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.32.1 - 2026-08-28
 
-<!-- verified-sha: 228f398030de8f32555baed055f9ad6fa9b407ad -->
 `2.32.0` gave `clean-specs` a proof by implementation: every symbol a spec says it adds must be present on the base branch and absent when the spec was written. It never said **where that symbol set comes from**, so each run invented a pattern. Adoption feedback found one that reported KEEP on two specs that had fully shipped — and the same class of pattern fails the other way, matching only names that already existed and proving a spec that never landed. This release sources the set, and fixes three ways the checks around it could read an error as evidence.
 
 ### Fixed
@@ -61,7 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.32.0 - 2026-08-28
 
-<!-- verified-sha: 583c5ed06c9467d2d820ea1a166b68e793427da9 -->
 `clean-specs` could prove a spec had shipped in exactly one way — a merged PR carrying the spec's issue key — and it looked in exactly one directory. A project that commits straight to its base branch, or names specs without an issue key, got "keep everything" on every run. This release gives the skill a second proof and a `spec.directories` slot, and splits deletion by whether git can undo it.
 
 ### Added
@@ -84,7 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.31.0 - 2026-08-25
 
-<!-- verified-sha: 89dba5dcbf6db5440a4039b9ad0c4939aee7ae60 -->
 ### Changed
 
 - `evaluate` Phase 1 now asks `pipeline:verify --server-verified` instead of the bare call. The bare call exits 0 only when the server verified every step in the walk, which a pipeline that sequences agent work can never satisfy — an acknowledged step is a self-report and is never counted as verified — so the skip never fired for those projects at all.
@@ -99,7 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.30.0 - 2026-08-24
 
-<!-- verified-sha: b14698b45a5ad14c771d71a9e0f91d551fc04cd3 -->
 ### Changed
 
 - `evaluate` Phase 1 now asks `sandermuller/boost-pipeline` whether a recorded run already verified the code on disk, instead of reconstructing from memory which check ran when. A project running the pipeline skips the mechanical checks that run covered, but only when the server verified every step: a walk that sequences agent steps does not satisfy that, so the skip does not fire there yet.
@@ -113,7 +107,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.29.0 - 2026-08-19
 
-<!-- verified-sha: 3633150869e897ea557903e07440486003bd3bab -->
 For docs-site packages, the README now links to the published documentation site with absolute URLs instead of to the repo's markdown sources. This flips a convention `2.28.0` introduced. Packages without a `docs/` site see no change.
 
 ### Changed
@@ -127,7 +120,6 @@ For docs-site packages, the README now links to the published documentation site
 
 ## 2.28.0 - 2026-08-18
 
-<!-- verified-sha: 16304b656a38f1e8e5a888292ea2673181c7133a -->
 The `readme` and `pre-release` skills now understand packages whose documentation lives in a `docs/` static site (for example VitePress on GitHub Pages) instead of the README. Additive — packages without a docs site see no change.
 
 ### Added
@@ -144,7 +136,6 @@ The `readme` and `pre-release` skills now understand packages whose documentatio
 
 ## 2.27.0 - 2026-08-15
 
-<!-- verified-sha: f2994a085d448af311fd44b2f41b83044771361c -->
 A dedicated skill for the browser pass that `frontend-quality` can only afford to make one advisory step. Tag-gated on `frontend`; projects that do not declare it see no change.
 
 ### Added
@@ -173,7 +164,6 @@ A dedicated skill for the browser pass that `frontend-quality` can only afford t
 
 ## 2.26.0 - 2026-08-14
 
-<!-- verified-sha: bc41652dd2af9c13e766f3f234d7e44dde811431 -->
 Bot review threads now close on the thread itself. Additive — no configuration change needed.
 
 ### Changed
@@ -189,7 +179,6 @@ Bot review threads now close on the thread itself. Additive — no configuration
 
 ## 2.25.0 - 2026-08-14
 
-<!-- verified-sha: 58ea1f87752f87a1a11509fba66578999fba28a1 -->
 A new opt-in guideline that settles which voice an agent writes in, per surface. Additive — a project that does not declare the `voice` tag sees no change.
 
 ### Added
@@ -207,7 +196,6 @@ A new opt-in guideline that settles which voice an agent writes in, per surface.
 
 ## 2.24.0 - 2026-08-05
 
-<!-- verified-sha: 5dfddd7d389faa2896842069c2c76fd197eacaa9 -->
 A conventions slot for projects that mandate a label on every PR. Optional and additive — leave it out and nothing changes.
 
 ### Added
@@ -263,7 +251,6 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
 
 ## 2.23.1 - 2026-07-31
 
-<!-- verified-sha: 650ae5a2e0bbbe7faed5042e2518b7ae759d087d -->
 Fixes four ways the `dangling-symbols.sh` companion introduced in 2.23.0 could report a clean sweep on a merge that had a real dangling reference. **If you are on 2.23.0, upgrade** — a check that silently passes is worse than no check, because `resolve-conflicts` tells you to trust its result.
 
 ### Fixed
@@ -284,7 +271,6 @@ Fixes four ways the `dangling-symbols.sh` companion introduced in 2.23.0 could r
 
 ## 2.23.0 - 2026-07-26
 
-<!-- verified-sha: a838c232e569713b5b806b6c907d2c01324fea38 -->
 `resolve-conflicts` now owns the whole merge rather than just the conflicted parts of it, and verifies the cases git reports as clean. Every git behaviour below was checked against real repositories before being written down; two claims the skill previously made turned out to be wrong.
 
 ### Added
@@ -309,7 +295,6 @@ Fixes four ways the `dangling-symbols.sh` companion introduced in 2.23.0 could r
 
 ## 2.22.0 - 2026-07-26
 
-<!-- verified-sha: a52cbddfe51142c389cdd33ba4079f2bf59caaa4 -->
 Two review-quality disciplines: trace behavior claims to real code before writing them, and check what was built against what was actually required.
 
 ### Added
@@ -325,7 +310,6 @@ Two review-quality disciplines: trace behavior claims to real code before writin
 
 ## 2.21.0 - 2026-07-16
 
-<!-- verified-sha: 9257915c000c140d8d38258d83ffc397711ce368 -->
 ### Added
 
 - **`clean-specs` skill** (command-only, `/clean-specs`) — a post-merge net that removes spec files whose work is fully shipped: every task box checked **and** a title/branch-matched, un-reverted merge commit that is an ancestor of the base branch. Conservative by design — it leans toward keeping a spec on any ambiguity, reports and asks for confirmation before deleting, re-checks eligibility against fresh state, and ships the removal as a reviewable PR.
@@ -340,7 +324,6 @@ Two review-quality disciplines: trace behavior claims to real code before writin
 
 ## 2.20.0 - 2026-07-16
 
-<!-- verified-sha: 2fbe6c08eeb1b25b034742ef2c81b0d0a76fbe34 -->
 ### Added
 
 - **`clarify` skill** — the shared questioning core: code-first exploration,
@@ -382,7 +365,6 @@ Two review-quality disciplines: trace behavior claims to real code before writin
 
 ## 2.19.0 - 2026-07-10
 
-<!-- verified-sha: c7eccb58ea36bf8d78d8384e7cb239ddf5d0e931 -->
 Activates the skill dependencies declared in 2.18.0. That release shipped the
 `metadata.boost-requires` declarations but they were inert on the engine
 available at the time; `boost-core 1.4.0` resolves them, so this release raises
@@ -405,7 +387,6 @@ No skill content changed — the declarations themselves shipped in 2.18.0.
 
 ## 2.18.0 - 2026-07-10
 
-<!-- verified-sha: 9a01ee921389304f9eef3f3ffa73b6f13fe7bfd0 -->
 Six skills now declare their hard dependencies in frontmatter, dogfooding the
 skill-dependency system `boost-core` is building. Once that engine lands,
 selecting a skill will co-ship every skill it hands off to — a dependency the
@@ -446,7 +427,6 @@ this repository's own review flow before shipping.
 
 ## 2.17.0 - 2026-07-03
 
-<!-- verified-sha: d95543268942dfc269c6d04d09ab8dcedf2530a4 -->
 ### Added
 
 - **A shipped eye-verify harness** (`frontend-quality/scripts/`, emitted as `boost-core` 1.3
@@ -519,7 +499,6 @@ codex-review flow before shipping.
 
 ## 2.16.1 - 2026-06-30
 
-<!-- verified-sha: b17d63530e47ca45aabd7025ec084c4283acdeea -->
 ### Fixed
 
 - **`interview` and `write-spec` no longer instruct a redundant manual "Other" option in assumption audits.** Both skills told the agent to add an explicit `"Other / let me clarify"` choice to each `AskUserQuestion` audit prompt, but `AskUserQuestion` already appends its own free-text "Other" — so prompts rendered two semantically identical escape hatches. The instruction now drops the manual option and notes the tool supplies one. This also removes the `"let me clarify"` first-person pronoun, aligning the wording with the `ask-user-question` guideline shipped in 2.16.0.
@@ -528,7 +507,6 @@ codex-review flow before shipping.
 
 ## 2.16.0 - 2026-06-28
 
-<!-- verified-sha: b00295ec8a047b763ec3c3ab532f0df00eb38505 -->
 A frontend-quality release: first-class frontend testing and browser eye-verification join the catalog, a new Laravel migration-squash skill and an always-on AskUserQuestion guideline ship, and `codex-review` is hardened against the plugin hangs that have stalled reviews. Everything here is **additive** — no skill or guideline was removed or renamed, no conventions slot or `schema-version` changed, so a consumer upgrading from 2.15.0 keeps every existing behavior and simply gains the new content (tag-gated where noted).
 
 ### Added
@@ -551,7 +529,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 ## 2.15.0 - 2026-06-26
 
-<!-- verified-sha: cb6caafe42313ce90798ad2e4c2e8eb0ed7856f3 -->
 ### Changed
 
 - **`pr-review-feedback` now activates on how the team actually asks.** The skill's trigger description previously only matched the formal "apply review feedback" wording. It now recognises terse, real-world phrasings — "fix the comments", "fix PR comments", "fix review comments", "fix comments issue 1234" — plus the Dutch "verwerk de comments" / "comments fixen". The description was also trimmed back to a single trigger list (it had grown to two overlapping lists).
@@ -564,7 +541,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 ## 2.14.0 - 2026-06-19
 
-<!-- verified-sha: 97a4e14a490014905f9ab62e48fbb2e42690c332 -->
 ### Changed
 
 - **Slot-aware skills now use paired visible-default conventions tokens.** The 13 skills that inline project conventions (`pull-requests`, `bug-fixing`, `test-writing`, `backend-quality`, the Jira skills, and the rest) wrap each slot as `<!--boost:conv …-->default value<!--boost:conv:end-->`. `boost-core` still resolves the whole span to the configured value at sync time; an engine that does not resolve `boost:conv` — notably `laravel/boost` — now shows the default value as readable text rather than a gap where the value was previously hidden inside a comment attribute. **Requires `boost-core ^1.2.1`** — the paired form needs the 1.2.1 engine, and the floor skips the empty `1.2.0` tag.
@@ -574,7 +550,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 ## 2.13.0 - 2026-06-19
 
-<!-- verified-sha: 25d74c4b7b6b8c3aa96070ef7a4000ec5bcff886 -->
 ### Changed
 
 - **`humanizer` now catches the AI tells that survive a vocabulary swap.** The skill's Wikipedia-based foundation handled the encyclopedic register; this release grafts the rhetorical and structural patterns from the MIT-licensed [stop-slop](https://github.com/hardikpandya/stop-slop) by Hardik Pandya, which target the punchier "AI blog post" voice. Nine new patterns (#30–#38) cover false agency (abstractions given human verbs to hide who acted), narrator-from-a-distance, throat-clearing openers, dramatic fragmentation, lazy extremes, performative emphasis, business jargon, Wh-openers, and engineered "quotables"; the negative-listing striptease folds into the existing parallelism pattern. Two tools come with them: a Quick Checks pre-delivery pass and an optional five-axis scoring rubric. The new rules are scoped so they don't degrade neutral reference docs — README, API docs, and release notes keep their third-person, impersonal voice and evidentiary phrasing ("the benchmark shows" is not false agency). Untagged, so it applies to any project's prose. Additive under conventions `schema-version 1` — no breaking change.
@@ -583,7 +558,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 ## 2.12.0 - 2026-06-17
 
-<!-- verified-sha: a0d8b61fca92c7d386cdbcc91316062256b02387 -->
 ### Changed
 
 - **`pr-review-feedback` now reliably resolves threads, not just applies the code.** A "close the loop" finish-line plus a new Phase 7 hard gate re-query the PR and assert zero unresolved bot/self threads remain (colleague threads stay gated). Resolving each bot/self thread is now mandatory, thread IDs are re-fetched if they scroll off, and the skill's triggers gained Copilot / CodeRabbit / "resolve threads" so natural-language asks discover it. Fixes feedback being applied while the review threads were left open. Additive under conventions `schema-version 1` — no breaking change.
@@ -592,7 +566,6 @@ The frontend-testing and eye-verification work and the skill refinements were so
 
 ## 2.11.0 - 2026-06-17
 
-<!-- verified-sha: 265a1696fbe22e2b3a0323aa09b8410c4634b240 -->
 Five workflow skills gained a named anchor concept (a "Leitwort") that recurs through the skill, with one key step reframed as a gate the agent can't rationalise past. The writing skills picked up a shared prose trio. All additive under conventions `schema-version 1` — no new convention slot, no breaking change.
 
 ### Changed
@@ -608,7 +581,6 @@ Five workflow skills gained a named anchor concept (a "Leitwort") that recurs th
 
 ## 2.10.0 - 2026-06-16
 
-<!-- verified-sha: 14ad8fccd9b04274e4450186e14835246fe12364 -->
 ### 2.10.0
 
 The `pr-review-feedback` skill now treats a test as part of fixing a bug, not an afterthought. When review feedback flags a runtime fault or an edge case, the skill writes a failing test that reproduces it *before* applying the fix, then verifies at quality-check time that every fix is covered. Additive under conventions `schema-version 1` — no new convention slot, and pure style/refactor feedback still needs no test.
@@ -625,7 +597,6 @@ The `pr-review-feedback` skill now treats a test as part of fixing a bug, not an
 
 ## 2.9.0 - 2026-06-14
 
-<!-- verified-sha: c54b86703b300d50caa6df796ac30b00a43add4b -->
 An issue-resolution preflight for the `pull-requests` skill, so a PR is never opened without a tracker issue behind it unless the change is a deliberate chore. Surfaced while tightening a downstream application's issue workflow, where PRs were landing with no linked issue because nothing in the flow asked for one. Additive under conventions `schema-version 1` — a project whose branch patterns carry no `{issue_key}` placeholder sees no new step, and no new convention slot is introduced.
 
 #### Added
@@ -647,7 +618,6 @@ The change was dogfooded through a downstream application's PR flow, then review
 
 ## 2.8.0 - 2026-06-14
 
-<!-- verified-sha: 2e14e6e1ba4a0576c0a674a6baff63f1065468ca -->
 Two refinements to the `php`/`github`-tagged skills, both surfaced while migrating a downstream application onto the `project-boost` family. The `backend-quality` test-runner substitution is now complete end-to-end, and a new opt-in `quality.rector` convention slot gives Rector a home in the completion and PR-preflight flows. Additive under conventions `schema-version 1` — a project that declares nothing sees no behavior change.
 
 ### Fixed
@@ -664,7 +634,6 @@ The changes were dogfooded through this repository's own evaluate → codex-revi
 
 ## 2.7.0 - 2026-06-14
 
-<!-- verified-sha: a606626f0904810a32b97baecc3ad2ec7b1ecb08 -->
 A code-brevity lens folded into the `evaluate` self-review loop and the `code-review` skill, inspired by the "lazy senior developer" pattern — stop at the first viable solution, and prefer the standard library, a native or framework feature, or an already-installed dependency over hand-rolled code. The family already pushed hard on correctness, style, and convention; this adds the missing pull toward writing less. It rides the existing review-and-fix loop rather than a standalone always-on guideline, so a project whose code is already lean sees no change.
 
 ### Added
@@ -678,7 +647,6 @@ The lens was dogfooded through this repository's own evaluate → review → rel
 
 ## 2.6.0 - 2026-06-14
 
-<!-- verified-sha: 3bf77bb93aab6f4d20d3fae8895e7673b09f1e22 -->
 Three handoff-hardening guards for the `write-spec` → `implement-spec` pair, adapted from the `/improve` skill's plan/execute model. They tighten what happens when a spec is implemented later than it was written, when a load-bearing assumption turns out to be false mid-implementation, and when a test passes without actually exercising the change. All additive under conventions `schema-version 1` — no new slots, and a spec written before this release implements exactly as before.
 
 ### Added
@@ -693,7 +661,6 @@ The changes were dogfooded through this repository's own write-spec → implemen
 
 ## 2.5.0 - 2026-06-09
 
-<!-- verified-sha: 1decdb174eac0df5c4ab6e6dc85a107abe00af34 -->
 A trio of skill refinements around the review-and-merge flow: self-review feedback now auto-applies, the feedback flow syncs the branch with its base before touching code, and conflict detection moved earlier so it can run without side effects. All additive under conventions `schema-version 1` — no new slots, and a project that never reviews its own PRs sees the same behavior as before.
 
 ### Added
@@ -708,7 +675,6 @@ The refinements were sourced from real-world adoption feedback and dogfooded thr
 
 ## 2.4.0 - 2026-06-08
 
-<!-- verified-sha: 28d2c1e6d3861ad1fdd9d3ea23dda3b51c490436 -->
 Two new optional conventions slots and a batch of skill refinements drawn from real-world adoption. Everything here is **additive under conventions `schema-version 1`** — a consumer that declares neither new slot, and existing slot-aware skills, behave exactly as before.
 
 ### Added
@@ -732,7 +698,6 @@ The skill refinements were sourced from upstream and production adoption feedbac
 
 ## 2.3.0 - 2026-06-05
 
-<!-- verified-sha: 090b63eb8298be5226494488d6d99628d4e7d942 -->
 ### Added
 
 - **`final-verification-review` skill** — a thin pre-PR closeout orchestrator for the moment work is done and a PR is next. It runs the full `evaluate` loop (including the Codex review per its dedup rules), then dry-runs the `pull-requests` preflight **check-only** — branch/base resolution with the rename/stop semantics mirrored from `pull-requests`, work state, the project's `pr.gates`, and title-format/template preconditions — and ends in a single **READY / NOT READY** verdict with the exact missing items. It never creates the PR; that stays `pull-requests`' job. Orchestrates without duplicating: code verification belongs to `evaluate`, gate definitions to `pull-requests`. Tagged `github`; reads the existing `branches.patterns`, `github.default_base_branch`, and `pr.gates` slots.
@@ -749,7 +714,6 @@ The closeout-loop patterns (re-review-until-clean, bug-class sweep, engine fidel
 
 ## 2.2.0 - 2026-06-04
 
-<!-- verified-sha: 90733eb11d838d8e3b0c8797d6590a06acc706b2 -->
 Two optional conventions slots and a generalized `evaluate` skill. Everything here is **additive under conventions `schema-version 1`** — a consumer that declares neither slot, and existing slot-aware skills, behave exactly as before.
 
 ### Added
@@ -768,7 +732,6 @@ Validated against real-world adoption (a production app with DB-driven translati
 
 ## 2.1.0 - 2026-06-04
 
-<!-- verified-sha: d402d36bbaa23b660420c478441a147d969ee047 -->
 Adds support for `boost-core 0.23` and the `1.x` line, raises the minimum engine to `^0.20`, and ships a new signed-commits guideline. See [UPGRADING.md](https://github.com/SanderMuller/boost-skills/blob/main/UPGRADING.md) for the one migration step.
 
 ### Breaking
@@ -788,7 +751,6 @@ Adds support for `boost-core 0.23` and the `1.x` line, raises the minimum engine
 
 ## 2.0.6 - 2026-06-03
 
-<!-- verified-sha: f7c102e232a44d998f30aaf228fb1615497c2482 -->
 Compatibility patch. `boost-skills` now accepts `boost-core 0.22` alongside `0.16`–`0.21`, so consumers can adopt the upcoming engine release without `boost-skills` capping them. No skill behavior changed.
 
 ### Changed
@@ -799,7 +761,6 @@ Compatibility patch. `boost-skills` now accepts `boost-core 0.22` alongside `0.1
 
 ## 2.0.5 - 2026-06-03
 
-<!-- verified-sha: c461dfaac3f6a000898b0dbb8c6aea1450b0144b -->
 Compatibility patch. `boost-skills` now accepts `boost-core 0.21` alongside `0.16`–`0.20`, so consumers can adopt the upcoming engine release without `boost-skills` capping them. No skill behavior changed.
 
 ### Changed
@@ -810,7 +771,6 @@ Compatibility patch. `boost-skills` now accepts `boost-core 0.21` alongside `0.1
 
 ## 2.0.4 - 2026-06-03
 
-<!-- verified-sha: a5edfb580f8ace3fd726a1b335200be3e6fb28ea -->
 Maintenance patch. `boost-skills` adopts `boost-core`'s `.config/boost.php` config location for its own dev tooling and widens the engine constraint to accept `boost-core 0.20`. No skill behavior changed.
 
 ### Changed
@@ -823,7 +783,6 @@ Maintenance patch. `boost-skills` adopts `boost-core`'s `.config/boost.php` conf
 
 ## 2.0.3 - 2026-06-02
 
-<!-- verified-sha: 58559d8c438a3076d6d4de66051f509dc38824a2 -->
 Compatibility patch. `boost-skills` now accepts `boost-core 0.19` alongside `0.16`, `0.17`, and `0.18`, so consumers can adopt the new engine release without `boost-skills` capping them. No skill behavior changed.
 
 ### Changed
@@ -834,7 +793,6 @@ Compatibility patch. `boost-skills` now accepts `boost-core 0.19` alongside `0.1
 
 ## 2.0.2 - 2026-06-02
 
-<!-- verified-sha: 32f4fa76f22f2d022c7d5eab76f28890c6d7962f -->
 Compatibility patch. `boost-skills` now accepts `boost-core 0.18` alongside `0.16` and `0.17`, so consumers can adopt the new engine release without `boost-skills` capping them. No skill behavior changed.
 
 ### Changed
@@ -845,7 +803,6 @@ Compatibility patch. `boost-skills` now accepts `boost-core 0.18` alongside `0.1
 
 ## 2.0.1 - 2026-06-01
 
-<!-- verified-sha: 7b624d9692f5f816af90baba0e312ad2414b98ff -->
 Compatibility patch. `boost-skills` now accepts `boost-core 0.17` alongside `0.16`, so consumers can adopt the new engine release without a `boost-skills` upgrade getting in the way. No skill behavior changed.
 
 ### Changed
@@ -860,7 +817,6 @@ Compatibility patch. `boost-skills` now accepts `boost-core 0.17` alongside `0.1
 
 ## 2.0.0 - 2026-05-31
 
-<!-- verified-sha: e18578c6a76df8005ed2edae28e33085d424c018 -->
 Slot-aware skills now resolve their project-convention values **into the skill body at sync time** via `boost-core`'s conventions-inlining tokens (shipped in `0.15.0`), instead of reading the always-loaded `## Project Conventions` block at agent runtime. Once a consumer's synced catalog is fully token-sourced, that block drops entirely — the values are baked into each skill. Adopting needs `boost-core ^0.16`.
 
 ### Breaking
@@ -937,7 +893,6 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 
 ## 1.9.9 - 2026-05-31
 
-<!-- verified-sha: 11649674a94d98b5f389f24e2e1ee8746efac0f5 -->
 ### Changed
 
 - **Consumer-facing `boost-core` floor `^0.13` → `^0.13 || ^0.14`** (README + UPGRADING). `package-boost-php 0.15.1` widened its `boost-core` constraint to `^0.13 || ^0.14` (absorbing `0.14.0`'s project-scope reconcile-on-sync), so a fresh family install now resolves `boost-core 0.14.0` — outside the `^0.13` floor `1.9.8` stated (`^0.13` = `>=0.13 <0.14`). The floor now matches the family range, with `0.14.0` added to the notable-versions list (dropped-emitter orphan reaping, sha-gated so operator edits are preserved).
@@ -1002,7 +957,6 @@ No schema, slot, or skill-body changes — floor-tracking only.
 
 ## 1.9.8 - 2026-05-31
 
-<!-- verified-sha: d089455c180515a0eee643abd330dc889cf8641a -->
 ### Changed
 
 - **Consumer-facing `boost-core` floor `^0.11` → `^0.13`** (README + UPGRADING). The `^0.11` floor (set in 1.9.5) had gone stale + disjoint from the family: the current family packages narrow `boost-core` to `^0.13`, so a consumer reading "Requires `^0.11`" while installing a current family package (which pulls `^0.13`) got contradictory guidance — `^0.11` and `^0.13` are non-overlapping ranges. The floor now matches the family line and lists the notable engine versions folded into it:
@@ -1079,7 +1033,6 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 
 ## 1.9.7 - 2026-05-31
 
-<!-- verified-sha: 29b5d544c3514a6d69d9f78dd3da3356c91b8ff6 -->
 ### Changed
 
 - **`test-writing` + `bug-fixing` — `testing.forbid` category-alias expansions rendered inline.** Both skills previously deferred to "see the schema description for alias expansions", but the schema description isn't loaded into the agent's context — so an agent had to know from general knowledge that `js-test-frameworks` includes `cypress`. Now the full expansion is inline in both skills:
@@ -1152,7 +1105,6 @@ No schema or convention changes — the alias map is unchanged (this renders the
 
 ## 1.9.6 - 2026-05-30
 
-<!-- verified-sha: 8278606eaf76c6095ec401a5e1ce03978c258867 -->
 ### Changed
 
 - **`require-dev` `sandermuller/package-boost-php` `^0.12` → `^0.13`.** package-boost-php 0.13.0 widens its `boost-core` constraint to `^0.10 || ^0.11`. boost-skills' dev environment was pinned `^0.12`, capping the transitive `boost-core` at `^0.10` — inconsistent with the `^0.11` consumer floor that `1.9.5` documents. The bump lets the dev environment resolve `boost-core 0.11.0`, so the catalog now dev-tests against the same floor it tells consumers to use. Dev-only constraint; consumers unaffected.
@@ -1161,7 +1113,6 @@ No schema or convention changes — the alias map is unchanged (this renders the
 
 ## 1.9.5 - 2026-05-30
 
-<!-- verified-sha: 07a17e546df12bc29c4559c5a5261aed42b4e423 -->
 A dispatch-prose audit across all six under-dogfooded conventions-schema slot groups (`pr.gates`, `codex.invocation_mode`, `testing.forbid`, `spec.filename_pattern`, `mcp.*`, `branches.patterns`) — the slots no real consumer exercises yet, where a vendor-skill prose bug would surface only when someone first adopts them. Caught six real prose/schema gaps that schema validation can't (validation checks input shape, not vendor dispatch prose). Plus a `boost-core ^0.11` floor-bump.
 
 ### Changed
@@ -1237,7 +1188,6 @@ No `boost.php` or convention changes. The slot-vocabulary is unchanged — these
 
 ## 1.9.4 - 2026-05-29
 
-<!-- verified-sha: 429039c4b99fae4b9e1672bb0a50675da83935d4 -->
 Closes a tag-bucketing inconsistency where the `pre-release` skill was the odd-one-out in the release-tooling cluster (`pre-release` tagged `php github` while siblings `readme` / `release-notes` / `upgrading` are all tagged `release-automation`). Surfaced by a downstream consumer who reasonably declared `withTags(Php, Github)` for an application repo and ended up needing to explicitly exclude `pre-release` since the app doesn't do release work.
 
 ### Changed
@@ -1312,7 +1262,6 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 ## 1.9.3 - 2026-05-29
 
-<!-- verified-sha: de550633851f5cc0576c9b54ed9c28ea9a68a954 -->
 ### Changed
 
 - **`require-dev` `sandermuller/package-boost-php` `^0.10` → `^0.12`.** Tracks the family-package's `0.11 → 0.12` floor-bump (which itself floored `boost-core` to `^0.10`, aligned with what `boost-skills 1.9.2` already requires). Dev-only constraint — keeps the catalog's own dev environment current with the family. Consumers unaffected (the require-dev constraint doesn't propagate downstream).
@@ -1325,7 +1274,6 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 ## 1.9.2 - 2026-05-29
 
-<!-- verified-sha: a83b3548a397e32944d9f8963bf215ba09c0e4c0 -->
 Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symmetry fix that landed in `0.10.0`. Laravel projects wiring the bare-CLI hook (`BoostAutoSync::run` in `composer.json` scripts) previously lost bundled `pest-testing` / `livewire-development` / `filament-development` / Inertia / Flux / Volt / Tailwind / Wayfinder / `laravel-best-practices` skills to Cursor / Copilot / Codex — the gap was masked locally by laravel/boost's MCP server for Claude Code only.
 
 ### Changed
@@ -1993,7 +1941,6 @@ Then in `composer.json`: `minimum-stability` from `RC` → `stable` (or drop the
 
 ## 1.7.2 - 2026-05-28
 
-<!-- verified-sha: 05bd62ae8141e35ea602954b6cd405f80bf027a1 -->
 ### 1.7.2
 
 Aligns the catalog with `sandermuller/boost-core 0.9.0`'s drop of the `.github/copilot-instructions.md` guideline-file emission. After 0.9.0 ships, the `CopilotTarget` no longer writes that file — Copilot now reads root `AGENTS.md` for guideline context per the GitHub Changelog 2025-08-28 + 2026 cloud-agent / CLI / JetBrains rollouts. Boost-core already emits `AGENTS.md` via `CodexTarget`, so the separate copilot-instructions write was duplicate.
@@ -2013,7 +1960,6 @@ Doc-only patch. No schema changes, no skill content rewrites, no functional beha
 
 ## 1.7.1 - 2026-05-28
 
-<!-- verified-sha: 1585e172fd1528e3cd430f341b7dcd3039ff19b4 -->
 ### 1.7.1
 
 Documentation polish: clarifies that `boost-core`'s `Tag` enum vocabulary is broader than the tag-registry table in this README. Surfaced by real-world adoption (a Laravel-app consumer declared `Tag::Filament` / `Tag::Livewire` in `withTags(...)` as forward-compatible slots and hit "possible typo" diagnostics from `boost tags` despite the declarations being correct + intentional).
@@ -2035,7 +1981,6 @@ The tag-registry table below the new paragraph stays unchanged — it documents 
 
 ## 1.7.0 - 2026-05-28
 
-<!-- verified-sha: 74170dfa86f25331955cb359220c040dddd9429b -->
 ### 1.7.0
 
 Adds the conventions-schema slot-fill mechanism: vendor skills reference project-specific values (Jira project key, repo conventions, branch patterns, test framework, MCP server names, policy declarations) by JSONPath; consumers fill values in a `## Project Conventions` block in `CLAUDE.md` instead of shadowing entire skills. Nine catalog skills rewrite to consume the schema, from two in the `1.7.0-rc1` / `rc2` cycle to nine in stable.
