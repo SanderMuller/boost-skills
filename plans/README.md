@@ -32,6 +32,7 @@ row when done.
 | 009  | `evaluate` Phase 1 asks the question the pipeline can answer | P2 | S | `boost-pipeline` >= v0.9.0 | DONE (`89dba5d`, released in 2.31.0; `quality.pipeline` shipped with it) |
 | 010  | Strip the `verified-sha` pin before it reaches the changelog | P3 | S | — | DONE (workflow strips it at release time, 55 existing lines scrubbed, release bodies left alone by decision) |
 | 011  | `clean-specs` proves shipping more than one way, and sweeps more than one directory | P2 | M | — | DONE (working tree, uncommitted) |
+| 012  | A stale `codex-review` wrapper fails invisibly, and the skill sends the reader away from the fix | P2 | S | — (complements `b14698b` / 2.30.0) | DONE (`WRAPPER_VERSION` set to `2.34.0` — bump it if the release tags differently) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 

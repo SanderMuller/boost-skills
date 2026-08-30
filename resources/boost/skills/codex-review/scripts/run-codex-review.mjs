@@ -17,6 +17,12 @@ import path from 'node:path';
 import process from 'node:process';
 import { finished } from 'node:stream/promises';
 
+// The package release this copy shipped in — bump it whenever this file changes.
+// It tells a consumer reading the JSON report whether their emitted copy is current.
+// A literal, not a lookup: the emitted copy sits in a consumer's skills directory,
+// where this package's composer.json is not reachable.
+const WRAPPER_VERSION = '2.34.0';
+
 const DEFAULT_TIMEOUT_MS = 900_000;
 const KILL_GRACE_MS = 5_000;
 const PREFLIGHT_TIMEOUT_MS = 10_000;
@@ -458,6 +464,7 @@ async function runCodexReview(options) {
     const terminalEventErrors = terminalErrors(eventsFile);
 
     const report = {
+        wrapperVersion: WRAPPER_VERSION,
         ok: !timedOut && exit.code === 0 && result !== '' && streamErrors.length === 0 && terminalEventErrors.length === 0,
         timedOut,
         exitCode: exit.code,
@@ -486,6 +493,7 @@ async function runCodexReview(options) {
 function outputFailure(error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stdout.write(`${JSON.stringify({
+        wrapperVersion: WRAPPER_VERSION,
         ok: false,
         timedOut: false,
         exitCode: 1,
