@@ -170,6 +170,20 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 **After:**
 > Somali cuisine also includes camel meat, which is considered a delicacy. Pasta dishes, introduced during Italian colonization, remain common, especially in the south.
 
+**Agentic-era hype words:** battle-tested, table stakes, north star
+
+**Problem:** These spread through AI and engineering writing after 2024, and they lend a sentence weight it has not earned. Cut the word and state the fact it stands in for.
+
+**Check the context first:** byte-identical, load-bearing, first-class citizen, non-trivial, step change
+
+**Problem:** Each of these is a real technical term and a favourite of AI hype prose. A reproducible build that really does emit byte-identical output states a requirement, and functions are first-class citizens in a language that passes them as values. Flag one only where it adds importance the fact does not carry, or stands in for a more specific statement.
+
+**Before:**
+> The retry wrapper is load-bearing, and the config parser is battle-tested, so a byte-identical config-parser rewrite is table stakes before the next step change.
+
+**After:**
+> Every failure path goes through the retry wrapper, and the config parser has run in production for two years. The config-parser rewrite must emit byte-for-byte identical output.
+
 
 ### 8. Avoidance of "is"/"are" (Copula Avoidance)
 
@@ -588,6 +602,29 @@ Name the closest real actor — the team, the author, the buyer. Use "you" only 
 **After:**
 > When we let the on-call rotation slip for three months, people learned that the schedule was optional.
 
+
+### 39. Design Defence Instead of Reader Guidance
+
+**Words to watch:** honest applied to the tool or its output ("honest reporting", "the honest floor", "which is honest"), falsely reassuring, the wrong direction to fail in, worse than silence, worse than guessing, which is the reason to, would be X dressed up as Y
+
+**Problem:** Documentation argues for its own design where the reader wanted to know what to do. The sentence defends a choice against an alternative nobody proposed, or it praises the tool for its integrity. Either way the reader gets an opinion about the design instead of an instruction. State the behaviour, then say what the reader should take from it. The same habit turns up in feature blurbs, where an abstract virtue ("Honest failures") replaces the concrete thing the feature catches.
+
+Rationale is not banned. A design-rationale page or an architecture decision record is the right home for it, and a short reason inside reference docs earns its place when it helps the reader use the behaviour correctly: it names a trade-off, or it explains a constraint that would otherwise read as a defect. The tell is defence that leaves the reader no better able to use the thing, and the same argument repeated across pages.
+
+**Before:**
+> Severity levels are not configurable. A level is a fact about the finding, and a project that could re-rate one would be grading its own code before reading it. Reporting a style nit as an error would be noise dressed up as rigour.
+
+**After:**
+> Severity levels are fixed: no setting re-rates a finding. Silence one with `ignore`, or turn the rule off. A finding that prints always carries its documented level.
+
+**Before (virtue blurb):**
+> Honest reporting. A file the parser cannot read is listed as unparsed rather than passed.
+
+**After:**
+> The report names unreadable files. It marks a file the parser cannot read as unparsed, so the file never counts as clean.
+
+#38 covers the neighbouring pattern. A quotable decorates a claim, while a design defence argues for a decision.
+
 ---
 
 ## Process
@@ -628,8 +665,10 @@ A fast pre-delivery pass. Run it over the draft before the final anti-AI audit �
 - Lazy extreme — "every," "always," "never," "nobody"? Replace with the specific scope (#34).
 - Performative emphasis — "let that sink in," "I promise," "this matters because"? Delete it (#35).
 - Business jargon — "lean into," "deep dive," "circle back," "move the needle"? Swap for plain words (#36).
+- Hype word carrying weight the sentence has not earned — "battle-tested," "table stakes," "north star"? State the fact instead (#7). A context-dependent one ("load-bearing," "byte-identical") stays wherever it carries its technical meaning.
 - Sentence built on a Wh- frame — "What makes this hard is..."? Lead with the subject (#37).
 - A line that reads like a pull-quote? Cut it or replace it with the concrete claim (#38).
+- Prose defending a design choice without changing what the reader does, or crediting the tool with being "honest"? Say what the behaviour is and what the reader should do about it (#39).
 - "Not X, it's Y" contrast or negative-listing buildup? State Y directly (#9).
 - Three consecutive sentences the same length? Break one (soul section).
 
