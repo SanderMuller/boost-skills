@@ -21,9 +21,13 @@ key leaks.
 The how — which browser tool to use, the coverage contract, the traps that fake a green
 run, fault injection, and the shipped Playwright harness (`scripts/screenshot.mjs`,
 `scripts/console.mjs`, `scripts/auth-capture.mjs`, `scripts/lib.mjs`) — lives in the
-**`frontend-quality`** skill: read its `references/eye-verify.md` and `scripts/README.md`
-before driving anything, and its `references/design-verification.md` when the testable is
-fidelity to an approved design. Do not hand-roll browser automation.
+**`frontend-quality`** skill. This skill ships no files of its own. Every `scripts/…` and
+`references/…` path below is relative to that skill's directory, the sibling
+`../frontend-quality/`. Read
+[`references/eye-verify.md`](../frontend-quality/references/eye-verify.md) and
+[`scripts/README.md`](../frontend-quality/scripts/README.md) before driving anything, and
+[`references/design-verification.md`](../frontend-quality/references/design-verification.md)
+when the testable is fidelity to an approved design. Do not hand-roll browser automation.
 
 ## Non-negotiable — the browser pass actually happens
 
@@ -91,14 +95,15 @@ just as much as a change-specific testable.
 
 ## Step 3 — Set up the harness
 
-Follow `frontend-quality`'s `scripts/README.md`. The three per-project seams are login,
-serving/building the app, and data seeding — meet them before driving:
+Follow `frontend-quality`'s
+[`scripts/README.md`](../frontend-quality/scripts/README.md). The three per-project seams
+are login, serving/building the app, and data seeding — meet them before driving:
 
 - **Serve the right checkout, and a fresh bundle.** The build output survives a branch
   switch, so serving the right tree does not mean the served JS was built from these edits.
   Rebuild the frontend after editing JS/CSS. Confirm a real page loads (a hard 404 is the
   signature of the wrong host — likely in an ephemeral clone or worktree served elsewhere).
-- **Auth** — `scripts/auth-capture.mjs` saves a session the probes reuse via
+- **Auth** — the harness's `scripts/auth-capture.mjs` saves a session the probes reuse via
   `--storage-state`; re-run it if a probe lands on the login page.
 - **Data** — put the app into the state that reveals the change (run the migration, set the
   flag/field on a seeded record, seed at least two rows for any list surface). Revert seeded
@@ -109,11 +114,11 @@ serving/building the app, and data seeding — meet them before driving:
 
 - **DOM/console-first** is the primary signal; screenshots are the fallback for canvas and
   other visual surfaces. Assert one testable per check with an expected value, printing
-  PASS/FAIL — `createChecker()` in the shipped `scripts/lib.mjs` does this; a drive-script
+  PASS/FAIL — `createChecker()` in the harness's `scripts/lib.mjs` does this; a drive-script
   that merely "ran without throwing" verifies nothing.
 - For each testable: arrange its prerequisites, perform the steps, confirm the **expected
   visible result**, then check the console for errors, warnings, and untranslated-key leaks
-  (`scripts/console.mjs`, including screen-reader attributes).
+  (the harness's `scripts/console.mjs`, including screen-reader attributes).
 - Drive **mutations** end to end (create → reload round-trip → delete) and **full flows**
   through their last step, and drive the **failure path** with fault injection
   (`withFailedRoute`) — assert a visible error and a way forward, then recovery.
@@ -121,7 +126,7 @@ serving/building the app, and data seeding — meet them before driving:
   end-user render), it is only covered when **both** were seen.
 - When the testable is fidelity to an approved design, do not score the screen as one
   pass/fail — run the per-element comparison in `frontend-quality`'s
-  `references/design-verification.md`.
+  [`references/design-verification.md`](../frontend-quality/references/design-verification.md).
 
 ## Step 5 — Store and publish the evidence
 
