@@ -267,17 +267,43 @@ A related form is the **negative-listing striptease** — stacking what somethin
 > You do not need a configuration file. The system preserves the results automatically.
 
 
+### 42. Adverbs Propping Up Weak Verbs
+
+**Words to watch:** significantly, dramatically, considerably, substantially, seamlessly, effortlessly, quickly (as a claim)
+
+**Problem:** The adverb carries weight the verb should carry, and it stands where a number belongs. An adverb holding up a weak verb means the verb is wrong. Give the measurement, or pick the verb that already means it.
+
+**Before:**
+> The new index significantly improves query time, and the importer now runs considerably faster.
+
+**After:**
+> The new index cuts query time from 1.8s to 40ms, and the importer finishes in half the time.
+
+
 ## STYLE PATTERNS
 
 ### 14. Em Dash Overuse
 
-**Problem:** LLMs use em dashes (—) more than humans, mimicking "punchy" sales writing. In practice, most of these can be rewritten more cleanly with commas, periods, or parentheses.
+**Problem:** LLMs use em dashes (—) more than humans, mimicking "punchy" sales writing. In practice, most of these read more cleanly with a comma or a period. If the thought needs real separation, end the sentence.
+
+Swapping the em dash for parentheses, an en dash, or a double hyphen trades one tell for another. The aside stays, and the reader still meets a sentence that could not decide where to stop. Rewrite the sentence instead of re-punctuating it.
 
 **Before:**
 > The term is primarily promoted by Dutch institutions—not by the people themselves. You don't say "Netherlands, Europe" as an address—yet this mislabeling continues—even in official documents.
 
 **After:**
 > The term is primarily promoted by Dutch institutions, not by the people themselves. You don't say "Netherlands, Europe" as an address, yet this mislabeling continues in official documents.
+
+
+### 40. Colons as Mid-Sentence Connectors
+
+**Problem:** A colon that introduces a list or an example is fine. AI also uses one as a hinge in the middle of a sentence, where it promises a reveal that the second half does not deliver. The colon usually props up a comparison nobody asked for. Two of them in one paragraph is a signal to reread both.
+
+**Before:**
+> If you come from manual deployment: instead of copying files to the server yourself, you describe the target state and let the tool do the copying.
+
+**After:**
+> You describe the target state, and the tool copies the files to the server.
 
 
 ### 15. Overuse of Boldface
@@ -302,6 +328,10 @@ A related form is the **negative-listing striptease** — stacking what somethin
 
 **After:**
 > The update improves the interface, speeds up load times through optimized algorithms, and adds end-to-end encryption.
+
+Not every bold lead-in is this pattern. The tell is a label that restates the line behind it. A bold lead-in that ends in a period, names the item, and is followed by detail the label did not already give is a normal reference form, and it stays:
+
+> **Sentence case in headings.** The rule covers every heading level, including the ones a table of contents generates.
 
 
 ### 17. Title Case in Headings
@@ -389,6 +419,16 @@ A related form is the **negative-listing striptease** — stacking what somethin
 - "In the event that you need help" → "If you need help"
 - "The system has the ability to process" → "The system can process"
 - "It is important to note that the data shows" → "The data shows"
+
+**Prefer the plain word.** The fancier synonym is rarely clearer:
+
+- "utilize" → "use"
+- "leverage" (as a verb) → "use"
+- "facilitate" → "help"
+- "numerous" → "many"
+- "commence" → "start"
+- "prior to" → "before"
+- "sufficient" → "enough"
 
 
 ### 24. Excessive Hedging
@@ -581,6 +621,36 @@ Name the closest real actor — the team, the author, the buyer. Use "you" only 
 > Next sprint we'll cut the two slowest queries and drop the feature nobody used.
 
 
+### 41. Abstract Metaphor Nouns
+
+**Problem:** These nouns read as technical, but a plainer concrete word says the same thing. The metaphor also hides which part of the system the sentence means.
+
+| Avoid | Use instead |
+|-------|-------------|
+| substrate | base, storage layer |
+| wedge in | add |
+| vector (meaning "a way") | way, method |
+| nexus | the point where the two meet |
+| locus, vantage | place, position, view |
+| bedrock | the part everything depends on |
+| modality, paradigm | way of working, approach |
+| gold-plating | more than the job needs |
+| ratchet | name the mechanism, or "a limit that only tightens" |
+| evacuate (for moving code) | move out |
+| endgame | the last phase |
+| flywheel | name the loop that feeds itself |
+
+**Check the context first:** surface (as in "API surface"), primitive (as a noun), harness, scaffolding
+
+**Problem:** Each of these is a real term of art. A package's API surface is the set of symbols consumers can call, a test harness is a real thing, and Testbench scaffolding has a directory. Flag one only where it works as a metaphor and a concrete word would say more.
+
+**Before:**
+> The cache is the substrate for the whole flywheel, so we wedge the new adapter in at the storage nexus and treat the migration as the endgame.
+
+**After:**
+> The cache stores every rendered page. The new adapter goes in the storage layer, and the migration is the last phase.
+
+
 ### 37. Wh- Openers as a Crutch
 
 **Problem:** AI leans on "What/Why/How [...] is [...]" frames to dress up an ordinary statement. Lead with the subject instead.
@@ -625,6 +695,29 @@ Rationale is not banned. A design-rationale page or an architecture decision rec
 
 #38 covers the neighbouring pattern. A quotable decorates a claim, while a design defence argues for a decision.
 
+
+### 43. Feelings Instead of Mechanisms
+
+**Words to watch:** effortless, intuitive, stays out of your way, close at hand, that you can actually read, feels fast, just works
+
+**Problem:** The sentence names how the tool feels to use where the reader needed to know what it does. Ask what the sentence tells the reader to do or to know, then write that: the command, the behaviour, or the number. If it cannot be restated as an instruction, a fact, or a measurement, cut it.
+
+**The other-project test:** if the sentence could appear unchanged in another project's documentation, it says nothing about this one. Cut it.
+
+**Before:**
+> Validation feels effortless, and the errors it gives you are always clear.
+
+**After:**
+> `validate()` returns one error per field, keyed by the field name.
+
+**Before:**
+> The generated types follow your schema, so refactoring stays safe.
+
+**After:**
+> The generator reads the schema at build time. A column rename that a query still references fails the build.
+
+#39 covers the neighbouring pattern. A feeling sentence flatters the experience, while a design defence argues for a decision.
+
 ---
 
 ## Process
@@ -657,7 +750,8 @@ Provide:
 
 A fast pre-delivery pass. Run it over the draft before the final anti-AI audit — it catches the structural tells that survive a vocabulary cleanup.
 
-- Em dash anywhere? Recheck whether a comma, period, or parenthesis reads cleaner (#14).
+- Em dash anywhere? Recheck whether a comma or a period reads cleaner. Parentheses, en dashes, and double hyphens are not the fix (#14).
+- Colon hinging the middle of a sentence instead of introducing a list or an example? Rewrite it as one statement (#40).
 - Abstraction doing a human verb to hide a decision — "the market rewards," "the culture shifts," "the decision emerges"? Name the person (#30). (Leave measurements like "the benchmark shows" alone.)
 - Narrator-from-a-distance in opinion prose — "Nobody designed this," "People tend to"? Put the reader in the scene with "you" (#31). (Neutral reference docs stay third-person.)
 - Throat-clearing opener — "Here's the thing," "It turns out," "The real question is"? Cut to the point (#32).
@@ -665,11 +759,15 @@ A fast pre-delivery pass. Run it over the draft before the final anti-AI audit �
 - Lazy extreme — "every," "always," "never," "nobody"? Replace with the specific scope (#34).
 - Performative emphasis — "let that sink in," "I promise," "this matters because"? Delete it (#35).
 - Business jargon — "lean into," "deep dive," "circle back," "move the needle"? Swap for plain words (#36).
+- Abstract metaphor noun — "substrate," "wedge in," "nexus," "flywheel," "endgame"? Use the concrete word (#41). (A real term of art like "API surface" or "test harness" stays.)
+- Adverb propping up a weak verb — "significantly improves," "runs seamlessly"? Give the number, or pick the right verb (#42).
 - Hype word carrying weight the sentence has not earned — "battle-tested," "table stakes," "north star"? State the fact instead (#7). A context-dependent one ("load-bearing," "byte-identical") stays wherever it carries its technical meaning.
 - Sentence built on a Wh- frame — "What makes this hard is..."? Lead with the subject (#37).
 - A line that reads like a pull-quote? Cut it or replace it with the concrete claim (#38).
 - Prose defending a design choice without changing what the reader does, or crediting the tool with being "honest"? Say what the behaviour is and what the reader should do about it (#39).
 - "Not X, it's Y" contrast or negative-listing buildup? State Y directly (#9).
+- A sentence that names a feeling instead of a mechanism, or one that could appear unchanged in another project's docs? Name the behaviour, or cut it (#43).
+- Bold lead-in that only restates the line behind it? Convert it to prose. A lead-in followed by new detail stays (#16).
 - Three consecutive sentences the same length? Break one (soul section).
 
 ## Scoring (Optional)
@@ -755,6 +853,8 @@ Below ~35/50, revise before delivering. For voice-driven prose — essays, posts
 The encyclopedic patterns (significance inflation, copula avoidance, AI vocabulary, formulaic sections) come from [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup, drawn from thousands of instances of AI-generated text on Wikipedia.
 
 The rhetorical and structural patterns (#30–#38), the Quick Checks pass, and the scoring rubric adapt [stop-slop](https://github.com/hardikpandya/stop-slop) by Hardik Pandya (MIT), which targets the punchier "AI blog post" register the Wikipedia list does not.
+
+Patterns #40–#43, the parentheses caution in #14, and the bold lead-in carve-out in #16 adapt the [unslop skill](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) from the pstack plugin by Lauren Tan, which pushes harder on punctuation crutches and on prose that names a feeling where the reader needed a mechanism.
 
 Two complementary insights:
 
