@@ -1,6 +1,6 @@
 ---
 name: readme
-description: "Author and maintain a concise, high-quality README for a Composer package. Covers stub, comprehensive, and docs-site shapes (thin README + a docs/ site, for example VitePress on GitHub Pages), length budgets, curated coverage, voice, the agent-facing surface (llms.txt, llms-full.txt, per-page markdown, robots.txt), staleness audits, and docs index/link sync. Activates when: writing or auditing a README or a docs page, or when the user says the docs are too long, too verbose, over-explained, or asks to shorten or trim them."
+description: "Author and maintain a concise, high-quality README for a Composer package. Covers stub, comprehensive, and docs-site shapes (thin README + a docs/ site, for example VitePress on GitHub Pages), length budgets, curated coverage, voice, the agent-facing surface (llms.txt, llms-full.txt, per-page markdown, robots.txt), staleness audits, and docs index/link sync. Activates when: writing or auditing a README or a docs page, or when the user says the docs are too long, too verbose, over-explained, read like a feature list, or asks to shorten or trim them."
 metadata:
   boost-tags: "release-automation"
 ---
@@ -14,18 +14,31 @@ metadata:
 - Reviewing a PR that touches README
 - The package moves its documentation to a `docs/` site (for example VitePress, published on GitHub Pages)
 
+## The opening names a problem, not a feature set
+
+Every shape below starts with a description. Its job is the same in all three: name the situation the reader is in without the package, then what the package does about it. One or two sentences, then the first code block: the install command, or the teaser example in the docs-site shape. A critical-tier prerequisite or warning that governs that block stays beside it, as the coverage tiers below require. A reader who recognises the situation keeps reading. One who does not will not install the package, whatever the capability list says.
+
+```markdown
+❌ Provides queue middleware, retry policies, a dashboard, and Slack notifications for Laravel jobs.
+
+✅ A job that fails at 3am retries until the queue gives up, and nobody finds out until a customer does.
+   This package tells you the first time, with the payload that failed.
+```
+
+Start from the problem the reader already has. Capabilities that do not follow from it go in usage, in a table, or nowhere. The `Why <package>` docs page (below) carries the long form. The README opening stays at one or two sentences.
+
 ## Three valid shapes
 
 **Stub README** (for early-stage packages, <500 stars):
-- One-paragraph description
+- One-paragraph description — the problem-first opening above
 - Install command
-- Minimal usage example
+- Minimal usage example that resolves the opening's problem
 - License + author
 
 **Comprehensive README** (for established packages or ones with substantial API):
-- Description + status badges
+- Description (problem-first) + status badges
 - Install + requirements
-- Usage examples for the **common** cases only — see the coverage tiers below, which decide what gets an example, a table row, or nothing
+- Usage examples for the **common** cases only — see the coverage tiers below, which decide what gets an example, a table row, or nothing. The first example resolves the problem the opening named; it is the before/after, not a tour of the API
 - Configuration reference (link to dedicated docs if long)
 - Testing/development section
 - Contributing pointer
@@ -33,8 +46,8 @@ metadata:
 - License + credits
 
 **Docs-site README** (for packages whose documentation lives in a `docs/` site):
-- Description + status badges
-- One-paragraph pitch + a copy-pasteable teaser example
+- Description (problem-first) + status badges
+- A copy-pasteable teaser example that resolves the opening's problem
 - Install + requirements
 - One minimal usage example
 - Documentation section: the published site root URL stated once in prose, plus links to every page or to section entry points (pick one policy — see the index-sync rules below — and the link mechanics). Page links are navigation and do not count against the once rule
@@ -118,6 +131,8 @@ Rationale is the single biggest source of bloat, because every decision has one 
 
 - **A gotcha with a cost** — the reader will otherwise misuse the feature, lose data, or hit a failure they cannot diagnose.
 - **A choice that looks wrong** — the surprising default, the one argument order that is not the obvious one.
+
+This rule does not cut the opening. *Why the package exists* is the opening sentence and stays: it is the reader's problem, not a rationale. *Why a feature works the way it does* is rationale and goes.
 
 Everything else gets the *what* and stops. "`--format=json` prints machine-readable output" is complete. Why JSON was chosen, how it is serialised, and which internal fields it omits are the author's context, not the reader's — and a paragraph defending a design decision belongs in an ADR or a release note, never in a usage section.
 
@@ -203,7 +218,7 @@ A package with none of these is fine with the generated header alone: an H1 and 
 
 ## Anti-patterns
 
-- Padding the README with motivation prose — **omit needless words**; every sentence should help a reader install or use the package
+- Padding the README with motivation prose — **omit needless words**; after the problem-first opening, every sentence should help a reader install or use the package
 - Burying the install command below ten paragraphs of motivation
 - Examples that don't actually run (always copy-pasteable)
 - Stale "TODO" sections — delete them before publishing
@@ -211,7 +226,7 @@ A package with none of these is fine with the generated header alone: an H1 and 
 - Documenting every command, endpoint, or option because it exists — coverage is curated, and "undocumented" is a tier
 - A paragraph explaining why a low-importance detail works the way it does
 - Restating in prose what the code block below already shows
-- A "Features" list that renames the table of contents
+- An opening that lists what the package provides instead of the problem it removes — and a "Features" list that renames the table of contents
 - Announcing what a section will cover before covering it
 - (Docs-site shape) Restating a docs page's content in the README, or stating the site root URL more than once in prose (page links to the site don't count)
 
@@ -224,6 +239,7 @@ A package with none of these is fine with the generated header alone: an H1 and 
 Run this with the staleness scan — docs rot by growing, not only by aging. Every release adds a paragraph, and nothing ever removes one.
 
 - **A missing opening page** — no Why, no Installation, or no Getting started, or a topic page sitting in the Getting-started slot.
+- **A feature-list description** — the README opening enumerates capabilities and never names the problem the reader has without the package. Rewrite it from the reader's situation.
 - **Over budget** — a README or docs page past its word budget. Cut or split; do not leave it because "it is all true".
 - **Prose-majority sections** — paragraph words exceeding the section's code, table and list words. Convert or cut. Exempt: a page with no task in it (concept, security, accessibility, troubleshooting), where prose is the right form.
 - **Paragraphs past ~100 words** — count words between blank lines; a line-based check misses a soft-wrapped wall entirely.
