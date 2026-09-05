@@ -97,7 +97,7 @@ Before writing from a fresh template, check whether a spec for this work already
 | Loose notes / neither | Treat as input; fall through to the from-scratch flow. |
 | More than one candidate file for the same work | **Stop and ask** which is authoritative — never pick silently. |
 
-**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## STOP Conditions`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
+**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## STOP Conditions`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, the `**Personas:**` line, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
 
 **Stamp on conversion**: if the existing spec carries a `spec:planned-at` stamp, refresh it to the current `HEAD` when the conversion materially re-bases the spec's `file:line` references on today's code — otherwise the drift preflight diffs against a stale baseline and reports false drift on a just-revalidated spec. Leave the stamp untouched when you only add sections without re-validating existing references. If no stamp exists and the repo is git, add one (see [Planning Commit Stamp](#planning-commit-stamp)).
 
@@ -110,8 +110,9 @@ Specs are only as good as the research behind them. Before writing the spec body
 3. **Read the project reference docs**: <!--boost:conv path="spec.research_docs" mode="inline"-->none — gather context from the conversation and codebase<!--boost:conv:end-->. If paths are shown, read the ones matching the feature area (architecture, domain glossary, relationship maps, or similar) so terminology + structural references match project canon. If a path points at a missing file, surface it (`boost doctor --check-conventions` catches this at sync time).
 4. **Verify any stated existing behavior** — if the user said "X currently does Y", read the code and confirm. If they're wrong, surface the contradiction before writing the spec around it.
 5. **Check terminology against the reference docs** — use canonical names. If the user used a different word, flag it in `## Terminology` so the spec doesn't propagate ambiguity.
+6. **Read the persona model and any matching stories** — when the project ships durable quality docs (conventionally a persona model at `docs/quality/personas.md` and persona-tagged stories beside it), read the axes and grep the stories for the feature area. An existing story states what should already be true for that surface, so the spec builds on it instead of restating or contradicting it. The axes are the source for the header's `**Personas:**` line, per the rule below.
 
-Skip steps that genuinely don't apply (e.g. step 4 when there's no claim to verify), but never skip 2 and 3 when a codebase and reference docs exist.
+Skip steps that genuinely don't apply (e.g. step 4 when there's no claim to verify, step 6 when the project ships no persona model or the change has no persona surface), but never skip 2 and 3 when a codebase and reference docs exist.
 
 ## Spec Format
 
@@ -125,6 +126,8 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 # {Feature Name}
 
 <!-- spec:planned-at <full-sha> <YYYY-MM-DD> -->
+
+**Personas:** admin `A2` · viewer `V1,V3` <!-- from the project's persona model; omit when it ships none, or when nothing user-facing is touched -->
 
 ## Overview
 
@@ -206,6 +209,8 @@ For focused changes that don't need multiple phases.
 # {Change Name}
 
 <!-- spec:planned-at <full-sha> <YYYY-MM-DD> -->
+
+**Personas:** admin `A2` <!-- from the project's persona model; omit when it ships none, or when nothing user-facing is touched -->
 
 ## Overview
 
@@ -305,6 +310,14 @@ Every phase carries one metadata line immediately under its heading:
 
 **Findings** — Always present, even if empty. Implementation notes go here: design decisions, deviations from spec, discovered issues.
 
+## Personas — Named From the Project's Model
+
+Applies only when the project ships a persona model. Fill the header's `**Personas:**` line from it; never invent user types for a spec. The line is the join between a spec and the durable quality model — the same model tags the stories and scopes the QA testables, so a spec that mints its own vocabulary splits one set of people in two.
+
+Pick the axes that **bite** the change, not the whole grid. Read each candidate's feared failure and keep the axis only when that failure is one this change could realistically cause. Where the model has no row for a persona the change genuinely needs, say so in `## Open Questions` — adding a row belongs to the quality process that owns the model, not to writing a spec.
+
+The labels stay in the spec. Treat them like a class name in issue or ticket text: a testable derived from a persona is written as what the tester does and sees, never as its label.
+
 ## Edge Case Sweep — Required Before the Assumptions Audit
 
 Once the spec body has shape (technical sections + draft Implementation phases), sweep for edge cases. Edges left implicit ship as production bugs with no test coverage. The sweep is codebase research, not guesswork.
@@ -317,6 +330,7 @@ Read the code around the feature and look for:
 - **Interacting states** — concurrent edits, stale client state vs changed server state, partial saves, optimistic UI vs server rejection.
 - **Boundary & lifecycle** — empty or missing related record, first / last / zero / max counts, soft-deleted or orphaned parents, retry / timeout / parallel invocation, partial failure.
 - **Permission edges** — actor loses access mid-flow, role downgraded, ownership moved.
+- **Persona feared failures** — for each persona on the header's `**Personas:**` line, the failure that persona fears. A feared failure is an assertion, so an untested one is an edge case rather than a nicety.
 
 ### Step 2 — Record each edge case
 
