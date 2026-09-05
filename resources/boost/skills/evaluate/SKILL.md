@@ -123,10 +123,10 @@ Read through all files in the resolved scope and check for:
 | **Race conditions** | Concurrent requests causing data corruption, non-atomic operations |
 | **Security** | Missing auth checks, unvalidated input, XSS, SQL injection, type confusion |
 | **Logic errors** | Wrong conditions, off-by-one errors, swallowed exceptions |
-| **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested |
+| **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested — `test-value` carries the full method, in both directions |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
-| **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |
+| **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior. `simplify-code` carries the full method, and the floor that stops a cut going too far |
 
 **Brevity has a floor.** Shortening code is a win only when nothing required is lost. Never trade away input validation at trust boundaries, error / data-loss handling, security, accessibility, explicitly-requested functionality, or a test for non-trivial logic to make code smaller. Delete the unrequested, not the necessary — and apply these cuts through the Phase 4 fix loop like any other finding.
 
@@ -144,30 +144,9 @@ If a policy is shown above, scan the files **in the resolved evaluation scope** 
 
 ### Phase 3: Audit Code Comments
 
-Within the **same evaluation scope resolved in Phase 2** (do not re-derive or broaden it), find every comment **added or changed** in this work. This covers **all** comment syntaxes in the changed languages, not only the obvious ones: docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Do not skip template comments. Never judge pre-existing comments outside that scope.
+Run the `comment-audit` skill over the **same evaluation scope resolved in Phase 2** (do not re-derive or broaden it). It owns the bar, the Remove / Replace / Trim ladder, the density signal, and the exemptions; invoked from here it applies its own verdicts. Keeping one copy of that method means the two cannot drift.
 
-A comment earns its place **only when both** are true:
-1. **Without it, a competent teammate reading the code (and any linked issue / PR) would draw the wrong conclusion or break it on edit** — not merely be curious. "Is there a real WHY?" is the wrong test; almost every line has one. A real-but-inferable why — the reader would understand it, just a little slower — is not enough to keep inline; that belongs in the tracker (a tracking link), not the source.
-2. There is no better way to write the code that would make the comment unnecessary.
-
-**Density is itself a signal.** After judging comments individually, look across the scope: if one function or method accrued more than a single surviving comment, treat that as a smell that the code wants splitting or renaming, not annotating — revisit those comments with a bias to Remove/Replace.
-
-For each added/changed comment, apply this decision ladder **in order** and stop at the first that fits:
-
-| Verdict | When | Action |
-|---------|------|--------|
-| **Remove** | Comment restates what the code already says, narrates the obvious, or is a leftover (commented-out code, "TODO" with no tracking link, scaffolding chatter) | Delete it |
-| **Replace with better code** | The need for the comment disappears if the code is rewritten — rename a variable/method/class, extract a well-named private method, or split a long function | Rewrite the code, drop the comment, re-run affected tests |
-| **Trim / compact** | The WHY is genuinely needed but the comment is verbose, repeats itself, or buries the point | Reduce to the minimal sentence(s) that carry the constraint |
-| **Keep as-is** | Already minimal, and without it a reader (with any linked issue) would get the code **wrong** — not just be curious | Leave it |
-
-Prefer **Remove** and **Replace** over **Trim** — a comment that can be designed away is better than a shorter comment. Default to no comment; the bar to keep one is high.
-
-Exempt — do not touch:
-- Comments required by tooling or convention (e.g. static-analysis annotations, `@var` and type-hint docblocks the project's conventions mandate, IDE/linter directives, license headers).
-- Comments outside the current diff (pre-existing code you did not modify).
-
-Apply the Remove/Replace/Trim edits as part of this phase (this is your own work), then continue to Phase 4. If a rewrite needs a design decision, ask the user.
+Its last rule matters for the phases after this one: a comment added by a later step — a fix in Phase 4, a review finding applied in Phase 6 or 7 — has not been audited. If you add or change a comment after this phase, re-run the audit over it before reporting.
 
 ### Phase 4: Fix Issues
 
