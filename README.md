@@ -57,7 +57,7 @@ Under `laravel/boost` instead, follow [its setup](https://github.com/laravel/boo
 The inventory below is the catalog's contract — CI checks it against the shipped skills and their tags, so it stays exact. The same list, rendered, is on the [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page.
 
 <details>
-<summary>33 skills — click to expand the inventory</summary>
+<summary>36 skills — click to expand the inventory</summary>
 
 | Skill                  | What it does                                                                                         | Tags            |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
