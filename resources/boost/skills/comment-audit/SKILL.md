@@ -22,7 +22,7 @@ When a review pipeline runs several judgement lenses over one tree and applies t
 
 ## Scope
 
-Use the evaluation scope already resolved for this change; do not re-derive or broaden it. Within it, find every comment **added or changed**, in **all** comment syntaxes of the changed languages — docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Template comments count. Never judge a pre-existing comment outside that scope.
+When a caller has already resolved an evaluation scope for this change, reuse it — do not re-derive or broaden it. Standalone, resolve it in this order and stop at the first that applies: the commit range or files given as an argument; the task's commits plus any local edits; the staged and uncommitted diff. Never the whole-branch diff. Within that scope, find every comment **added or changed**, in **all** comment syntaxes of the changed languages — docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Template comments count. Never judge a pre-existing comment outside that scope.
 
 ## The Bar
 

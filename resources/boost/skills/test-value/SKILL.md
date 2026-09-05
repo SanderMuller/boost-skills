@@ -22,7 +22,7 @@ When a review pipeline runs several judgement lenses over one tree and applies t
 
 ## Scope
 
-Use the evaluation scope already resolved for this change. Judge the tests it **added or changed**, plus the behaviour it changed that no test covers. Never touch a pre-existing test outside that scope. **Deleting a test needs the user's approval and a stated reason** — tests are part of the application, and a deleted test takes its scenario with it.
+When a caller has already resolved an evaluation scope for this change, reuse it — do not re-derive or broaden it. Standalone, resolve it in this order and stop at the first that applies: the commit range or files given as an argument; the task's commits plus any local edits; the staged and uncommitted diff. Never the whole-branch diff. Judge the tests the change **added or changed**, plus the behaviour it changed that no test covers. Never touch a pre-existing test outside that scope. **Deleting a test needs the user's approval and a stated reason** — tests are part of the application, and a deleted test takes its scenario with it.
 
 ## Direction 1 — Tests That Prove Nothing
 
