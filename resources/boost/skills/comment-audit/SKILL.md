@@ -1,7 +1,7 @@
 ---
 name: comment-audit
 description: "Judge the code comments a change added or changed, and apply Remove / Replace / Trim. Activates when: auditing or trimming comments, asking whether comments are needed, or when user mentions: comment audit, audit comments, trim comments, too many comments, comment noise."
-argument-hint: [optional: commit range or files, if not already resolved]
+argument-hint: "[optional: commit range or files, if not already resolved]"
 ---
 
 # Audit Code Comments

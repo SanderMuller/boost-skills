@@ -1,7 +1,7 @@
 ---
 name: simplify-code
 description: "Two ordered passes over a change — cut code that is not needed while behaviour stays identical, then shape what remains into the right type. Activates when: simplifying code, reducing complexity, asking whether something should be an enum or a DTO, or when user mentions: simplify, same functionality less code, over-engineering, primitive obsession, extract a form request."
-argument-hint: [optional: commit range or files, if not already resolved]
+argument-hint: "[optional: commit range or files, if not already resolved]"
 ---
 
 # Simplify Code

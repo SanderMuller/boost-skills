@@ -1,7 +1,7 @@
 ---
 name: test-value
 description: "Judge the tests a change added or changed in both directions — delete the ones that prove nothing, name the assertions that are missing. Activates when: asking whether tests are worth keeping, trimming tests, finding untested behaviour, or when user mentions: test value, useless tests, missing assertions, does this test anything, framework testing."
-argument-hint: [optional: commit range or files, if not already resolved]
+argument-hint: "[optional: commit range or files, if not already resolved]"
 ---
 
 # Judge Test Value
