@@ -112,3 +112,36 @@ Must show 0 failures. This catches cross-cutting regressions.
 - Modifying `phpstan.neon` (e.g. `ignoreErrors`, `excludePaths`, lowering the level or otherwise reducing strictness)
 
 **The only exception** is a confirmed upstream bug in a dependency or PHPStan itself that cannot be resolved in the project code. In that case, explain the upstream issue and ask the user for approval before adding any suppression.
+
+### Two Annotations That Fix the Error Instead of Hiding It
+
+Both tell PHPStan something true that it cannot read from a signature. Neither is a suppression: a wrong one makes the analysis worse, so annotate only where the condition holds for every call.
+
+**A parameter decides the return type** — add `@return ($param is Type ? A : B)` even when the method already declares a union return type. The union tells a caller what it might get, never which arm it gets.
+
+```php
+/**
+ * @return ($channel is Channel::Email ? EmailMessage : ($channel is Channel::Sms ? SmsMessage : never))
+ */
+public static function make(Channel $channel): EmailMessage|SmsMessage
+```
+
+Nest one condition per parameter case and close with `never` when the parameter has more cases than the return type covers — a flat `A : B` claims `B` for every remaining case. The condition also reads a literal `null` (`$key is null`), a bool literal (`$withNull is true`), and a literal string, and it can be negated with `is not`. Narrowing only happens where the caller passes a literal or a default; a caller passing a variable still gets the whole union.
+
+Then clean up the call sites the annotation now narrows. Delete a `@var` that existed only to split the union — that deletion is the proof it narrows. Delete an `instanceof` guard only where the caller passes a literal; elsewhere the guard still runs, and removing it changes behaviour.
+
+**A bool method is a pure type check** — add `@phpstan-assert-if-true` so callers get the narrowed value after the check.
+
+```php
+/**
+ * @phpstan-assert-if-true !null $this->reference
+ */
+public function hasReference(): bool
+{
+    return $this->reference !== null;
+}
+```
+
+`@phpstan-assert-if-true SomeClass $this` covers an `instanceof` check, `@phpstan-assert-if-true Status::Active $this->status` an enum identity check, and `@phpstan-assert-if-true non-empty-string $this->reference` a helper that also rejects `''`. After the helper returns true, drop the leftover null check or nullsafe operator on the proven value.
+
+Do not annotate a helper that is not a pure predicate: one that checks emptiness rather than type, one that reads a relation which may not be loaded, or one that combines a type check with another condition. Do not spray it across every `has*` and `is*` method — annotate where a caller already calls the helper and then uses the value it proves.

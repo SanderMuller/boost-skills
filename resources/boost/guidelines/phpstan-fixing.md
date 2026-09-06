@@ -19,6 +19,10 @@ Write a test when the PHPStan error indicates a fault that would surface at runt
 - Accessing a property or method that does not exist
 - Any type error that would manifest as a runtime exception
 
+### Annotate Rather Than Suppress
+
+Some errors are PHPStan reading a signature that says less than the code does — a return type a parameter decides, a bool helper that proves a type. The `backend-quality` skill carries the two annotations that state the missing fact, and the rules for when each one lies.
+
 ### When to Skip the Test
 
 Skip the test when the error is purely static and cannot cause a runtime failure:

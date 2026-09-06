@@ -28,6 +28,12 @@ Use the project's own commands — check its `composer.json` / `package.json` sc
 
 Where the project has dedicated quality-check skills synced, delegate to them — `backend-quality` for backend files, `frontend-quality` for frontend files, both when a change spans both. Otherwise, run the project's own equivalent commands directly.
 
+### A Commit Is a Claim Too
+
+Commit a change once its own checks pass against the tree as it stands, not while the approach is still being tried. A commit reads as a decision. The next defect then gets patched on top of the approach instead of the approach being dropped, and each extra commit raises the cost of the revert that was the right answer.
+
+Deferring is not "never commit". Uncommitted work is unprotected, and a commit is still the safe way to set work aside or to hand it over. A measurement loop inverts the rule on purpose — it commits before it measures, so a rejected experiment reverts in one step. Where a skill states that it commits first, that skill wins for its own flow.
+
 ### Never Use Without Evidence
 
 - "should work now"
