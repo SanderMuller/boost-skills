@@ -77,6 +77,14 @@ it('grants access to a paid account', function () {
 
 Test **one behavior per test**. The example above asserts twice (`assertOk` and `assertSee`) — that is fine, because both assertions verify the *same* behaviour (a paid account can reach the report). What to avoid is **assertion roulette**: piling assertions about *unrelated* behaviours into one test, so a failure doesn't reveal which behaviour broke. Split those into separate tests. ("One behaviour per test" is the rule — not the common misreading "one *assertion* per test".)
 
+## How Many Tests
+
+Test volume is maintenance cost. Cover each behaviour the task asks for and the failure modes that matter, then stop.
+
+- **Size the suite like the sibling test files.** Read them for shape and length first. Roughly one focused test per stated behaviour is the target. A sibling file is the reference, never an argument to add cases it happens to have or to skip cases this change needs.
+- **Do not keep a scratch check as an extra test.** A one-off script, a REPL snippet, or a quick assertion written to convince yourself mid-task is a verification step, and it goes once it has served its purpose. Where that check is the coverage a rule requires — the regression test for a bug fix, the test for changed logic — rewrite it as a proper named test instead of committing it as it stands.
+- **A whole new test layer is the user's decision.** A required test — a regression test for a bug fix, a test for changed backend or frontend logic — is written whatever the surrounding suite looks like, in the closest runner that can reach the behaviour. Only when no configured runner can reach it at all, propose the new layer, say the behaviour is unverified until the user decides, and follow *When Tests Aren't Possible* below in the meantime.
+
 ## When Tests Aren't Possible
 
 For behaviour that can't be reproduced with an automated test:

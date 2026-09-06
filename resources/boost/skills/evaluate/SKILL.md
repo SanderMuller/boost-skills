@@ -128,7 +128,27 @@ Read through all files in the resolved scope and check for:
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
 | **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |
 
+**Judge the over-engineering row at altitude first.** Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, config key, flag, route, migration, event, job and public method** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
+
+In a package or any code with downstream consumers, answer every row against those consumers too. An interface, event, config key or hook with no second implementation, listener or caller *in this repository* may still be the published extension point.
+
+| Unit the change added | Ask |
+|---|---|
+| A class, service, or action | Does more than one caller use it? Would the caller read better with the body inlined? |
+| An interface, abstract class, or trait | Is there more than one implementation today? |
+| A config key, setting, or feature flag | Does anything set it to a value other than the default? |
+| A migration or column | Does the value have to be stored — for querying, indexing, history, or cost — or can a cast, an accessor, or a computation replace it? |
+| An event | Does anything listen to it? |
+| A listener or a queued job | Is it dispatched anywhere, and does the work need to leave the caller at all? |
+| A route, or a new public method | Does anything call it, here or downstream? |
+| A wrapper or adapter over one dependency | Does the indirection buy a swap anyone plans? |
+| An unrequested `try`/`catch` | Does it handle a failure that can happen, or hide one? |
+
 **Brevity has a floor.** Shortening code is a win only when nothing required is lost. Never trade away input validation at trust boundaries, error / data-loss handling, security, accessibility, explicitly-requested functionality, or a test for non-trivial logic to make code smaller. Delete the unrequested, not the necessary — and apply these cuts through the Phase 4 fix loop like any other finding.
+
+**Complexity is the second floor.** Fewer lines that are harder to follow is a loss, not a win. Reject a cut that deepens nesting, adds indirection to save a line, chains or nests ternaries, folds two guard clauses into one compound condition, removes an early return that flattens the method, or replaces named steps with one opaque expression. Name the floor you invoked, brevity or complexity, in the reason you reject a candidate. A line count on its own rewards dense code.
+
+**Account for what you did not cut.** Report "nothing to over-engineer here" only with the list behind it: the units the change added, and for each one you kept, the caller or the floor that keeps it. Without that list a reader cannot tell a clean change from an unexamined one.
 
 **DB-driven translation keys** (only when a project translation-key policy is configured):
 

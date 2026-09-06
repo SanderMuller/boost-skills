@@ -42,6 +42,32 @@ This package uses sandermuller/boost-core (Composer plugin, framework-agnostic):
 
 Guideline files in `.ai/guidelines/` are standard Markdown (`.md`). Keep them concise and scoped to conventions that persist across the project.
 
+### Where content lives
+
+Guidelines are folded into `CLAUDE.md` / `AGENTS.md` and load in **every** session, so each line is a context cost paid on every task. Skills load on demand. Put content at the right altitude:
+
+- **`.ai/guidelines/<name>.md`** — the enforceable rule, and only the crucial non-obvious *why*, stated tersely. No command sequences, no step-by-step procedure, no long rationale. When a rule has a procedure, name the skill that owns it.
+- **`.ai/skills/<name>/SKILL.md`** — the *how*: procedures, commands, checklists, examples.
+- **A `references/` file next to the skill** — deep reference the skill pulls in when it needs it.
+
+A package that ships skills to consumers keeps its own sources elsewhere. The `sandermuller/boost-skills` package, for example, holds them in `resources/boost/guidelines/` and `resources/boost/skills/`. The three tiers apply there unchanged, and so does everything below that names `.ai/` — read it as the repository's own source tree. Check where the repository actually keeps its sources before editing.
+
+### The altitude gate
+
+Apply this to the lines a change adds or rewrites. An older guideline that carries a procedure or a table is grandfathered: move it when you are already editing that section, not as a sweep of its own.
+
+Before a line lands in a guideline, ask: *does this line enforce, or explain?*
+
+A line that carries a command, a multi-step procedure, a paragraph of rationale, or a code example beyond a short convention snippet **fails**. Move it to the owning skill and leave behind the rule and a pointer. The test: *would this line earn its context cost on a task unrelated to this rule?* A "no" means move it.
+
+Terse is not enough to pass. A sentence that is true, interesting, and **changes nothing an agent does** still fails. That covers a benefit of the rule, a mechanism behind it, and a consequence nobody acts on. Keep the rule, and keep only the fact whose absence would lead a competent reader to the wrong conclusion. The rest belongs in the pull-request body or the owning skill.
+
+Length is not the signal. A pointer can be long and pass, and packed skill-owned detail fails however short. Judge it per line, every time. A skill or a reference file has no altitude limit.
+
+### The consistency gate
+
+Every skill name, file path, tag, and document a change references must resolve, and the change must contradict no sibling guideline or skill. Check the sibling files before you ship, not after a consumer syncs.
+
 ## Creating/Updating Skills
 
 Skills live in `.ai/skills/{skill-name}/SKILL.md` with frontmatter:
@@ -99,6 +125,8 @@ This syncs `.ai/` changes to per-agent locations:
 ## Checklist for Changes
 
 - [ ] Edit files in `.ai/guidelines/` or `.ai/skills/` (never edit generated files)
+- [ ] **Altitude gate** — each guideline line you add carries the rule and the crucial why; procedures, commands, and long rationale live in the owning skill
+- [ ] **Consistency gate** — every referenced skill name, path, and tag resolves, and no sibling file contradicts the change
 - [ ] Include clear activation triggers in skill descriptions
 - [ ] **Run `vendor/bin/boost sync`** (or rely on auto-sync if `boost.php` exists)
 - [ ] **Verify `git status`** shows changes in `.ai/` only — generated files are gitignored

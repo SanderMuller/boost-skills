@@ -126,7 +126,7 @@ Most content is universal. The rest carries **capability tags** — a project de
 Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGENTS.md`. Unlike skills they are always active — no on-demand activation. They are tagged like skills, but from a sidecar `.boost-tags.yaml` manifest, since a guideline file stays frontmatter-free for `laravel/boost` compatibility.
 
 <details>
-<summary>9 guidelines — click to expand</summary>
+<summary>10 guidelines — click to expand</summary>
 
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
@@ -137,6 +137,7 @@ Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGEN
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
 | `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
+| `task-scope`                      | Keep the change to what the task asks, pick one reading of an ambiguous ask, and edit in place. | —          |
 | `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
 | `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |
 
