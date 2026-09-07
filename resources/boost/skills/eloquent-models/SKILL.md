@@ -3,6 +3,7 @@ name: eloquent-models
 description: "Creates and maintains Eloquent models with strict conventions: column/relation constants, comprehensive class docblock with @property and @property-read sections, foreign keys referenced via constants, and casts/fillable/hidden referencing constants. Use when creating a new model, adding columns or properties to an existing model, adding or modifying relations, or updating model docblocks. Triggers on model, eloquent, relation, belongs to, has many, has one, belongs to many, model constants, model properties, eloquent casts."
 metadata:
   boost-tags: "laravel"
+  boost-requires: "php-generics"
 ---
 # Eloquent Model Development
 
@@ -161,6 +162,68 @@ protected $hidden = [
 ];
 ```
 
+## Generics on the Model's Companions
+
+A model's factory, query builder and collection are generic classes. Bind the type parameter, or every caller gets the unbound base back and the analyser stops following the chain. The language-level rules behind this — binding a base, naming a shape, `class-string` — live in the `php-generics` skill.
+
+**On the model**, pair each generic trait with its binding:
+
+```php
+final class Article extends Model
+{
+    /** @use HasBuilder<ArticleQueryBuilder> */
+    use HasBuilder;
+
+    /** @use HasFactory<ArticleFactory> */
+    use HasFactory;
+}
+```
+
+**One docblock per `use` statement.** A docblock carrying both tags binds only the trait it sits directly above; the second trait stays unbound and PHPStan reports `missingType.generics` on the class.
+
+**On a custom query builder**, bind the model:
+
+```php
+/**
+ * @extends Builder<Article>
+ */
+final class ArticleQueryBuilder extends Builder
+{
+    public function whichArePublished(): self { /* ... */ }
+}
+```
+
+A fluent constraint method that declares `self` needs no docblock.
+
+**The binding is the analysis half; the model still has to select the class at run time.** `Model::$builder` defaults to Eloquent's own `Builder`, and `newEloquentBuilder()` instantiates whatever that property names — so a model that declares `@use HasBuilder<ArticleQueryBuilder>` and sets nothing gets the default builder at run time while analysis believes otherwise, and a call to a custom constraint fails only when it runs:
+
+```php
+final class Article extends Model
+{
+    /** @use HasBuilder<ArticleQueryBuilder> */
+    use HasBuilder;
+
+    protected static string $builder = ArticleQueryBuilder::class;
+}
+```
+
+**On a factory**, bind the model on the class docblock:
+
+```php
+/**
+ * @extends Factory<Article>
+ */
+final class ArticleFactory extends Factory { /* ... */ }
+```
+
+Then delete the legacy `@method Article create(...)` / `@method Article make(...)` / `@method Article newModel(...)` trio: `@extends` already says it, and the overrides go stale on their own. A state method returning `$this->state(...)` keeps its `static` return type and needs no docblock.
+
+A factory extending an abstract base that is already bound to a concrete model inherits that binding and rebinds nothing. Rebind only where the subclass builds a different model, or where the abstract base is itself templated.
+
+**On a custom collection**, bind key and value: `@extends EloquentCollection<int, Article>` for a collection of models a relation returns, or `array-key` as the key elsewhere. The same two halves apply — the model selects the class and binds it with `@use HasCollection<ArticleCollection>`, selecting either through `$collectionClass` or the `#[CollectedBy(ArticleCollection::class)]` attribute. Bind without selecting and every query still returns the base collection.
+
+These helpers have version floors: `HasBuilder` and the `$builder` property arrived in Laravel 11.15, `HasCollection` in 11.17, and `#[CollectedBy]` in 11.28. Below a floor, override `newEloquentBuilder()` or `newCollection()` on the model instead and keep the generic docblock on the override.
+
 ## Checklist
 
 When creating or modifying a model:
@@ -173,3 +236,5 @@ When creating or modifying a model:
 - [ ] Relation foreign keys use constants (`self::COLUMN_ID` or `RelatedModel::COLUMN_ID`)
 - [ ] `casts()` method, `$fillable`, `$hidden` reference constants, not raw strings
 - [ ] Constants are sorted alphabetically within their group
+- [ ] Each generic trait the model uses carries its own `@use ...<>` docblock, one per `use` statement
+- [ ] Where the model has a factory, a custom query builder, or a custom collection, each binds its type parameter

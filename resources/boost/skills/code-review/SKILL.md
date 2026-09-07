@@ -87,6 +87,7 @@ Look for:
 - **Fragile assertions**: Tests that pass for the wrong reason (e.g., an absence assertion matching unrelated text)
 - **Missing security tests**: No tests verifying auth/authorization on actions
 - **Test isolation**: Tests that depend on each other or on specific state
+- **Tests that prove nothing**: assertions that restate the framework, mirror the implementation, or check only that work was scheduled with nothing anywhere running that work and asserting its effect — the `test-value` skill carries the full verdict pass and the cases where a shallow check is legitimate
 
 ### Phase 3: Compile Findings
 

@@ -123,7 +123,7 @@ Read through all files in the resolved scope and check for:
 | **Race conditions** | Concurrent requests causing data corruption, non-atomic operations |
 | **Security** | Missing auth checks, unvalidated input, XSS, SQL injection, type confusion |
 | **Logic errors** | Wrong conditions, off-by-one errors, swallowed exceptions |
-| **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested |
+| **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested. A test that exists but proves nothing counts here too — the `test-value` skill judges both directions |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
 | **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |

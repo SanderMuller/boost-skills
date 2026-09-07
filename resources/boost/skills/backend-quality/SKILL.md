@@ -113,6 +113,8 @@ Must show 0 failures. This catches cross-cutting regressions.
 
 **The only exception** is a confirmed upstream bug in a dependency or PHPStan itself that cannot be resolved in the project code. In that case, explain the upstream issue and ask the user for approval before adding any suppression.
 
+An error about what is *inside* a value — `mixed` in an array, an unbound collection, a bare `string` holding a class name — is usually a missing docblock convention rather than a missing annotation here. The `php-generics` skill owns those.
+
 ### Two Annotations That Fix the Error Instead of Hiding It
 
 Both tell PHPStan something true that it cannot read from a signature. Neither is a suppression: a wrong one makes the analysis worse, so annotate only where the condition holds for every call.

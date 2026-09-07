@@ -57,7 +57,7 @@ Under `laravel/boost` instead, follow [its setup](https://github.com/laravel/boo
 The inventory below is the catalog's contract — CI checks it against the shipped skills and their tags, so it stays exact. The same list, rendered, is on the [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page.
 
 <details>
-<summary>33 skills — click to expand the inventory</summary>
+<summary>35 skills — click to expand the inventory</summary>
 
 | Skill                  | What it does                                                                                         | Tags            |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
@@ -83,6 +83,7 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
+| `php-generics`         | Docblock generics and shapes: name a repeated `array{...}`, bind a generic base, type a class name.  | `php`           |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
 | `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
@@ -90,6 +91,7 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, a problem-first opening, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, length budget, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
+| `test-value`          | Judge the tests a change touched: delete what proves nothing, cover what nothing tests.               | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |
 | `upgrading`            | Canonical structure for UPGRADING.md in a Composer package — when to maintain one, what to put in it. | `release-automation` |
 | `ux-review`            | Weigh UX/UI options for a new feature, recommend an approach, and document the decision.             | —               |
