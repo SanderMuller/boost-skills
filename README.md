@@ -171,6 +171,16 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release history.
 
 Found a vulnerability? Email `github@scode.nl` rather than opening a public issue. See [`SECURITY.md`](SECURITY.md) for the disclosure policy.
 
+### Skill scanners report findings here
+
+Static skill scanners such as [SkillSpector](https://github.com/NVIDIA/skillspector) flag this package. The findings are false positives. Three patterns cause them:
+
+- **HTML comments read as prompt injection.** Every `<!--boost:conv …-->` token is a `boost-core` conventions placeholder that the sync resolves. So are the `<!-- verified-sha: … -->` and `<!-- spec:planned-at … -->` anchors. A scanner cannot tell them from a hidden instruction.
+- **Anti-pattern prose read as an instruction.** A skill that lists "without asking" or "skip verification" as a thing *not* to do matches the same string as a skill that tells an agent to do it.
+- **Documented shell commands read as tool misuse.** The `autoresearch` skill prints `git reset --hard HEAD~1` because its loop commits before it measures, so a rejected experiment reverts in one step.
+
+Do not add a scanner baseline file to this repository. A baseline written by the package author suppresses the findings in a consumer's own scan, which is why SkillSpector ignores a discovered baseline until the consumer opts in.
+
 ## Credits
 
 - [Sander Muller](https://github.com/sandermuller)
