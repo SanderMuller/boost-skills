@@ -4,8 +4,8 @@ description: >-
   Architecture reviewer for approach-level proportionality. Use when reviewing a non-trivial change —
   judges whether the approach is the right size for the problem, whether a simpler design delivers the
   same requirement, whether values are carried in the right types, whether the change sits in the right
-  layer, and which decisions are one-way doors. Read-only — reports findings, never edits. NOT for
-  line-level quality, which the code-review skill owns.
+  layer, and which decisions are one-way doors. Reports findings and never edits the repository.
+  NOT for line-level quality, which the code-review skill owns.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit, NotebookEdit
 model: inherit

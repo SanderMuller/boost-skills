@@ -3,8 +3,8 @@ name: test-coverage-auditor
 description: >-
   Adversarial auditor for behavioural test coverage of a change — finds the untested failure paths,
   edge cases, and assertions that pass whatever the code does. Use before requesting review on a change
-  with logic. Read-only — reports prioritized gaps and never writes tests. NOT for judging whether the
-  code is correct, which the code-review skill owns.
+  with logic. Reports prioritized gaps and never writes a test or edits the
+  repository. NOT for judging whether the code is correct, which the code-review skill owns.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit, NotebookEdit
 model: inherit

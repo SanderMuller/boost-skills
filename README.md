@@ -155,7 +155,9 @@ Claude Code subagent definitions this package ships. A subagent runs in its own 
 | `tech-lead-reviewer`   | Review the approach one altitude above the line: design size, value types, placement, one-way doors.  | —               |
 | `test-coverage-auditor` | Find the untested failure paths and the assertions that pass whatever the code does.                 | —               |
 
-`boost-core` 1.9.0 added the subagent channel; an older engine ignores the directory entirely, so this costs a consumer on an earlier version nothing. A skill that dispatches one should say what its inline fallback loses — see the `ai-guidelines` skill.
+`boost-core` 1.9.0 added the subagent channel; an older engine ignores the directory entirely, so this costs a consumer on an earlier version nothing.
+
+**Already wrote one of these yourself?** Claude Code resolves a dispatch by the frontmatter `name`, not by path, so your `.claude/agents/tech-lead-reviewer.md` and the shipped one are two files claiming one name — and which one loads is filesystem read order. Delete or rename your copy when you adopt the shipped version; `boost sync` warns about the overlap until you do. A skill that dispatches one should say what its inline fallback loses — see the `ai-guidelines` skill.
 
 ## Editing skills and guidelines
 
