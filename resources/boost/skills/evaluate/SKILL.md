@@ -128,9 +128,11 @@ Read through all files in the resolved scope and check for:
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
 | **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |
 
-**Judge the over-engineering row at altitude first.** Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, config key, flag, route, migration, event, job and public method** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
+**Judge the over-engineering row at altitude first.** Dispatch the `simplification-auditor` subagent where the session has it: the author of a change is the reader least able to see what it did not need, and that subagent judges the diff in a fresh context. Run inline when it is absent — the questions survive, the distance does not, so answer each row against the diff and the requirement rather than your memory of why you wrote it, and say in the report that the pass was not independent. Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, config key, flag, route, migration, event, job and public method** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
 
 In a package or any code with downstream consumers, answer every row against those consumers too. An interface, event, config key or hook with no second implementation, listener or caller *in this repository* may still be the published extension point.
+
+The `simplification-auditor` subagent carries this table in fuller form, plus the ledger it reports. This copy is the fix-loop version: keep them consistent when either changes.
 
 | Unit the change added | Ask |
 |---|---|

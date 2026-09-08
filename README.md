@@ -145,6 +145,18 @@ Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGEN
 
 </details>
 
+## Subagents
+
+Claude Code subagent definitions this package ships. A subagent runs in its own context, which is the point: an adversarial pass judges a change as code somebody else wrote, and the same rules applied by the author who wrote it are a weaker check. `boost-core` emits them to `.claude/agents/boost/<vendor>__<package>/`, a subtree it owns; hand-written definitions at the top of `.claude/agents/` are untouched. Targets with no subagent concept receive nothing.
+
+| Subagent | What it does | Tags |
+|------------------------|------------------------------------------------------------------------------------------------------|-----------------|
+| `simplification-auditor` | Audit a change for code that does not need to exist, and return a ledger accounting for every unit it added. | —               |
+| `tech-lead-reviewer`   | Review the approach one altitude above the line: design size, value types, placement, one-way doors.  | —               |
+| `test-coverage-auditor` | Find the untested failure paths and the assertions that pass whatever the code does.                 | —               |
+
+`boost-core` 1.9.0 added the subagent channel; an older engine ignores the directory entirely, so this costs a consumer on an earlier version nothing. A skill that dispatches one should say what its inline fallback loses — see the `ai-guidelines` skill.
+
 ## Editing skills and guidelines
 
 Skills are `resources/boost/skills/<name>/SKILL.md` with `name` + `description` frontmatter. Guidelines are `resources/boost/guidelines/<name>.md` with **no** frontmatter — they must open at a heading to render under both engines.

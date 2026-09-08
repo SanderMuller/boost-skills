@@ -44,13 +44,14 @@ Guideline files in `.ai/guidelines/` are standard Markdown (`.md`). Keep them co
 
 ### Where content lives
 
-Guidelines are folded into `CLAUDE.md` / `AGENTS.md` and load in **every** session, so each line is a context cost paid on every task. Skills load on demand. Put content at the right altitude:
+Guidelines are folded into `CLAUDE.md` / `AGENTS.md` and load in **every** session, so each line is a context cost paid on every task. Skills load on demand. Four homes, ordered by what each one costs a reader:
 
 - **`.ai/guidelines/<name>.md`** — the enforceable rule, and only the crucial non-obvious *why*, stated tersely. No command sequences, no step-by-step procedure, no long rationale. When a rule has a procedure, name the skill that owns it.
 - **`.ai/skills/<name>/SKILL.md`** — the *how*: procedures, commands, checklists, examples.
 - **A `references/` file next to the skill** — deep reference the skill pulls in when it needs it.
+- **`.ai/subagents/<name>.md`** — a Claude Code subagent definition, for a pass whose value is a context that did not write the change. `boost-core` 1.9.0 and newer emit these; an older engine ignores the directory.
 
-A package that ships skills to consumers keeps its own sources elsewhere. The `sandermuller/boost-skills` package, for example, holds them in `resources/boost/guidelines/` and `resources/boost/skills/`. The three tiers apply there unchanged, and so does everything below that names `.ai/` — read it as the repository's own source tree. Check where the repository actually keeps its sources before editing.
+A package that ships skills to consumers keeps its own sources elsewhere. The `sandermuller/boost-skills` package, for example, holds them in `resources/boost/guidelines/`, `resources/boost/skills/` and `resources/boost/subagents/`. The same four homes apply there unchanged, and so does everything below that names `.ai/` — read it as the repository's own source tree. Check where the repository actually keeps its sources before editing.
 
 ### The altitude gate
 
@@ -63,6 +64,14 @@ A line that carries a command, a multi-step procedure, a paragraph of rationale,
 Terse is not enough to pass. A sentence that is true, interesting, and **changes nothing an agent does** still fails. That covers a benefit of the rule, a mechanism behind it, and a consequence nobody acts on. Keep the rule, and keep only the fact whose absence would lead a competent reader to the wrong conclusion. The rest belongs in the pull-request body or the owning skill.
 
 Length is not the signal. A pointer can be long and pass, and packed skill-owned detail fails however short. Judge it per line, every time. A skill or a reference file has no altitude limit.
+
+### Say What a Fallback Loses
+
+A skill that offers a lesser path when something is unavailable — a review agent the session may not have, a tool the project may not install, a check that needs a second context — states what the fallback gives up, not only that it exists.
+
+The failure this prevents is a pass that keeps a rule and quietly drops the property the rule depended on. An adversarial review run by the author of the change applies the same questions with none of the distance the questions were written for. A reader who is told only "run it inline instead" assumes parity, and the weaker result is reported as if it were the stronger one.
+
+Write the loss where the fallback is offered, and require the run to name it in its own report.
 
 ### The consistency gate
 
@@ -124,10 +133,11 @@ This syncs `.ai/` changes to per-agent locations:
 
 ## Checklist for Changes
 
-- [ ] Edit files in `.ai/guidelines/` or `.ai/skills/` (never edit generated files)
+- [ ] Edit the repository's own sources — `.ai/guidelines/`, `.ai/skills/`, `.ai/subagents/`, or the `resources/boost/…` equivalents in a package — never a generated file
 - [ ] **Altitude gate** — each guideline line you add carries the rule and the crucial why; procedures, commands, and long rationale live in the owning skill
 - [ ] **Consistency gate** — every referenced skill name, path, and tag resolves, and no sibling file contradicts the change
+- [ ] Every fallback path that is *lesser* than the primary one states what it loses
 - [ ] Include clear activation triggers in skill descriptions
 - [ ] **Run `vendor/bin/boost sync`** (or rely on auto-sync if `boost.php` exists)
-- [ ] **Verify `git status`** shows changes in `.ai/` only — generated files are gitignored
-- [ ] **Commit `.ai/` sources**; generated files propagate on consumers' next `composer install/update`
+- [ ] **Verify `git status`** shows changes in the source tree only — generated files are gitignored
+- [ ] **Commit the source files** — `.ai/…` or a package's `resources/boost/…`; generated files propagate on consumers' next `composer install/update`

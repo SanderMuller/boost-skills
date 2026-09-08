@@ -1,5 +1,14 @@
 # Upgrading
 
+## From 2.38.x to 2.39.0 (subagents — no floor change)
+
+**Not breaking. The `boost-core` floor stays `^1.4`.** 2.39.0 adds three Claude Code subagents (`simplification-auditor`, `tech-lead-reviewer`, `test-coverage-auditor`) under `resources/boost/subagents/`.
+
+- On `boost-core` **1.9.0 or newer**, they sync to `.claude/agents/boost/sandermuller__boost-skills/`, gitignored and owned by boost. Hand-written definitions at the top of `.claude/agents/` are untouched, and every non-Claude-Code target receives nothing (`boost doctor` says so once; `boost sync` stays quiet).
+- On **anything older**, the engine has no subagent channel and ignores the directory. Nothing warns, nothing breaks.
+
+`evaluate`, `code-review` and `test-value` dispatch the subagents when a session has them and run the pass inline when it does not, stating what the inline version loses either way. That degradation is prose, not a dependency: the skills declare no `subagent:` requirement, so nothing is reported as missing on an engine that predates the feature.
+
 ## From 2.0.x to 2.1.0 (boost-core floor raised to `^0.20`)
 
 **Breaking: requires `boost-core ^0.20`.** 2.1.0 drops `boost-core 0.16–0.19` from the accepted range (now `^0.20 || ^0.21 || ^0.22 || ^0.23 || ^1.0`). This is a support-policy cutoff, not a hard requirement of the shipped skills — they still resolve correctly on `0.16` (the `mcp.jira` conventions-token resolver remains the actual content floor). The cutoff aligns boost-skills with the config API `boost-core` froze for `1.0`: `->withTags(...)` became a single `array` argument in `boost-core 0.20.0` (it was variadic through `0.19`), and both the README setup example and boost-skills' own `boost.php` now use the array form.

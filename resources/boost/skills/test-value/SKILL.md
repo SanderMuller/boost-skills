@@ -20,6 +20,8 @@ A suite grows in two bad directions at once: tests that assert nothing worth ass
 
 Judge the tests the change **added or changed**, plus the behaviour it changed that no test covers. Where a scope has already been resolved for this change (`evaluate` Phase 2 resolves one), reuse it rather than re-deriving a wider one.
 
+**Dispatch the `test-coverage-auditor` subagent where the session has it, for both directions at once.** It judges the suite in a fresh context and rates each gap, which is the half you cannot do for tests you just wrote. Its verdicts are leads: follow every one before acting on it, and merge them with your own. Without it, walk both directions yourself and say in the report that the audit was not independent.
+
 **Never delete a test outside that scope**, and never delete one without stating why. A pre-existing test that looks worthless may be the only record of a bug someone hit; that judgement belongs to the user, not to a pass over an unrelated change.
 
 ## Direction 1 — Tests That Prove Nothing
@@ -38,7 +40,7 @@ The verdict per test is **delete**, **rewrite so it asserts the real behaviour**
 
 ## Direction 2 — Behaviour With No Test
 
-Every behavioural change needs a test that **fails without it** — or, where no automated test can reach the behaviour, a documented manual check in its place. Walk the change and name what nothing covers:
+Every behavioural change needs a test that **fails without it** — or, where no automated test can reach the behaviour, a documented manual check in its place. Name what nothing covers:
 
 - The happy path, the failure paths, and the edge cases the change introduced — null, empty, zero, boundary
 - The branch this change actually added, rather than a test that merely executes the file it lives in
