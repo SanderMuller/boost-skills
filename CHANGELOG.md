@@ -5,6 +5,21 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.38.0 - 2026-09-07
+
+### Added
+
+- `php-generics`: a new `php`-tagged skill for the docblock conventions static analysis depends on. Name a repeated `array{...}` shape once with `@phpstan-type` and import it with `@phpstan-import-type` rather than copying the braces, write a shape instead of `array<string, mixed>` without narrowing what is genuinely open, bind every generic base with `@extends` / `@implements` / `@use`, and type a class name that gets instantiated as `class-string<T>`.
+- `test-value`: a new skill that judges the tests a change touched in both directions — the ones that prove nothing, and the behaviour nothing covers. Each test gets a delete, rewrite or keep verdict; nothing outside the change's scope is deleted; a falling test count is reported as the improvement it can be.
+
+### Changed
+
+- `eloquent-models`: covers the generics on a model's companions. A factory, custom query builder and custom collection each bind their type parameter, each generic trait carries its own `@use` docblock on its own `use` statement, and a binding is paired with the runtime selection it needs — `$builder` for a query builder, `$collectionClass` or `#[CollectedBy]` for a collection. Version floors are stated, with the `newEloquentBuilder()` / `newCollection()` override as the route below them.
+- `code-review` and `test-writing`: both point at `test-value` for a verdict on tests that already exist, `code-review` from its testing dimension and `test-writing` as the counterpart to authoring.
+- `backend-quality`: an error about what is inside a value now routes to `php-generics` rather than being answered locally.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.37.0...2.38.0
+
 ## 2.37.0 - 2026-09-06
 
 ### Added
@@ -286,6 +301,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -965,6 +981,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -984,6 +1001,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1115,6 +1133,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1140,6 +1159,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1280,6 +1300,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1306,6 +1327,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1396,6 +1418,7 @@ Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symm
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
 
 
 
@@ -1545,6 +1568,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1553,6 +1577,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1692,6 +1717,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1709,6 +1735,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1818,6 +1845,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -1999,6 +2027,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -2017,6 +2046,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -2227,6 +2257,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
