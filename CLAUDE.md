@@ -224,6 +224,14 @@ Deferring is not "never commit". Uncommitted work is unprotected, and a commit i
 
 These phrases indicate missing verification. Run the command first, then report what actually happened.
 
+### Say What You Did Not Verify
+
+State the limits of your own check. A reader cannot tell a gap you did not mention from a check you ran, so an unmentioned gap counts as a claim you did not make good on.
+
+When you report a result, name what you ran and what you did not. "The unit suite passes; I did not run the browser tests" is a complete report. "Tests pass" is not, when you ran one suite of three. The same holds for a claim you carried over from an earlier step: if you did not re-run it against the tree as it stands now, say so.
+
+This is the outward half of the `NEEDS-CONFIRMATION` rule above. That rule stops you asserting an untraced cause. This one stops a traced, true statement from implying more than it covers.
+
 ---
 
 ## Voice — Which Rule, Which Surface
@@ -246,7 +254,7 @@ This table decides which rule applies to a piece of text. Never apply both to th
 
 A surface the table does not list gets Simplified Technical English, unless an end user reads it. Then it gets the project's tone-of-voice rules. A project without documented tone-of-voice rules gets Simplified Technical English everywhere.
 
-This guideline governs **how a sentence is built**. It never overrides what a document is allowed to say: an issue-format doc still owns issue content, and a PR template still owns its sections.
+This guideline governs **how a sentence is built**, and how much you write. It never overrides what a document is allowed to say: an issue-format doc still owns issue content, and a PR template still owns its sections.
 
 ### Simplified Technical English
 
@@ -266,6 +274,20 @@ This guideline governs **how a sentence is built**. It never overrides what a do
 - No metaphors, no clichés, no jokes that carry meaning the plain sentence does not.
 
 The sentence limits, the tense list, the article rule, and the paragraph limit come from the ASD-STE100 writing rules. The everyday-words, Latin-abbreviation, no-shouting, and no-metaphor rules come from the GOV.UK content style guide.
+
+### Register and Volume
+
+Simplified Technical English decides how a sentence is built. This section decides how much you write and how you format it. A reply can pass every rule above and still read as machine output, because it is ten times the size of the question and formatted as a report.
+
+**Answer at the size of the question.** A one-line question gets a one-line answer. A yes/no question gets "yes" or "no", and a reason only if the reader cannot act without it. Do not pad a short answer to look thorough. A longer answer does not show more care, and the reader has to find the answer inside it. A sentence that names what you did not verify is content, not padding, and stays.
+
+**Do not format someone else's thread like a document.** In a PR comment, an issue comment, a chat reply, or a review reply, do not use bold section headings, tables, or fenced evidence blocks unless the reader asked for detail or the content cannot be read without them. A code block that quotes real output or a real diff is content and stays. The rest reads as machine output whatever the words are worth.
+
+**One answer per turn.** Do not answer a question and then add a closing observation about what the work taught you. Stop when the answer is complete.
+
+**Read the thread again as the last step before you post.** The thread can move while you draft. A reply to a question the other person already withdrew costs more than a slow reply.
+
+Apply these rules most strictly outside your own repository. A maintainer who does not know you can reject a contribution on this basis alone, and the change itself is then no longer read on merit.
 
 ---
 

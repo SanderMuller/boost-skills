@@ -127,6 +127,8 @@ Most content is universal. The rest carries **capability tags** — a project de
 
 Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGENTS.md`. Unlike skills they are always active — no on-demand activation. They are tagged like skills, but from a sidecar `.boost-tags.yaml` manifest, since a guideline file stays frontmatter-free for `laravel/boost` compatibility.
 
+A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes those to your agent directories, so they apply on the machine rather than in one project (needs `boost-core` >= 1.10.0). The two sidecars answer different questions and do not interact: tags pick which projects a guideline reaches, and the user-scope list picks whether it ships outside a project at all. `voice` is in both. A user-scope guideline must render token-free, because user scope has no `boost.php` to resolve a conventions token against.
+
 <details>
 <summary>10 guidelines — click to expand</summary>
 
@@ -140,8 +142,8 @@ Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGEN
 | `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `task-scope`                      | Keep the change to what the task asks, pick one reading of an ambiguous ask, and edit in place. | —          |
-| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
-| `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |
+| `verification-before-completion`  | Run the verification command and read its output before claiming work is done, and say what you did not verify. | —          |
+| `voice`                           | One voice rule per writing surface — a routing table, the Simplified Technical English rules, and how much to write. | `voice` (opt-in) |
 
 </details>
 

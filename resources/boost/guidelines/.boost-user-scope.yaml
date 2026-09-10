@@ -1,0 +1,20 @@
+# Guidelines in this directory that are eligible for user-scope publication,
+# read by boost-core's user-scope guideline sync (boost-core >= 1.10.0).
+# `boost sync --scope=user --all` writes these to the user's agent directories,
+# so they apply in every project on the machine.
+#
+# This answers a different question from `.boost-tags.yaml`. Tags decide which
+# projects a guideline ships to; this list decides whether it ships outside a
+# project at all. The two do not interact: `voice.md` is tagged "voice" for
+# project scope and is also user-scope eligible.
+#
+# This file must be a YAML list. Each entry is a path relative to this
+# directory, not a bare filename, because the guideline loader recurses.
+#
+# List only a guideline that holds everywhere, in any language and any
+# repository. A guideline about one stack does not belong here.
+#
+# An eligible guideline must render token-free: user scope has no `boost.php`,
+# so a conventions token cannot resolve.
+- voice.md
+- verification-before-completion.md

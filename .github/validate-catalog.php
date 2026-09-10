@@ -22,6 +22,8 @@ declare(strict_types=1);
  *      non-empty description, string-valued tags. Prose is NOT compared: the
  *      README "What it does" cell is a summary, exactly as for skills, and the
  *      invariant is inventory + tags, not wording.
+ *   J. `.boost-user-scope.yaml` entries name a real guideline that holds no
+ *      conventions token — user scope has no boost.php to resolve one against
  *   F. every `boost:conv path="…"` resolves to a slot in conventions-schema.json
  *   G. `metadata.schema-required` present iff the skill body uses a boost:conv token
  *
@@ -366,6 +368,74 @@ foreach (array_keys($readmeGuidelineTags) as $name) {
 // validate-skills.php's manifest validation, which runs first — not repeated here.)
 
 // ---------------------------------------------------------------------------
+// Invariant J — .boost-user-scope.yaml entries name a real, token-free guideline
+// ---------------------------------------------------------------------------
+
+$userScopePath = $guidelinesDir . '/.boost-user-scope.yaml';
+if (is_file($userScopePath)) {
+    $userScope = Yaml::parseFile($userScopePath) ?? [];
+    if (! is_array($userScope) || array_values($userScope) !== $userScope) {
+        $fail('.boost-user-scope.yaml must be a YAML list of guideline filenames');
+        $userScope = [];
+    }
+
+    $seen = [];
+    foreach ($userScope as $entry) {
+        if (! is_string($entry)) {
+            $fail('.boost-user-scope.yaml has a non-string entry');
+
+            continue;
+        }
+        if (isset($seen[$entry])) {
+            $fail(".boost-user-scope.yaml lists '{$entry}' more than once");
+
+            continue;
+        }
+        $seen[$entry] = true;
+
+        // boost-core matches an entry against Finder's getRelativePathname(),
+        // an exact string compare — so `./voice.md` resolves on disk here and
+        // is then silently never published. Reject any form that compare
+        // cannot match before asking the filesystem.
+        if (str_contains($entry, '..') || str_starts_with($entry, '/')
+            || str_contains($entry, './') || str_contains($entry, '//')
+            || str_contains($entry, '\\')) {
+            $fail(".boost-user-scope.yaml entry '{$entry}' must be a plain path inside the guidelines directory");
+
+            continue;
+        }
+
+        // An existing non-.md file passes the is_file() check below, so only
+        // this catches a listed `.boost-tags.yaml`. boost-core refuses a
+        // selected file no renderer can read; this fails the build first.
+        if (! str_ends_with($entry, '.md')) {
+            $fail(".boost-user-scope.yaml lists '{$entry}', which is not a .md file; no renderer can read it");
+
+            continue;
+        }
+
+        if (! is_file($guidelinesDir . '/' . $entry)) {
+            $fail(".boost-user-scope.yaml lists '{$entry}' but no such guideline file exists");
+
+            continue;
+        }
+
+        // boost-core refuses on any `boost:conv` occurrence, not only one
+        // carrying a path, so test for the marker and use $convPaths only to
+        // name the paths when there are any.
+        $body = (string) file_get_contents($guidelinesDir . '/' . $entry);
+        if (str_contains($body, 'boost:conv')) {
+            $tokens = $convPaths($guidelinesDir . '/' . $entry);
+            $fail(sprintf(
+                "guideline '%s' is user-scope eligible but holds a conventions token%s; user scope cannot resolve one",
+                $entry,
+                $tokens === [] ? '' : ' [' . implode(' ', $tokens) . ']',
+            ));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Invariant H — subagents (files <-> README <-> frontmatter)
 // ---------------------------------------------------------------------------
 //
@@ -513,7 +583,7 @@ $subagentCount = count($subagentNames);
 if ($violations === []) {
     echo "PASS  catalog consistency\n";
     echo "        {$skillCount} skills, {$guidelineCount} guidelines, {$subagentCount} subagents\n";
-    echo "        checks: name↔dir, README↔frontmatter tags, inventory, guideline sidecar, subagent name↔file↔README, boost-requires resolvable, tag vocabulary, conv-slot, schema-required\n";
+    echo "        checks: name↔dir, README↔frontmatter tags, inventory, guideline sidecar, user-scope sidecar, subagent name↔file↔README, boost-requires resolvable, tag vocabulary, conv-slot, schema-required\n";
     exit(0);
 }
 

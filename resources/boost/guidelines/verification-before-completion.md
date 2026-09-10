@@ -42,3 +42,11 @@ Deferring is not "never commit". Uncommitted work is unprotected, and a commit i
 - "I'm confident this works"
 
 These phrases indicate missing verification. Run the command first, then report what actually happened.
+
+### Say What You Did Not Verify
+
+State the limits of your own check. A reader cannot tell a gap you did not mention from a check you ran, so an unmentioned gap counts as a claim you did not make good on.
+
+When you report a result, name what you ran and what you did not. "The unit suite passes; I did not run the browser tests" is a complete report. "Tests pass" is not, when you ran one suite of three. The same holds for a claim you carried over from an earlier step: if you did not re-run it against the tree as it stands now, say so.
+
+This is the outward half of the `NEEDS-CONFIRMATION` rule above. That rule stops you asserting an untraced cause. This one stops a traced, true statement from implying more than it covers.
