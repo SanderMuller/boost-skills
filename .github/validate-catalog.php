@@ -393,10 +393,10 @@ if (is_file($userScopePath)) {
         }
         $seen[$entry] = true;
 
-        // boost-core matches an entry against Finder's getRelativePathname(),
-        // an exact string compare — so `./voice.md` resolves on disk here and
-        // is then silently never published. Reject any form that compare
-        // cannot match before asking the filesystem.
+        // boost-core keys eligibility on Finder's getRelativePathname(). Only
+        // the canonical form of a path matches it on every core version, so
+        // require that here rather than relying on the consumer's core to
+        // normalize. An absolute or `..` entry is refused outright.
         if (str_contains($entry, '..') || str_starts_with($entry, '/')
             || str_contains($entry, './') || str_contains($entry, '//')
             || str_contains($entry, '\\')) {
