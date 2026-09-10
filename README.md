@@ -91,6 +91,7 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, a problem-first opening, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, length budget, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
+| `simplify-shape`       | Judge whether a change carries its values in the right type: enum, form request, DTO, query-builder method. | `php`           |
 | `test-value`          | Judge the tests a change touched: delete what proves nothing, cover what nothing tests.               | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |
 | `upgrading`            | Canonical structure for UPGRADING.md in a Composer package — when to maintain one, what to put in it. | `release-automation` |

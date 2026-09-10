@@ -126,7 +126,7 @@ Read through all files in the resolved scope and check for:
 | **Missing tests** | Happy paths, failure paths, and edge cases that aren't tested. A test that exists but proves nothing counts here too — the `test-value` skill judges both directions |
 | **Convention violations** | Deviations from project patterns (check sibling files) |
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
-| **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior |
+| **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior. A value carried in the wrong type belongs here too — the `simplify-shape` skill carries the ladder for it, and runs after the cutting pass below |
 
 **Judge the over-engineering row at altitude first.** Dispatch the `simplification-auditor` subagent where the session has it: the author of a change is the reader least able to see what it did not need, and that subagent judges the diff in a fresh context. Run inline when it is absent — the questions survive, the distance does not, so answer each row against the diff and the requirement rather than your memory of why you wrote it, and say in the report that the pass was not independent. Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, config key, flag, route, migration, event, job and public method** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
 
@@ -174,13 +174,15 @@ A comment earns its place **only when both** are true:
 
 **Density is itself a signal.** After judging comments individually, look across the scope: if one function or method accrued more than a single surviving comment, treat that as a smell that the code wants splitting or renaming, not annotating — revisit those comments with a bias to Remove/Replace.
 
+**Judge each comment on its own — never batch-justify.** A collective verdict ("these all explain real WHYs") is how a comment that merely restates the code survives.
+
 For each added/changed comment, apply this decision ladder **in order** and stop at the first that fits:
 
 | Verdict | When | Action |
 |---------|------|--------|
 | **Remove** | Comment restates what the code already says, narrates the obvious, or is a leftover (commented-out code, "TODO" with no tracking link, scaffolding chatter) | Delete it |
 | **Replace with better code** | The need for the comment disappears if the code is rewritten — rename a variable/method/class, extract a well-named private method, or split a long function | Rewrite the code, drop the comment, re-run affected tests |
-| **Trim / compact** | The WHY is genuinely needed but the comment is verbose, repeats itself, or buries the point | Reduce to the minimal sentence(s) that carry the constraint |
+| **Trim / compact** | The WHY is genuinely needed but the comment is verbose, repeats itself, or buries the point | Reduce to the minimal sentence(s) that carry the constraint — prefer linking the issue or PR over re-explaining the whole case inline |
 | **Keep as-is** | Already minimal, and without it a reader (with any linked issue) would get the code **wrong** — not just be curious | Leave it |
 
 Prefer **Remove** and **Replace** over **Trim** — a comment that can be designed away is better than a shorter comment. Default to no comment; the bar to keep one is high.
@@ -190,6 +192,8 @@ Exempt — do not touch:
 - Comments outside the current diff (pre-existing code you did not modify).
 
 Apply the Remove/Replace/Trim edits as part of this phase (this is your own work), then continue to Phase 4. If a rewrite needs a design decision, ask the user.
+
+Re-run this audit over comments added by any **later** phase of the same run — a Phase 4 fix, or a comment written while applying review feedback. Those phases add comments without auditing them, so an audit that ran before them is not finished.
 
 ### Phase 4: Fix Issues
 
