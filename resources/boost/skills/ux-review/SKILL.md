@@ -43,7 +43,7 @@ Before implementing UI changes, evaluate the current state and design an approac
 1. **Fetch requirements**
    - If the work is tracked in an issue tracker, fetch the issue for the full requirements
    - Understand what the user is trying to accomplish
-   - Identify the user personas affected
+   - Identify the personas affected. When the project ships a persona model, name them from it rather than an ad-hoc list — each row carries a feared failure, and that is what the review judges the interface against.
 
 2. **Analyze current state**
    - Find the relevant UI components/pages
