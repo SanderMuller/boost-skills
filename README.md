@@ -76,7 +76,7 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `final-verification-review` | Closeout verdict: run the full evaluate loop, dry-run the closeout preflight (PR flow *or* no-PR commit/release), report READY / NOT READY. | `github`        |
 | `frontend-quality`     | Frontend quality gate: type-checking, linting, and the JS test suite; browser eye-verify for UI changes, with a shipped harness. | `frontend`      |
 | `github-issue-updates` | Append a user-facing description and QA testables to a GitHub issue after a feature ships.           | `github-issues` |
-| `humanizer`            | Remove signs of AI-generated writing so text reads as natural and human.                             | —               |
+| `humanizer`            | Remove signs of AI-generated writing from prose a person reads — never from agent-to-agent text.      | —               |
 | `implement-spec`       | Implement a specification file phase by phase with progress tracking.                                | —               |
 | `interview`            | Adversarially grill out a complex feature's requirements — code-first, assumptions-audited — before writing its spec. | —               |
 | `jira-create`          | Create a Jira issue with a well-formed, user-facing description.                                     | `jira`          |
