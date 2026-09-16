@@ -191,7 +191,7 @@ When making changes to an existing PR you authored:
 2. **Switch to the branch**: `git checkout <branch-name>`.
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
-5. **Commit changes**: create meaningful commits following the project's commit conventions.
+5. **Commit changes**: create meaningful commits following the project's commit conventions, once the changes pass the project's checks — see *A Commit Is a Claim Too* in the `verification-before-completion` guideline.
 6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
 7. **Push to remote**: `git push origin <branch-name>`.
 

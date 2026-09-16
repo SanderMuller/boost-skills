@@ -29,3 +29,28 @@ $table->string('description')->after('name');
 // ✅ CORRECT — just append the column
 $table->string('description');
 ```
+
+### Guard Each Statement On an Engine Without Transactional DDL
+
+A migration runner records a migration only after its whole `up()` returns, and it wraps the run in a transaction only for engines it treats as supporting transactional DDL. Laravel does that for PostgreSQL and SQL Server, and not for MySQL, MariaDB or SQLite. Without that transaction, a run that dies halfway leaves the applied statements in place with nothing recorded, and the retry fails on the first statement it already applied, blocking every later migration. Check which side your engine and runner fall on before assuming a failed migration rolled back.
+
+Make each statement in a multi-statement migration skippable when it is already applied, using the runner's own column and index checks.
+
+```php
+// ❌ WRONG — a retry after a half-applied run dies on "Duplicate column name"
+Schema::table('orders', function (Blueprint $table) {
+    $table->string('reference');
+    $table->index('reference');
+});
+
+// ✅ CORRECT — each statement checks for itself first
+if (! Schema::hasColumn('orders', 'reference')) {
+    Schema::table('orders', fn (Blueprint $table) => $table->string('reference'));
+}
+
+if (! Schema::hasIndex('orders', 'orders_reference_index')) {
+    Schema::table('orders', fn (Blueprint $table) => $table->index('reference'));
+}
+```
+
+Keep slow work out of the migration on a large table: build an index, backfill a column, or add a foreign key as a separate job or an out-of-band task, not inside the deploy step.

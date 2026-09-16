@@ -65,7 +65,7 @@ Minimum viable version? Explicitly out of scope? Related features to integrate w
 
 ### Phase 3: User Experience
 
-How do users discover this? Primary flow? What feedback/confirmation do they need? Different user types with different needs?
+How do users discover this? Primary flow? What feedback/confirmation do they need? Different user types with different needs? When the project ships a persona model, name those user types from it instead of inventing them here, so the spec that follows inherits one vocabulary.
 
 ### Phase 4: Technical Considerations
 

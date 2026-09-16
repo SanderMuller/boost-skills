@@ -5,6 +5,120 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.42.0 - 2026-09-15
+
+### Added
+
+- `simplify-shape` judges whether a change carries its values in the right type — a fixed set of strings that wants an enum, inline validation that wants a form request, an array shape that wants a DTO, a repeated query chain that wants a query-builder method. Tagged `php`.
+
+### Changed
+
+- `evaluate` routes the wrong-type case to `simplify-shape` from its over-engineering pass, and its comment gate now treats comment density in one method as a signal to split or rename rather than annotate.
+- `migration-squash` matches uppercase in migration names. The contamination check and the pre-flight "not AHEAD" check truncated a name at its first capital, so legitimate target-branch migrations were reported as contamination.
+- `migration-squash` covers three more ways a squash goes wrong: a throwaway database whose data-migrations only guard themselves in test mode aborts a CLI rebuild and yields a silently incomplete dump; a test that loads a migration by path breaks when the prune deletes the file; and an insert-only data-migration can be replayed by keeping the file and dropping its row from the dump instead of moving its rows into a seeder.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.41.0...2.42.0
+
+## 2.41.0 - 2026-09-10
+
+### Added
+
+- `write-spec` names personas from the project's own model. A spec header carries a `**Personas:**` line, the research checklist reads the model and any persona-tagged stories before writing, and the Edge Case Sweep treats each persona's feared failure as an assertion rather than a nicety. Pick the axes that bite the change, not the whole grid. Conversion Mode carries the line forward, so converting an interview spec no longer drops it.
+- `interview` and `ux-review` draw their user types from the same model. The interview stops inventing user types at Phase 3, and a UX review judges the interface against what those personas fear instead of an ad-hoc list. A spec and its ticket now describe the same people in one vocabulary.
+
+Every part of this is conditional on the project shipping a persona model. A project without one reads no differently than before, and no new convention slot is introduced.
+
+### Internal
+
+- The dev requirement on `stolt/skill-validator` moved from 0.0.1 to 0.0.5.
+- The user-scope sidecar check states the real reason it rejects a non-canonical path. Only the canonical form matches on every `boost-core` version, and the validator no longer depends on the consumer's core to normalize one.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.40.0...2.41.0
+
+## 2.40.0 - 2026-09-10
+
+### Added
+
+- Two guidelines now publish at user scope. `boost sync --scope=user --all` writes `voice` and `verification-before-completion` to your agent directories, so they apply in every repository on the machine instead of only in projects that require this package. A new `.boost-user-scope.yaml` sidecar picks which guidelines are eligible, and needs `boost-core` 1.10.0 or later. Below that the sidecar is inert and nothing changes. The sidecar answers a different question from `.boost-tags.yaml`: tags decide which projects a guideline reaches, this decides whether it ships outside a project at all. `voice` is in both.
+- `voice` gains a register-and-volume section. Answer at the size of the question, and do not put bold headings, tables, or fenced evidence blocks in someone else's thread unless the reader asked for detail. A code block quoting real output or a real diff is content and stays. The rules apply most strictly outside your own repository, where a formatted report against a short question can get a contribution rejected before the change is read.
+
+### Changed
+
+- `verification-before-completion` now covers what you did not check. The file already forbade asserting an untraced cause; it now also forbids a true statement that implies more coverage than it has. "Tests pass" is not a complete report when you ran one suite of three.
+
+### Internal
+
+- The catalog validator gains an invariant over the new sidecar. It fails the build on an entry that is not a plain relative path, is not a `.md` file, names no file, or holds a conventions token. User scope has no `boost.php` to resolve a token against, and boost-core refuses the package's whole user-scope run when it finds one.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.39.1...2.40.0
+
+## 2.39.1 - 2026-09-08
+
+### Fixed
+
+- The three subagents no longer describe themselves as "Read-only". Each holds `Bash` so it can read a diff, walk history, or run one named test, and a shell command writes as freely as any other — so the word claimed a fence that is not there. The descriptions now say what is true, that the subagent never edits the repository, and each body keeps the accurate split: `Write` and `Edit` are denied outright, using `Bash` only to read is an instruction the run follows. The description is the half a dispatcher reads when choosing an agent, which is why it mattered more than the body.
+
+### Changed
+
+- The README says what to do about a subagent you already wrote yourself. Claude Code resolves a dispatch by the frontmatter `name` and never by path, so a hand-written `.claude/agents/tech-lead-reviewer.md` and the shipped copy are two files claiming one name, resolved by filesystem read order. Delete or rename the local one when adopting the shipped version; `boost sync` warns about the overlap until you do.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.39.0...2.39.1
+
+## 2.39.0 - 2026-09-08
+
+### Added
+
+- Three Claude Code subagents, the first this package ships: `simplification-auditor` audits a change for code that does not need to exist and returns a ledger accounting for every unit it added; `tech-lead-reviewer` judges the approach one altitude above the line — design size, value types, placement, one-way doors; `test-coverage-auditor` finds the untested failure paths and the assertions that pass whatever the code does. Each runs in a context that did not write the change, which is the property an inline pass cannot have.
+- `evaluate`, `code-review` and `test-value` dispatch them when a session has them, and state what the inline fallback loses when it does not.
+- `ai-guidelines`: a fallback that is lesser than the path it replaces must say what it gives up. A pass that keeps a rule and quietly drops the property the rule depended on reads as parity to anyone downstream.
+
+### Changed
+
+- `evaluate` and `code-review`: the over-engineering pass now says the fresh context is what makes it work, and that running it inline means answering from the diff and the requirement rather than from what you meant to build.
+- `ai-guidelines`: subagents join guidelines, skills and reference files as a source home, and the checklist covers a package's own `resources/boost/…` tree rather than assuming `.ai/`.
+- The catalog validator gains two invariants, both CI-enforced: a subagent file ties to its README row, its frontmatter `name` and its tags; and every `boost-requires` token names a skill or subagent this package actually ships.
+
+### Notes
+
+`boost-core` 1.9.0 or newer emits the subagents to `.claude/agents/boost/sandermuller__boost-skills/`, a subtree it owns and gitignores; hand-written definitions elsewhere in `.claude/agents/` are untouched, and targets without a subagent concept receive nothing. An older engine ignores the directory, so the `boost-core` floor stays `^1.4` and nothing about this release is breaking.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.38.0...2.39.0
+
+## 2.38.0 - 2026-09-07
+
+### Added
+
+- `php-generics`: a new `php`-tagged skill for the docblock conventions static analysis depends on. Name a repeated `array{...}` shape once with `@phpstan-type` and import it with `@phpstan-import-type` rather than copying the braces, write a shape instead of `array<string, mixed>` without narrowing what is genuinely open, bind every generic base with `@extends` / `@implements` / `@use`, and type a class name that gets instantiated as `class-string<T>`.
+- `test-value`: a new skill that judges the tests a change touched in both directions — the ones that prove nothing, and the behaviour nothing covers. Each test gets a delete, rewrite or keep verdict; nothing outside the change's scope is deleted; a falling test count is reported as the improvement it can be.
+
+### Changed
+
+- `eloquent-models`: covers the generics on a model's companions. A factory, custom query builder and custom collection each bind their type parameter, each generic trait carries its own `@use` docblock on its own `use` statement, and a binding is paired with the runtime selection it needs — `$builder` for a query builder, `$collectionClass` or `#[CollectedBy]` for a collection. Version floors are stated, with the `newEloquentBuilder()` / `newCollection()` override as the route below them.
+- `code-review` and `test-writing`: both point at `test-value` for a verdict on tests that already exist, `code-review` from its testing dimension and `test-writing` as the counterpart to authoring.
+- `backend-quality`: an error about what is inside a value now routes to `php-generics` rather than being answered locally.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.37.0...2.38.0
+
+## 2.37.0 - 2026-09-06
+
+### Added
+
+- `task-scope`: a new always-on guideline covering how much of a change to make. A pre-existing bug or an unrelated cleanup found on the way becomes a follow-up rather than a fix, a defect the change itself introduces stays in scope, an ambiguous ask gets the one reading its wording and the surrounding code support, and a file is edited in place rather than rewritten.
+- `backend-quality`: the two PHPStan annotations that fix an error rather than hide it. Conditional return types (`@return ($param is Type ? A : B)`) for a return type a parameter decides, and `@phpstan-assert-if-true` for a bool method that is a pure type check, each with the call-site cleanup that follows and the cases where the annotation would lie.
+- `migrations`: guard each statement in a multi-statement migration where the runner has no transactional DDL. A run that dies halfway leaves the applied statements in place with nothing recorded, and the retry then fails on the first statement it already applied.
+- `verification-before-completion`: a commit is a claim too. Commit once the change's own checks pass, not while the approach is still being tried, with the measurement-loop exception stated.
+- `test-writing`: how many tests a change earns. Size the suite like the sibling files, keep a scratch check out of the permanent suite unless it is the coverage a rule requires, and treat a whole new test layer as the user's decision.
+- `ai-guidelines`: the three content tiers, an altitude gate, and a consistency gate. A guideline line that is true and changes nothing an agent does now fails the gate, and every skill name, path, and tag a change references must resolve.
+
+### Changed
+
+- `evaluate` and `code-review`: over-engineering is judged at altitude before any line. Both skills inventory the files, classes, interfaces, flags, routes, migrations, events, jobs and public methods a change added and ask whether each needs to exist, answered against downstream consumers as well. A complexity floor joins the existing behaviour floor, so fewer lines bought with deeper nesting or a lost early return counts as a loss.
+- `evaluate`: reporting no over-engineering findings now requires the list of units examined, so a clean change reads differently from an unexamined one.
+- `humanizer`: four more patterns for punctuation and plain speech. Section 14 no longer offers parentheses as the em-dash fix, since parentheses, en dashes and double hyphens trade one tell for another. Section 16 gains a carve-out for a bold lead-in that names an item and adds new detail, and section 23 gains a plain-word list.
+- `pull-requests` and `autoresearch`: both now point at the commit-timing rule, `autoresearch` as its stated exception.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.36.0...2.37.0
+
 ## 2.36.0 - 2026-09-02
 
 ### Changed
@@ -266,6 +380,13 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
+  
+  
+  
+  
+  
+  
   
   
   
@@ -943,6 +1064,13 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -962,6 +1090,13 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
 
 
 
@@ -1091,6 +1226,13 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1116,6 +1258,13 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
 
 
 
@@ -1254,6 +1403,13 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
+
+
+
+
+
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1280,6 +1436,13 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
+
+
+
+
+
+
 
 
 
@@ -1369,6 +1532,13 @@ Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symm
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
+
+
+
+
+
+
 
 
 
@@ -1516,6 +1686,13 @@ vendor/bin/boost validate
 
 
 
+
+
+
+
+
+
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1524,6 +1701,13 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
 
 
 
@@ -1661,6 +1845,13 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
+  
+  
+  
+  
+  
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1678,6 +1869,13 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
 
 
 
@@ -1786,6 +1984,13 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
+
+
+
+
+
+
 
 
 
@@ -1965,6 +2170,13 @@ vendor/bin/boost validate
 
 
 
+
+
+
+
+
+
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -1983,6 +2195,13 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
+
+
+
+
+
+
 
 
 
@@ -2192,6 +2411,13 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
+
+
+
+
+
+
 
 
 

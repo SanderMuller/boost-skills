@@ -35,6 +35,8 @@ git checkout <target-branch> && git pull
 
 **Safest: dump from a clean, target-only DB**, not your day-to-day dev DB (which is almost always migrated to a development branch). Point `DB_DATABASE` at a throwaway database, then rebuild it as pure target state by loading the current baseline and running the target branch's migrations onto it. This is the test-runner-style "build it fresh, throw it away" path the `database-safety` guideline blesses — never wipe or `migrate:fresh` a dev or shared DB to do this.
 
+A CLI rebuild runs the migrations outside the test runner. A data-migration that guards its body with a test-mode check (for example `if (app()->runningUnitTests()) { return; }`) therefore executes for real on the throwaway DB, and it fails when it needs rows a seeder owns — migrations run before seeders. The failure aborts the run, so every migration after it never applies and the dump comes out incomplete without saying so. If that happens, migrate the throwaway DB **through the test runner** instead: point the test environment at that same throwaway database (not `:memory:`, and not the suite's own test DB), run one test in a suite that refreshes the database, then dump from it. The dump reads the connection the CLI uses, so both must name the same database or you dump the unmigrated one.
+
 **If you must dump from your working DB, verify it first:**
 
 ```bash
@@ -50,7 +52,7 @@ php artisan migrate
 #    avoids false-flagging legitimate pruned-but-recorded history. Any line = applied-but-not-
 #    legitimate → contamination, do NOT dump from this DB.
 comm -13 \
-  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+') \
+  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+') \
             <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##')) \
   <(php artisan tinker --execute="echo DB::table('migrations')->orderBy('migration')->pluck('migration')->implode(PHP_EOL);" | sort -u)
 ```
@@ -65,7 +67,17 @@ php artisan schema:dump --prune     # writes <connection>-schema.sql, deletes mi
 
 If the squash prunes any **data-migration** (one that seeded or transformed rows, not just schema), those rows are **not** in `schema:dump`'s output — add them to whatever seeds that table on a fresh DB (a seeder, a factory, or your schema-load hook), or the next fresh build / CI loses them (see review check #5).
 
-Then remove any test that `require`s a now-deleted migration file by path, create the branch, and open the PR — verifying your own dump against the review checklist below before pushing.
+Another option is cheaper and keeps the rows identical, and it fits a migration that only inserts its own rows: keep the migration file, and delete its row from the dump's `migrations` INSERTs. It does not fit one that transforms rows another migration wrote — on a fresh DB those rows are gone, so the replay changes nothing or fails. The migration then runs again on every fresh DB and writes the same rows. Existing deployments already recorded it, so it never re-runs there. Check #3 reports such a file as `MISSING RECORD` by design — confirm every hit is one of these, not a real gap.
+
+Before you prune, find the tests that load a migration file by path — they break when the file goes:
+
+```bash
+grep -rn "migrations/" tests/     # each hit either survives the prune or the test goes
+```
+
+Keep a file the prune would delete when a test still loads it, or drop the test. Also keep `database/migrations/` itself as a directory (a `.gitkeep`) when a tool in the project lists that path — a static analyser configured with it refuses to run when the path is gone.
+
+Then create the branch and open the PR — verifying your own dump against the review checklist below before pushing.
 
 ## Reviewing / verifying a squash — run EVERY check
 
@@ -92,7 +104,8 @@ On another host, read the PR's target from its UI/API, or skip this check when r
 **3. Completeness — no recent migrations missing (the most common defect).** Every deleted migration must be recorded in the dump, and the newest migrations' columns must be present. A DB behind HEAD yields a dump missing the latest migrations' *schema and records*; merging then deletes those files while their schema is absent from the baseline → fresh installs miss tables/columns and the app breaks against its own schema.
 
 ```bash
-# every migration on the target must be recorded in the dump:
+# every migration on the target must be recorded in the dump — except one deliberately kept
+# so it runs again on a fresh DB (the data-migration option in #5); confirm each hit is that:
 for f in $(git ls-tree -r --name-only origin/<target-branch> database/migrations/); do
   n=$(basename "$f" .php)
   printf '%s' "$DUMP" | grep -q "$n" || echo "MISSING RECORD: $n"
@@ -113,21 +126,22 @@ printf '%s' "$DUMP" | grep -c "<a_column_added_by_the_latest_migration>"   # exp
 # migration files. Anything the new dump records beyond that union is contamination. Subtracting
 # the baseline records avoids false-flagging legitimate history whose files earlier squashes pruned.
 comm -13 \
-  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+') \
+  <(sort -u <(git show origin/<target-branch>:<schema-path> | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+') \
             <(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | sed 's#.*/##;s#\.php$##')) \
-  <(printf '%s' "$DUMP" | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+' | sort -u)
+  <(printf '%s' "$DUMP" | grep -oE '[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+' | sort -u)
 # Empty output = clean. Spot-check any flagged name's columns are likewise absent from the dump.
 ```
 
-**5. Data migrations — seeded rows preserved.** `schema:dump` captures table *structure* and the `migrations` table, but **not** the data rows any other table holds. So a pruned *data-migration* (one that `INSERT`s/`UPDATE`s rows) loses its rows on a fresh DB unless they are also carried into whatever seeds that table. Find the data-migrations among the pruned files and confirm their rows still land on a fresh DB:
+**5. Data migrations — seeded rows preserved.** `schema:dump` captures table *structure* and the `migrations` table, but **not** the data rows any other table holds. So a pruned *data-migration* (one that `INSERT`s/`UPDATE`s rows) loses its rows on a fresh DB unless they are also carried into whatever seeds that table. Find the data-migrations among the pruned files and confirm their rows still land on a fresh DB. Run this check even when the full suite is green — a table no test asserts on loses its rows silently, and check #6 still passes:
 
 ```bash
 # data-migrations among the files THIS PR deletes (they write rows, not just schema):
 for f in $(git diff --name-only --diff-filter=D origin/<target-branch> "pr-<PR>" -- database/migrations/); do
   git show "origin/<target-branch>:$f" | grep -Eq 'DB::table|->insert\(|->update\(|->upsert\(' && echo "DATA MIGRATION: $f"
 done
-# for each, its rows must be present on a fresh DB — in the schema dump's own INSERTs, or in
-# the relevant seeder. Grep the right seed for a value the data-migration inserts:
+# for each, its rows must be present on a fresh DB — in the schema dump's own INSERTs, in
+# the relevant seeder, or by the file being kept while its row is dropped from the dump's
+# `migrations` INSERTs (so it runs again). Grep the right seed for a value it inserts:
 grep -c "<a value the data-migration inserts>" "<seeder-or-seed-dump-path>"   # expect > 0
 ```
 
@@ -145,6 +159,7 @@ php artisan test --parallel --recreate-databases
 |---|---|---|
 | Untracked schema `.sql` left beside a stale tracked dump | forgot the rename (projects tracking a non-default filename) | check #2 |
 | Fresh installs miss tables/columns | dumped from a DB **behind** the target HEAD | check #3 |
+| Dump stops at some migration, later ones absent | a CLI rebuild of the throwaway DB aborted on a data-migration that only guards itself in test mode | check #3 |
 | Baseline has extra/unreleased columns | dumped from a **dev-branch-migrated** DB | check #4 |
 | Fresh-DB / CI tests fail asserting on seeded rows (`size 0`) | a pruned **data-migration**'s rows weren't carried into the dump or a seeder | checks #5, #6 |
 | Tests fatal "file not found" | a test `require`s a deleted migration | check #7 |

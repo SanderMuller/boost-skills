@@ -60,7 +60,7 @@ Look for:
 
 Look for:
 - **Project convention violations**: Does the code follow established patterns? Check sibling files.
-- **Over-engineering**: Unrequested abstractions, speculative generality, premature flexibility, or hand-rolled code a stdlib/native/framework feature or installed dependency replaces — could it be simpler or deleted without losing required behavior? Never cut validation, error handling, security, or accessibility to shrink code.
+- **Over-engineering**: Unrequested abstractions, speculative generality, premature flexibility, or hand-rolled code a stdlib/native/framework feature or installed dependency replaces — could it be simpler or deleted without losing required behavior? Ask this **at altitude first**: inventory every file, class, interface, trait, config key, flag, route, migration, event, job and public method the change added, and ask of each whether the unit needs to exist at all. Dispatch the `simplification-auditor` subagent where the session has it, and the `tech-lead-reviewer` subagent when the change's approach is worth judging above the line. Reviewing your own change costs the distance these questions depend on, so without them, answer from the diff and the requirement rather than from what you meant to build, and say the pass ran without a fresh context. The question differs per unit — a class wants more than one caller or an inlined body, an interface wants a second implementation, a flag wants a value other than the default, an event wants a listener, a queued job wants a reason to leave the caller. The `evaluate` skill carries the same table, and the `simplification-auditor` subagent the fullest version; keep the three consistent when any of them changes. Answer every question against downstream consumers too, not this repository alone: a package's public API, a route, a console command, and a framework hook are called from outside. A line-level pass can only shorten a file, never remove one. Read the lines after that. Two floors reject a candidate: **brevity** (never cut validation, error handling, security, accessibility, requested functionality, or a test for non-trivial logic to shrink code) and **complexity** (fewer lines bought with deeper nesting, chained ternaries, a lost early return, or one opaque expression is a loss). Name the floor when you reject a candidate.
 - **DRY violations**: Duplicated logic that should be extracted
 - **Dead code**: Unused variables, unreachable branches, commented-out code
 - **Type safety**: Missing return types, loose comparisons where strict is needed
@@ -87,6 +87,7 @@ Look for:
 - **Fragile assertions**: Tests that pass for the wrong reason (e.g., an absence assertion matching unrelated text)
 - **Missing security tests**: No tests verifying auth/authorization on actions
 - **Test isolation**: Tests that depend on each other or on specific state
+- **Tests that prove nothing**: assertions that restate the framework, mirror the implementation, or check only that work was scheduled with nothing anywhere running that work and asserting its effect — the `test-value` skill carries the full verdict pass and the cases where a shallow check is legitimate
 
 ### Phase 3: Compile Findings
 

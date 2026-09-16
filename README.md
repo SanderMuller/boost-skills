@@ -57,7 +57,7 @@ Under `laravel/boost` instead, follow [its setup](https://github.com/laravel/boo
 The inventory below is the catalog's contract — CI checks it against the shipped skills and their tags, so it stays exact. The same list, rendered, is on the [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page.
 
 <details>
-<summary>36 skills — click to expand the inventory</summary>
+<summary>35 skills — click to expand the inventory</summary>
 
 | Skill                  | What it does                                                                                         | Tags            |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
@@ -69,7 +69,6 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `clean-specs`          | Command-only (`/clean-specs`): remove spec files whose work is fully implemented and proven on the base branch, keeping only live work.               | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
-| `comment-audit`        | Judge the comments a change added — Remove / Replace / Trim, one at a time, default to none.         | —               |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
@@ -84,6 +83,7 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
+| `php-generics`         | Docblock generics and shapes: name a repeated `array{...}`, bind a generic base, type a class name.  | `php`           |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
 | `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
@@ -91,8 +91,8 @@ The inventory below is the catalog's contract — CI checks it against the shipp
 | `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, a problem-first opening, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, length budget, voice, breaking-change callouts, what to omit. | `release-automation` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
-| `simplify-code`        | Two passes over a change — cut what is not needed, then shape what remains into the right type.      | —               |
-| `test-value`           | Judge a change's tests both ways — delete the ones that prove nothing, name the missing assertions.  | —               |
+| `simplify-shape`       | Judge whether a change carries its values in the right type: enum, form request, DTO, query-builder method. | `php`           |
+| `test-value`          | Judge the tests a change touched: delete what proves nothing, cover what nothing tests.               | —               |
 | `test-writing`         | Write specific, descriptively named tests that follow Arrange-Act-Assert.                            | —               |
 | `upgrading`            | Canonical structure for UPGRADING.md in a Composer package — when to maintain one, what to put in it. | `release-automation` |
 | `ux-review`            | Weigh UX/UI options for a new feature, recommend an approach, and document the decision.             | —               |
@@ -128,8 +128,10 @@ Most content is universal. The rest carries **capability tags** — a project de
 
 Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGENTS.md`. Unlike skills they are always active — no on-demand activation. They are tagged like skills, but from a sidecar `.boost-tags.yaml` manifest, since a guideline file stays frontmatter-free for `laravel/boost` compatibility.
 
+A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes those to your agent directories, so they apply on the machine rather than in one project (needs `boost-core` >= 1.10.0). The two sidecars answer different questions and do not interact: tags pick which projects a guideline reaches, and the user-scope list picks whether it ships outside a project at all. `voice` is in both. A user-scope guideline must render token-free, because user scope has no `boost.php` to resolve a conventions token against.
+
 <details>
-<summary>9 guidelines — click to expand</summary>
+<summary>10 guidelines — click to expand</summary>
 
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
@@ -140,10 +142,25 @@ Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGEN
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
 | `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
-| `verification-before-completion`  | Run the verification command and read its output before claiming work is done.           | —          |
-| `voice`                           | One voice rule per writing surface — a routing table plus the Simplified Technical English rules. | `voice` (opt-in) |
+| `task-scope`                      | Keep the change to what the task asks, pick one reading of an ambiguous ask, and edit in place. | —          |
+| `verification-before-completion`  | Run the verification command and read its output before claiming work is done, and say what you did not verify. | —          |
+| `voice`                           | One voice rule per writing surface — a routing table, the Simplified Technical English rules, and how much to write. | `voice` (opt-in) |
 
 </details>
+
+## Subagents
+
+Claude Code subagent definitions this package ships. A subagent runs in its own context, which is the point: an adversarial pass judges a change as code somebody else wrote, and the same rules applied by the author who wrote it are a weaker check. `boost-core` emits them to `.claude/agents/boost/<vendor>__<package>/`, a subtree it owns; hand-written definitions at the top of `.claude/agents/` are untouched. Targets with no subagent concept receive nothing.
+
+| Subagent | What it does | Tags |
+|------------------------|------------------------------------------------------------------------------------------------------|-----------------|
+| `simplification-auditor` | Audit a change for code that does not need to exist, and return a ledger accounting for every unit it added. | —               |
+| `tech-lead-reviewer`   | Review the approach one altitude above the line: design size, value types, placement, one-way doors.  | —               |
+| `test-coverage-auditor` | Find the untested failure paths and the assertions that pass whatever the code does.                 | —               |
+
+`boost-core` 1.9.0 added the subagent channel; an older engine ignores the directory entirely, so this costs a consumer on an earlier version nothing.
+
+**Already wrote one of these yourself?** Claude Code resolves a dispatch by the frontmatter `name`, not by path, so your `.claude/agents/tech-lead-reviewer.md` and the shipped one are two files claiming one name — and which one loads is filesystem read order. Delete or rename your copy when you adopt the shipped version; `boost sync` warns about the overlap until you do. A skill that dispatches one should say what its inline fallback loses — see the `ai-guidelines` skill.
 
 ## Editing skills and guidelines
 
@@ -158,6 +175,16 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release history.
 ## Security
 
 Found a vulnerability? Email `github@scode.nl` rather than opening a public issue. See [`SECURITY.md`](SECURITY.md) for the disclosure policy.
+
+### Skill scanners report findings here
+
+Static skill scanners such as [SkillSpector](https://github.com/NVIDIA/skillspector) flag this package. The findings are false positives. Three patterns cause them:
+
+- **HTML comments read as prompt injection.** Every `<!--boost:conv …-->` token is a `boost-core` conventions placeholder that the sync resolves. So are the `<!-- verified-sha: … -->` and `<!-- spec:planned-at … -->` anchors. A scanner cannot tell them from a hidden instruction.
+- **Anti-pattern prose read as an instruction.** A skill that lists "without asking" or "skip verification" as a thing *not* to do matches the same string as a skill that tells an agent to do it.
+- **Documented shell commands read as tool misuse.** The `autoresearch` skill prints `git reset --hard HEAD~1` because its loop commits before it measures, so a rejected experiment reverts in one step.
+
+Do not add a scanner baseline file to this repository. A baseline written by the package author suppresses the findings in a consumer's own scan, which is why SkillSpector ignores a discovered baseline until the consumer opts in.
 
 ## Credits
 
