@@ -34,6 +34,7 @@ row when done.
 | 011  | `clean-specs` proves shipping more than one way, and sweeps more than one directory | P2 | M | — | DONE (working tree, uncommitted) |
 | 012  | A stale `codex-review` wrapper fails invisibly, and the skill sends the reader away from the fix | P2 | S | — (complements `b14698b` / 2.30.0) | DONE (`WRAPPER_VERSION` set to `2.34.0` — bump it if the release tags differently) |
 | 013  | The pre-outward gate ships as a skill, not a guideline | P1 | S (M if boost-core takes §6) | — | TODO |
+| 014  | Three lens ideas that only exist on a superseded branch | P3 | S per item | — | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale).
 
