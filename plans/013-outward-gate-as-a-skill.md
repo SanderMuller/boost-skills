@@ -78,9 +78,10 @@ have passed it.
 
 There was also no hook. `pull-requests/SKILL.md` already points at `humanizer`
 for PR *descriptions* (line 436, "run it through that lens before submitting"),
-and `pr-review` tells the model to fetch `humanizer` at use time for a review
-body. Neither covers an ad-hoc comment on a thread. That is exactly where the
-damage happened.
+and `readme/SKILL.md` points at it for prose tells. Those two are the whole set:
+`grep -rn humanizer resources/` finds no other pointer, and
+`pr-review-feedback` has none. Nothing covers an ad-hoc comment on a thread.
+That is exactly where the damage happened.
 
 The code was never the issue. Two files, a handful of production lines, a test that
 proved the mechanism in both directions, and a maintainer's approval. Once the
