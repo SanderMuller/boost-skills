@@ -16,7 +16,9 @@ Use it on prose a **person** reads:
 - A PR or issue body, a review comment, a commit message
 - An article, a post, or any text the user hands over to humanize
 
-Do NOT use it on machine-to-machine text. A message to a peer agent, a prompt for a subagent, a subagent's report back, a handoff note between sessions, and a tool argument all go to another machine. That text has to be correct, complete and short. It does not need a human voice, and a humanizing pass over it costs a step and changes nothing that matters. The `voice` guideline already covers how those sentences are built.
+Do NOT use it on machine-to-machine text. A message to a peer agent, a prompt for a subagent, a subagent's report back, and a handoff note between sessions all go to another machine. That text has to be correct, complete and short. It does not need a human voice, and a humanizing pass over it costs a step and changes nothing that matters. The `voice` guideline already covers how those sentences are built.
+
+The reader decides this, not the channel. A tool call often carries prose a person reads — the body of `gh pr create --body`, an issue comment, a release note — and the prose inside it is in scope even though a command carries it.
 
 Code and code comments are out of scope too — the language guidelines own those.
 
