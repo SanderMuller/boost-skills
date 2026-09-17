@@ -26,3 +26,5 @@ jobs:
       - run: php .github/validate-skills.php
 
       - run: php .github/validate-catalog.php
+
+      - run: node .github/test-dangling-symbols.mjs

@@ -23,7 +23,10 @@
 #                     commit, else ORIG_HEAD.
 #   --keywords <re>   Declaration keywords to scan for. Default covers PHP/JS/TS.
 #                     Python: 'def|class'. Go: 'func|type'. Rust: 'fn|struct|trait|enum'.
-#   -- <pathspec>...  Limit the reference search (e.g. -- src/ app/). Default: whole repo.
+#   -- <pathspec>...  Limit where stale REFERENCES are searched for (e.g. -- src/ app/).
+#                     Default: the whole repo. The "is it still declared somewhere" check
+#                     stays repo-wide either way. Generated bundles (*.map, *.min.js) are
+#                     skipped by both.
 #
 # Exit codes: 0 = nothing dangling, 1 = dangling references found, 2 = usage error.
 #
@@ -34,12 +37,39 @@
 
 set -uo pipefail
 
-KEYWORDS='function|class|interface|trait|const|enum'
+# Every sort and comm below must agree on collation, or comm silently mis-compares two
+# lists that are each sorted — by different rules — and reports nonsense.
+export LC_ALL=C
+
+# Keep in sync with the --keywords default documented in the header above.
+KEYWORDS='function|class|interface|trait|const|enum|type'
 BASE=''
 OURS=''
 PATHSPEC=()
 
 die() { printf 'dangling-symbols: %s\n' "$1" >&2; exit 2; }
+
+# Generated bundles and their source maps are megabytes of vendored text that dominate the
+# scan, and they are excluded from BOTH passes. A stale reference inside one is not yours
+# to fix, and a build output still carrying a declaration the source dropped would mark
+# that name as declared — reporting a clean sweep over a tree whose source is broken.
+BUNDLES=(':(exclude)*.map' ':(exclude)*.min.js')
+
+# git grep answers 0 for a match and 1 for none; anything higher is a real failure.
+# Treating those alike is how this script would answer "no dangling references" because
+# it could not run — the one wrong answer it must never give.
+#
+# Writes to a file rather than stdout for two reasons: command substitution drops the NUL
+# bytes the -z form depends on, and die() inside a pipeline would exit only that subshell,
+# leaving the caller reading an empty result as a clean sweep. Call it at top level.
+grep_tree() {
+    local destination=$1 status
+    shift
+
+    git grep --no-color "$@" >> "$destination"
+    status=$?
+    [ "$status" -le 1 ] || die "git grep failed (exit $status)"
+}
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -105,26 +135,87 @@ DIFF_THEIRS=$(git diff --no-color --no-ext-diff --no-textconv "$OURS...$BASE") \
 DIFF_OURS=$(git diff --no-color --no-ext-diff --no-textconv "$BASE...$OURS") \
     || die "git diff $BASE...$OURS failed"
 
+workdir=$(mktemp -d) || die "cannot create a temporary directory"
+trap 'rm -rf "$workdir"' EXIT
+
+# Only regex-safe names reach the alternation pattern built below. names() extracts
+# exactly this character class today, so nothing is dropped; the filter is here so a
+# future --keywords change cannot inject a metacharacter into that pattern.
+removed_from_diff "$DIFF_THEIRS" > "$workdir/removed-by-base"
+removed_from_diff "$DIFF_OURS" > "$workdir/removed-by-ours"
+
+awk '/^[A-Za-z_][A-Za-z0-9_]*$/' "$workdir/removed-by-base" "$workdir/removed-by-ours" \
+    | sort -u > "$workdir/candidates"
+
+# A name is only dangling if NOTHING declares it any more. Without this, every
+# renamed local — `for (const request of …)` reads as a removed `const request` —
+# reports the hundreds of files that merely use the word, and a sweep that cries
+# wolf gets ignored, which is the same as not running it.
+#
+# One pass collecting every declared name, rather than one grep per candidate: the
+# per-candidate form re-scans the whole repository once per name, which took 18 minutes
+# for the several hundred candidates one real merge produced.
+#
+# Deliberately repo-wide, ignoring PATHSPEC: the pathspec narrows where you look for
+# stale REFERENCES, but a declaration living outside it is still a declaration, and
+# scoping this check would report it as removed.
+#
+# -w (whole word) is load-bearing: without it `myfunction foo` reads as a declaration of
+# `foo`, so a name nothing declares looks declared.
+# Whole lines, not -o: an import line carries the same shape as a declaration —
+# `import type MoneyAmount from './money'` reads as a declaration of the very alias the
+# other side removed, so the rename it is meant to catch would report clean. The names
+# come out of the surviving lines below.
+grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" -- "${BUNDLES[@]}"
+
+grep -vE '^[[:space:]]*import[[:space:]]' "$workdir/declarations" \
+    | grep -oE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" \
+    | awk '{print $NF}' \
+    | sort -u > "$workdir/declared"
+
+comm -23 "$workdir/candidates" "$workdir/declared" > "$workdir/dangling"
+
+# References: one alternation pass per chunk of names, rather than one grep per name.
+# -o prints the matched name, so a single pass reports which symbol each file hit.
+# Chunked because the pattern grows with the symbol count, well inside ARG_MAX at this
+# size but bounded on purpose.
+#
+# -w, never a `\b` regex: `\b` is a GNU extension that matches nothing under
+# `grep.patternType=extended` (and on platforms whose regex lib lacks it), which would
+# report a clean sweep on a broken merge. -w is a git option, immune to that config.
+#
+# -z separates the filename with a NUL, so a path holding a colon still parses.
+# Splitting `path:line:match` on colons cannot do that. The record terminator is still a
+# newline, so a path holding one is not covered.
+#
 found=0
-while IFS= read -r symbol; do
-    [ -n "$symbol" ] || continue
+if [ -s "$workdir/dangling" ]; then
+    : > "$workdir/references"
 
-    # -w -F, never a `\b` regex: `\b` is a GNU extension that matches nothing under
-    # `grep.patternType=extended` (and on platforms whose regex lib lacks it), which
-    # would report a clean sweep on a broken merge. -w is a git option and -F treats
-    # the symbol as the literal it is, so both are immune to that config.
-    if [ ${#PATHSPEC[@]} -gt 0 ]; then
-        hits=$(git grep --no-color -lnwF -- "$symbol" -- "${PATHSPEC[@]}" 2>/dev/null)
-    else
-        hits=$(git grep --no-color -lnwF -- "$symbol" 2>/dev/null)
-    fi
+    while IFS= read -r chunk; do
+        [ -n "$chunk" ] || continue
 
-    if [ -n "$hits" ]; then
+        if [ ${#PATHSPEC[@]} -gt 0 ]; then
+            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${PATHSPEC[@]}" "${BUNDLES[@]}"
+        else
+            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${BUNDLES[@]}"
+        fi
+    done < <(xargs -n 200 < "$workdir/dangling" | tr ' ' '|')
+
+    # NUL is translated first: the awk macOS ships terminates a string at \0, so a NUL
+    # field separator silently becomes the empty one and every record splits per character.
+    tr '\0' '\001' < "$workdir/references" \
+        | awk 'BEGIN { FS = "\001" } NF == 3 { print $3 "\001" $1 }' \
+        | sort -u > "$workdir/hits"
+
+    if [ -s "$workdir/hits" ]; then
         found=1
-        printf 'DANGLING  %s\n' "$symbol"
-        printf '%s\n' "$hits" | sed 's/^/          /'
+        awk -F'\001' '
+            $1 != previous { printf "DANGLING  %s\n", $1; previous = $1 }
+            { printf "          %s\n", $2 }
+        ' "$workdir/hits"
     fi
-done < <({ removed_from_diff "$DIFF_THEIRS"; removed_from_diff "$DIFF_OURS"; } | sort -u)
+fi
 
 if [ "$found" -eq 0 ]; then
     printf 'No dangling references. (ours=%s base=%s)\n' "$OURS" "$BASE"
