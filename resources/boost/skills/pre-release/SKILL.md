@@ -30,7 +30,7 @@ Run the checks **in this order**. Each must pass before moving to the next. Fix 
 
 Always append `|| true` to verification commands so output is captured even on failure (per repo `CLAUDE.md` rule). Pass/fail is determined from the captured output, not the exit status alone.
 
-**The order is 1 → 2 → 3 → 4 → 5 → commit → push → 6 → 7 (draft notes) → user cuts tag → 8a (pre-tag gate, just before `gh release create`) → 8b (post-tag watch).** Do not jump from step 5 straight to drafting release notes. The release-notes file is written only after the changes have been committed, pushed, and CI is green on that exact SHA (step 6). Writing notes earlier claims facts ("tests pass on CI matrix", "2,092 tests / 2,941 assertions") that are not yet proven. If you find yourself about to `Write` a file under `internal/release-notes-<version>.md` and the last thing you did was a local quality check, stop — you skipped commit/push/CI. And if the tag is cut without step 8a's live-remote + CI re-check, or without waiting on step 8b's tag-ref runs, the release ships on unverified facts even if steps 1-7 all passed.
+**The order is 0 → 1 → 2 → 3 → 4 → 5 → commit → push → 6 → 7 (draft notes) → user cuts tag → 8a (pre-tag gate, just before `gh release create`) → 8b (post-tag watch).** Do not jump from step 5 straight to drafting release notes. The release-notes file is written only after the changes have been committed, pushed, and CI is green on that exact SHA (step 6). Writing notes earlier claims facts ("tests pass on CI matrix", "2,092 tests / 2,941 assertions") that are not yet proven. If you find yourself about to `Write` a file under `internal/release-notes-<version>.md` and the last thing you did was a local quality check, stop — you skipped commit/push/CI. And if the tag is cut without step 8a's live-remote + CI re-check, or without waiting on step 8b's tag-ref runs, the release ships on unverified facts even if steps 1-7 all passed.
 
 **Two landing flows — know which you're in BEFORE step 6.** The order above is the **direct-to-release-branch flow**: you push the release commit straight to the release branch (usually `main`), and that branch's HEAD is the release commit. If instead the work lands via a **pull request** — it sits on a feature branch with an open PR — the release commit is the **merge commit on the release branch**, NOT the feature-branch tip. In a PR flow, three things shift and skipping any of them has shipped a broken release:
 
@@ -39,6 +39,19 @@ Always append `|| true` to verification commands so output is captured even on f
 - **Tagging before the merge points the tag at the release branch's pre-merge HEAD**, which contains none of the PR's work — a green-but-empty release. This has actually shipped: a `1.2.0` tag cut while its PR was still open pointed at pre-feature `main` and carried zero of the feature; the empty version still resolved on Packagist, so a dependent package pinning `^1.2` would have installed an engine that wasn't there. Recovery was delete-tag + re-tag at the real merge commit. Step 8a check D (content presence) below is the backstop, but the primary rule is: **merge first, then notes, then tag.**
 
 **The concrete commands in steps 6–8 use `main` as the release branch** — the common case. If your release branch is not `main` (a `release/*` line, a maintenance branch, an rc-prep branch), the release branch is wherever the tag will be cut from: substitute it in every `origin/main` / `refs/heads/main` reference below, and pin/verify against *that* branch's post-merge tip. The flow is identical; only the branch name changes.
+
+### 0. Sync with the remote
+
+```bash
+git fetch origin || true
+git status -sb | head -1 || true
+```
+
+The branch must not be behind its remote counterpart. Run this **before** the gauntlet, not at push time.
+
+A branch that is behind fails at `git push`, after every local check has already run. The fix is a rebase, which moves the work onto commits the gauntlet never saw — so every check has to run again on the new base, and the whole of steps 1-5 is paid twice. Ten seconds here buys that back.
+
+If the branch is behind, rebase (or merge) first, then start at step 1. If it has diverged, resolve that before running anything — see the `resolve-conflicts` skill.
 
 ### 1. Rector
 
@@ -162,17 +175,39 @@ sleep 20
 gh run list --commit "$SHA" --json databaseId,name,event,status,conclusion
 
 # Wait for every run to reach a terminal state, then assert all success.
-# `total > 0` guard prevents the empty-list → zero-running false green.
-while true; do
+# The `total > 0` guard stops an empty list reading as green, so the wait MUST be
+# bounded: a commit whose change set matches no workflow `paths` filter produces
+# no runs at all, and an unbounded wait for `total > 0` then never ends.
+waited=0
+while [ "$waited" -lt 600 ]; do
     total=$(gh run list --commit "$SHA" --json databaseId -q 'length')
     running=$(gh run list --commit "$SHA" --json status -q '[.[] | select(.status != "completed")] | length')
     [ "$total" -gt 0 ] && [ "$running" -eq 0 ] && break
     sleep 15
+    waited=$((waited + 15))
 done
+
+# Zero runs is a judgement call, not a pass and not a failure. Print the evidence
+# and decide it explicitly — see "When a commit produces no runs" below.
+if [ "$total" -eq 0 ]; then
+    echo "NO RUNS for $SHA after ${waited}s — paths changed by this commit:"
+    git show --name-only --format= "$SHA"
+    echo "Compare against the paths filters in .github/workflows/*.yml"
+    exit 2
+fi
+
+[ "$running" -eq 0 ] || { echo "CI STILL RUNNING after ${waited}s"; gh run list --commit "$SHA"; exit 1; }
 
 failed=$(gh run list --commit "$SHA" --json conclusion,name -q '[.[] | select(.conclusion != "success" and .conclusion != "skipped")] | length')
 [ "$failed" -eq 0 ] || { echo "CI red on $SHA"; gh run list --commit "$SHA"; exit 1; }
 ```
+
+**When a commit produces no runs (exit 2).** The release commit is often docs-only — a synced guideline, a README fix, a regenerated `CLAUDE.md` — and every workflow filters on `**.php` or similar. That commit legitimately produces nothing to enumerate. Two readings, and you must say which one applies:
+
+- **Expected absence.** Every path the commit touches falls outside every workflow's `paths` filter. This passes, on one condition: the nearest code-bearing ancestor is green under the same query, and you name both SHAs in the report — "`<ancestor>` green on run-tests + phpstan; HEAD `<sha>` is docs-only and produced no runs by path filter". An unexplained absence is not a pass.
+- **Unexpected absence.** A path the commit touches *is* covered by a filter, or the workflow is disabled, or a push never reached the remote. That is a failure to investigate, not a pass.
+
+This branch exists because the unbounded form has cost a release cycle: a docs-only release commit sat in the loop for 24 minutes with `total` permanently 0, and the intermittent API errors during the wait hid the cause behind what looked like network flakiness.
 
 Pass criteria: every run for this commit has `conclusion` in `{success, skipped}`. A `skipped` conclusion is fine — a run reports it when its jobs were skipped by their job-level `if:` conditions. A `paths` filter that doesn't match behaves differently: the workflow produces **no run at all** for that push (nothing for `gh run list` to enumerate), which is equally fine — a push whose change set is docs-only is expected to leave `**.php`-filtered workflows absent.
 
@@ -238,7 +273,7 @@ SHA=$(git rev-parse HEAD)
 gh run list --commit "$SHA" --json name,status,conclusion
 ```
 
-Only when (1) status is empty, (2) echoes `pushed`, and (3) every run is `completed` + `{success, skipped}` may you `Write` to `internal/release-notes-<version>.md`.
+Only when (1) status is empty, (2) echoes `pushed`, and (3) every run is `completed` + `{success, skipped}` may you `Write` to `internal/release-notes-<version>.md`. When (3) lists no runs at all, apply step 6's "When a commit produces no runs" rule: draft the notes only for an expected absence, pin the verified-sha to HEAD as usual, and name the green code-bearing ancestor in the handoff.
 
 Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below) and stop.
 
@@ -310,10 +345,15 @@ grep -qE "^<!-- verified-sha: $SHA -->$" "$NOTES" || { echo "NOTES SHA DRIFT —
 LIVE_TIP=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
 [ "$SHA" = "$LIVE_TIP" ] || { echo "HEAD DRIFT — HEAD=$SHA live origin/$RELEASE_BRANCH=$LIVE_TIP"; exit 1; }
 
-# C. Every CI run for this SHA still terminal + {success, skipped}
+# C. Every CI run for this SHA still terminal + {success, skipped}.
+#    A zero-run SHA satisfies this trivially, so it is re-decided here the same way
+#    step 6 decided it: expected absence needs a green code-bearing ancestor named
+#    in the report, and anything else is a failure.
 failed=$(gh run list --commit "$SHA" --json conclusion -q '[.[] | select(.conclusion != "success" and .conclusion != "skipped")] | length')
 running=$(gh run list --commit "$SHA" --json status -q '[.[] | select(.status != "completed")] | length')
+total=$(gh run list --commit "$SHA" --json databaseId -q 'length')
 [ "$running" -eq 0 ] && [ "$failed" -eq 0 ] || { echo "CI NOT GREEN — running=$running failed=$failed"; gh run list --commit "$SHA"; exit 1; }
+[ "$total" -gt 0 ] || echo "NOTE: no runs for $SHA — confirm expected absence per step 6 before tagging"
 
 # D. RELEASE ACTUALLY LANDED — guard against tagging a commit without the release.
 #    "Green" is not "correct": a tag cut before its PR merged is green on a tree
@@ -388,6 +428,7 @@ Wait until terminal. If red:
 
 | Step               | Command                                                                                        | Pass criteria                                 |
 |--------------------|------------------------------------------------------------------------------------------------|-----------------------------------------------|
+| 0. Sync            | `git fetch origin \|\| true` + `git status -sb \|\| true`                                       | branch not behind its remote                  |
 | 1. Rector          | `vendor/bin/rector process \|\| true`                                                          | 0 files changed                               |
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
 | 3. Tests           | `vendor/bin/pest \|\| true`                                                                    | 0 failures                                    |
@@ -396,7 +437,7 @@ Wait until terminal. If red:
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
 | 5c. Docs build     | derived command (mirror docs workflow, else lockfile + `build` script), docs-site repos only   | build succeeds, or documented skip + 5a link audit |
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |
-| 6. CI green-light  | `gh run list --commit "$(git rev-parse HEAD)"` all complete + no failure                       | every run for the SHA in `{success, skipped}` |
+| 6. CI green-light  | `gh run list --commit "$(git rev-parse HEAD)"` all complete + no failure, bounded wait         | every run for the SHA in `{success, skipped}`; zero runs decided explicitly, with the green code-bearing ancestor named |
 | 7. Release notes   | delete any pre-green/placeholder notes → preflight (clean tree + **merged** + CI green on release commit) → `Write internal/release-notes-<version>.md` | first line is `<!-- verified-sha: $real-green-SHA -->` (never a placeholder) |
 | 8a. Pre-tag gate   | agent runs A–D (SHA-drift, push/merge state, CI-still-green, **content-presence**) before presenting handoff + REFUSES on failure; user re-runs before `gh release create` | prints `OK to tag`                            |
 | 8b. Post-tag watch | `gh run list --commit "$TAG_SHA"` filtered by `headBranch == $TAG`                             | tag-ref + release-event workflows all green   |
