@@ -426,6 +426,26 @@ function testAStaleBundleDeclarationDoesNotMaskADanglingReference() {
     fs.rmSync(cwd, { recursive: true, force: true });
 }
 
+// A git config that colours output must not empty the sweep. Both stages parse git's own
+// output: the declaration pass reads names out of `git grep`, and the reference pass reads
+// NUL-separated fields. ANSI codes wrapped around either make a declared name unmatchable
+// and a path unusable, and the sweep reports clean rather than failing.
+function testADiffRewritingGitConfigCannotEmptyTheSweep() {
+    const cwd = createMergedRepo();
+    git(cwd, 'config', 'color.ui', 'always');
+    git(cwd, 'config', 'color.diff', 'always');
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+
+    assert.equal(result.status, 1, 'forced colour must not hide the stale reference');
+    assert.match(result.stdout, /DANGLING {2}formatAmount\n/);
+    assert.match(result.stdout, / {10}src\/receipt\.js\n/);
+    // eslint-disable-next-line no-control-regex
+    assert.doesNotMatch(result.stdout, /\x1B\[/, 'no ANSI codes reach the report');
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
 const tests = [
     testDetectsStaleReferenceToRenamedDeclaration,
     testCleanWhenTheCallerWasUpdatedToo,
@@ -444,6 +464,7 @@ const tests = [
     testReportsEveryCandidateAcrossChunkBoundaries,
     testAnImportDoesNotCountAsADeclaration,
     testAStaleBundleDeclarationDoesNotMaskADanglingReference,
+    testADiffRewritingGitConfigCannotEmptyTheSweep,
 ];
 
 let failures = 0;
