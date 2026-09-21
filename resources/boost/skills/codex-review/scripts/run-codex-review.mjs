@@ -21,21 +21,30 @@ import { finished } from 'node:stream/promises';
 // It tells a consumer reading the JSON report whether their emitted copy is current.
 // A literal, not a lookup: the emitted copy sits in a consumer's skills directory,
 // where this package's composer.json is not reachable.
-const WRAPPER_VERSION = '2.34.0';
+const WRAPPER_VERSION = '2.45.0';
 
 const DEFAULT_TIMEOUT_MS = 900_000;
+// The wrapper passes `--ignore-user-config`, so an unset model or effort falls to
+// the Codex CLI defaults, which move between CLI releases and can cost far more
+// plan usage per review than a bounded run needs. Pin both here instead.
+const DEFAULT_EFFORT = 'medium';
+const DEFAULT_MODEL = 'gpt-5.6-sol';
+const EFFORT_LEVELS = new Set(['minimal', 'low', 'medium', 'high', 'default']);
 const KILL_GRACE_MS = 5_000;
 const PREFLIGHT_TIMEOUT_MS = 10_000;
-const VALUE_OPTIONS = new Set(['--base', '--commit', '--model', '--prompt', '--prompt-file', '--timeout-ms']);
+const VALUE_OPTIONS = new Set(['--base', '--commit', '--effort', '--model', '--prompt', '--prompt-file', '--timeout-ms']);
 
 function usage() {
     return [
         'Usage:',
-        '  node run-codex-review.mjs [--base <branch>|--uncommitted|--commit <sha>] [--prompt <text>|--prompt-file <file>] [--model <model>] [--timeout-ms <ms>] [--use-user-config]',
+        '  node run-codex-review.mjs [--base <branch>|--uncommitted|--commit <sha>] [--prompt <text>|--prompt-file <file>] [--model <model>] [--effort <level>] [--timeout-ms <ms>] [--use-user-config]',
         '',
         'Runs Codex non-interactively, captures JSONL/stderr/result files, and fails on timeout without reading stale output.',
         'With no target flag, infers one: a feature branch that differs from the repo default branch -> that branch diff; otherwise the uncommitted working tree.',
         'Timeout resolves as --timeout-ms > $CODEX_REVIEW_TIMEOUT_MS > 15min default (floor 1000ms).',
+        `Model resolves as --model > $CODEX_REVIEW_MODEL > ${DEFAULT_MODEL}.`,
+        `Reasoning effort resolves as --effort > $CODEX_REVIEW_EFFORT > ${DEFAULT_EFFORT}; one of ${[...EFFORT_LEVELS].join(', ')} ('default' leaves it to the Codex CLI).`,
+        'With --use-user-config and no explicit flag/env, the model and effort are left to the user config.',
     ].join('\n');
 }
 
@@ -43,7 +52,8 @@ function parseArgs(argv) {
     const options = {
         base: null,
         commit: null,
-        model: null,
+        effort: envEnum('CODEX_REVIEW_EFFORT', EFFORT_LEVELS, null),
+        model: process.env.CODEX_REVIEW_MODEL ?? null,
         prompt: null,
         promptFile: null,
         timeoutMs: envInteger('CODEX_REVIEW_TIMEOUT_MS', DEFAULT_TIMEOUT_MS),
@@ -80,6 +90,11 @@ function parseArgs(argv) {
                 options.base = value;
             } else if (arg === '--commit') {
                 options.commit = value;
+            } else if (arg === '--effort') {
+                if (!EFFORT_LEVELS.has(value)) {
+                    throw new Error(`--effort must be one of ${[...EFFORT_LEVELS].join(', ')}.`);
+                }
+                options.effort = value;
             } else if (arg === '--model') {
                 options.model = value;
             } else if (arg === '--prompt') {
@@ -143,6 +158,12 @@ function ensureCommand(command, args, failureMessage) {
         throw new Error(stderr ? `${failureMessage}\n${stderr}` : failureMessage);
     }
     return result;
+}
+
+function envEnum(name, allowed, fallback) {
+    const value = process.env[name];
+
+    return value !== undefined && allowed.has(value) ? value : fallback;
 }
 
 function envInteger(name, fallback) {
@@ -241,6 +262,20 @@ function buildFocusedReviewPrompt(options, focus) {
     ].join('\n');
 }
 
+function pushModelSelection(args, options) {
+    const model = options.model ?? (options.useUserConfig ? null : DEFAULT_MODEL);
+    if (model) {
+        args.push('--model', model);
+    }
+
+    // Under `--use-user-config` an unset value stays unset: a `-c` override would
+    // beat the very config that flag exists to honour.
+    const effort = options.effort ?? (options.useUserConfig ? 'default' : DEFAULT_EFFORT);
+    if (effort !== 'default') {
+        args.push('-c', `model_reasoning_effort="${effort}"`);
+    }
+}
+
 function buildCodexArgs(options, resultFile) {
     const prompt = resolvePrompt(options);
 
@@ -253,9 +288,7 @@ function buildCodexArgs(options, resultFile) {
         if (!options.useUserConfig) {
             args.push('--ignore-user-config');
         }
-        if (options.model) {
-            args.push('--model', options.model);
-        }
+        pushModelSelection(args, options);
         // The prompt travels on stdin, never argv. The codex binary is SIGKILLed by
         // the OS at exec time when any single argument exceeds ~1010 bytes — before
         // it runs a line of its own code, so there is no error to read: zero stdout,
@@ -275,9 +308,7 @@ function buildCodexArgs(options, resultFile) {
     } else {
         args.push('--uncommitted');
     }
-    if (options.model) {
-        args.push('--model', options.model);
-    }
+    pushModelSelection(args, options);
 
     return { args, stdin: null };
 }

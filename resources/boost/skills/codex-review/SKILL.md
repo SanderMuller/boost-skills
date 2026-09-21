@@ -62,6 +62,8 @@ Then pick the invocation by scope and whether the user supplied a focus argument
 - **Pass the focus through a file, not by interpolating it into the shell command.** Write the user's focus text **verbatim** to a temp file (with the `Write` tool, or a quoted-delimiter `<<'EOF'` heredoc) and pass it via `--prompt-file <focus-file>`. Never build `--prompt "<focus>"` inline — a focus containing `"`, `$`, a backtick, or other shell metacharacters would mangle the `node <wrapper>` command or execute unintended syntax. `--prompt-file` keeps the focus out of the shell entirely (the wrapper then forwards it to Codex itself).
 - The default timeout is 15 minutes; override per-run with `--timeout-ms <ms>`, or set `CODEX_REVIEW_TIMEOUT_MS` in the environment (floor 1000ms), for a very large diff. The flag wins over the env var.
 - The wrapper runs Codex in a read-only sandbox and passes `--ignore-user-config` so a stalled inherited MCP probe can't wedge startup. Pass `--use-user-config` only if a project deliberately needs the user's Codex config.
+- Because the user's Codex config is ignored, the wrapper pins the reasoning effort itself: `medium` by default. Override per-run with `--effort <minimal|low|medium|high|default>`, or set `CODEX_REVIEW_EFFORT`; `default` leaves the effort to the Codex CLI. Raise it to `high` only for a review that needs it — effort drives token usage on every loop iteration.
+- The model is pinned to `gpt-5.6-sol` for the same reason. Override with `--model <model>` or `CODEX_REVIEW_MODEL`; the flag wins over the env var. With `--use-user-config` and no override, the model and the effort both come from the user config.
 
 ### 2c. Read the result
 
