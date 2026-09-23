@@ -21,7 +21,7 @@ import { finished } from 'node:stream/promises';
 // It tells a consumer reading the JSON report whether their emitted copy is current.
 // A literal, not a lookup: the emitted copy sits in a consumer's skills directory,
 // where this package's composer.json is not reachable.
-const WRAPPER_VERSION = '2.45.0';
+const WRAPPER_VERSION = '2.46.0';
 
 const DEFAULT_TIMEOUT_MS = 900_000;
 // The wrapper passes `--ignore-user-config`, so an unset model or effort falls to

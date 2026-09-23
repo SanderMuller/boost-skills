@@ -1,5 +1,14 @@
 # Upgrading
 
+## From 2.45.x to 2.46.0 (nine more subagents — no floor change)
+
+**Not breaking. The `boost-core` floor stays `^1.4`.** 2.46.0 adds nine subagents. Most carry tags, so a project receives only the ones its `withTags()` declares; `comment-analyzer` is untagged and ships everywhere. The README Subagents table lists each one with its tags.
+
+- **A hand-written subagent with the same name now collides.** Claude Code picks one of two same-named definitions by filesystem order. If your project keeps its own `security-reviewer`, `performance-reviewer`, `database-specialist` or another shipped name, delete or rename your copy, or exclude the shipped one with `withExcludedSkills(['sandermuller/boost-skills:<name>'])`. `boost sync` warns until you do.
+- **New tag `sentry`** gates `sentry-researcher`. `Tag::Sentry` exists from `boost-core` 1.11; the string `'sentry'` works on any 1.x.
+- **`frontend` now means a user-facing UI** — templates, styles, JS, or any mix. A template-only project can declare it; `frontend-quality` skips the checks the project has no tooling for.
+- **codex-review defaults to `gpt-6-sol`.** An older Codex CLI rejects that model on a ChatGPT account. Update the CLI, or pass `--model gpt-5.6-sol` / set `CODEX_REVIEW_MODEL`. `--effort` now accepts `low`, `medium`, `high`, `xhigh`, `max` and `default`; `minimal` is gone.
+
 ## From 2.38.x to 2.39.0 (subagents — no floor change)
 
 **Not breaking. The `boost-core` floor stays `^1.4`.** 2.39.0 adds three Claude Code subagents (`simplification-auditor`, `tech-lead-reviewer`, `test-coverage-auditor`) under `resources/boost/subagents/`.
