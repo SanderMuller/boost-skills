@@ -62,16 +62,17 @@ Nobody reviewing that change asked what algorithm the `ALTER` would use. That qu
 On a large table, state the algorithm so MySQL rejects what it cannot do, instead of falling back:
 
 ```php
-// Column work stays in Blueprint. `->instant()` compiles to `algorithm=instant`.
+// Column work: on a framework version whose MySQL grammar compiles `->instant()`, Blueprint
+// appends `algorithm=instant`. Otherwise use the raw statement below it.
 $table->string('status')->nullable()->instant();
-$table->dropColumn('status')->instant();
+DB::statement('ALTER TABLE `orders` ADD COLUMN `status` VARCHAR(255) NULL, ALGORITHM=INSTANT');
 
 // An index build needs raw SQL: Blueprint's `IndexDefinition::algorithm()` means `USING BTREE`,
 // not the DDL algorithm, so it cannot assert INPLACE.
 DB::statement('ALTER TABLE `orders` ADD INDEX `orders_status_index` (`status`), ALGORITHM=INPLACE, LOCK=NONE');
 ```
 
-Do not accept `$table->index(...)->lock('none')` alone. Without the algorithm clause, MySQL can still pick COPY. Check the installed `laravel/framework` version for each Blueprint method before you prescribe it, and check that the server version (or the managed service's MySQL compatibility level) supports the clause.
+Do not accept `$table->index(...)->lock('none')` alone. Without the algorithm clause, MySQL can still pick COPY. **An unsupported column modifier fails silently**: a Blueprint column definition accepts any method name, so on a framework version without `->instant()` the call does nothing and the migration runs with no algorithm clause. Never accept `->instant()` on trust — require the generated SQL (`php artisan migrate --pretend`) to show `algorithm=instant`, or a raw statement that states it, and check that the server version (or the managed service's MySQL compatibility level) supports the clause.
 
 **`lock_wait_timeout` bounds the wait. It does not remove the stall.** Set it for the session around a slow `ALTER`, and restore it in a `finally`, so a statement that cannot get its metadata lock aborts instead of queuing writes without limit. State three limits: a pending lock request still queues later writes for up to that timeout; MySQL applies the timeout per lock acquisition, so one statement can wait longer in total; and an abort discards a build that may have run for minutes. Check for long-running transactions that hold the lock before the build starts.
 
