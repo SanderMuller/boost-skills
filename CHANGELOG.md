@@ -5,11 +5,23 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.46.1 - 2026-09-23
+
+### Fixed
+
+- `database-specialist` no longer trusts `->instant()` alone. On a framework version without that modifier the call does nothing, so the subagent now requires the generated SQL to show `algorithm=instant`, or a raw statement that states it.
+- `database-specialist` names MySQL 8.0.12 as the first version with instant `ADD COLUMN`, instead of calling the change safe on any MySQL 8.
+- `accessibility-reviewer` no longer reports a toggle with a stable name and an updating `aria-pressed` as a failure. It reports a toggle whose state is never exposed, or whose label and pressed state contradict each other.
+- `sentry-researcher` lists the Sentry read tools by name instead of a server wildcard, so a write tool the server adds later stays out of reach.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.46.0...2.46.1
+
 ## 2.46.0 - 2026-09-23
 
 ### Added
 
 - Nine Claude Code subagents, each read-only and run in its own context. Tagged ones ship only where the project declares their tags:
+  
   - `database-specialist` (`laravel` `database`) — names the MySQL algorithm and lock each `ALTER` takes, and whether it fits the deploy.
   - `db-inspector` (`laravel` `database`) — schema and data facts through the Laravel Boost database tools.
   - `performance-reviewer` (`laravel` `database`) — N+1, unbounded queries and slow request-path work, measured where it can be.
@@ -21,7 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `comment-analyzer` (untagged) — comments a change added, changed or made false.
   
 - A `sentry` tag.
+  
 - `bug-fixing`, `code-review`, `evaluate` and the `migrations` guideline dispatch the new subagents where a session has them, and say what the inline fallback loses.
+  
 
 ### Changed
 
@@ -450,6 +464,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
           ],
       ],
   ],
+  
   
   
   
@@ -1149,6 +1164,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -1168,6 +1184,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1319,6 +1336,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1344,6 +1362,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1504,6 +1523,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1530,6 +1550,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1630,6 +1651,7 @@ Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symm
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
 
 
 
@@ -1799,6 +1821,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -1807,6 +1830,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -1966,6 +1990,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -1983,6 +2008,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -2102,6 +2128,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -2303,6 +2330,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -2321,6 +2349,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -2541,6 +2570,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
