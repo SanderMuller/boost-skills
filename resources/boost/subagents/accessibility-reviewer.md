@@ -30,7 +30,7 @@ You run in your own context so the interface is judged by someone who did not bu
 
 These leak most often:
 
-- **An accessible name that does not follow state** — a toggle (expand and collapse, show and hide, on and off) that keeps one static label, or never updates `aria-pressed` or `aria-expanded`.
+- **A state the control never exposes** — a toggle whose state changes but whose `aria-pressed` or `aria-expanded` never updates, and whose label stays the same. Two correct patterns exist: a stable name with `aria-pressed` or `aria-expanded` that updates, or a label that changes to the next action with no pressed state. Changing the label **and** setting `aria-pressed` is a defect too: the name then contradicts the state (ARIA Authoring Practices Guide, button pattern).
 - **A control with no accessible name** — an icon-only button, a logo link, a `<select>` not associated with its label.
 - **A custom control with the wrong role, or no keyboard operation** — a clickable `<div>`, a slider or a menu built from generic elements.
 - **A status that is never announced** — a "Copied" or "Saved" confirmation, an inline error, a state change, with no live region.
