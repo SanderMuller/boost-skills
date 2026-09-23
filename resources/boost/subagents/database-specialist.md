@@ -44,8 +44,8 @@ Nobody reviewing that change asked what algorithm the `ALTER` would use. That qu
 
 | Operation | Algorithm | Blocks writes? | In a deploy-time migration? |
 |---|---|---|---|
-| `ADD COLUMN`, nullable, no `->after()` | INSTANT | no | yes, at any size — metadata only |
-| `ADD COLUMN` with a default | INSTANT (MySQL 8) | no | yes |
+| `ADD COLUMN`, nullable, no `->after()` | INSTANT on MySQL 8.0.12+; INPLACE rebuild before that | no | on 8.0.12+, yes at any size with the algorithm asserted (below) |
+| `ADD COLUMN` with a default | INSTANT on MySQL 8.0.12+ | no | on 8.0.12+, yes with the algorithm asserted |
 | `SET DEFAULT` / `DROP DEFAULT` | metadata only | no | yes |
 | `ADD INDEX` (secondary) | INPLACE | not during the build | only on a small table |
 | `ADD FOREIGN KEY`, `foreign_key_checks=1` | **COPY** | **yes — full rebuild** | **never on a large table** |
