@@ -45,7 +45,7 @@ If the project uses **ESLint**, you can scope it to the changed files for speed 
 eslint --cache --cache-location ".cache/eslint/" <file1> <file2> ...
 ```
 
-Must show 0 errors. Fix any linting issues found.
+Must show 0 errors. Fix any linting issues found. Skip this check when `package.json` defines no lint script, or the project has no `package.json` — a server-rendered project may have templates and styles but no JS linter.
 
 ### 3. Tests
 

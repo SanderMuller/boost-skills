@@ -43,6 +43,7 @@ Before writing any code:
 
 1. **Gather information**
    - Read any linked issues or error reports
+   - Where the session has them, dispatch `sentry-researcher` for the production error signal, `github-researcher` for the history of the code involved, and `db-inspector` for the real schema and data. Each returns facts from its own context, so the raw output stays out of this one. Without them, gather the same facts directly; nothing is lost except context space.
    - Ask clarifying questions if reproduction steps are unclear
 
 2. **Identify the scope**

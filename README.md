@@ -110,7 +110,7 @@ Most content is universal. The rest carries **capability tags** — a project de
 |----------------------|-------------------------------------------------------------|---------------------|
 | `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
 | `database`           | project has a database                                      | `boost-skills`      |
-| `frontend`           | frontend toolchain — type-checking, linting, JS tests       | `boost-skills`      |
+| `frontend`           | project has a user-facing UI — templates, styles, JS, or any mix; the JS checks skip what the project lacks | `boost-skills` |
 | `github`             | hosted on GitHub                                            | `boost-skills`      |
 | `github-issues`      | issue tracking in GitHub Issues                             | `boost-skills`      |
 | `hosting`            | project deploys to a hosted platform (parent of platform-specific tags) | `boost-skills` |
@@ -119,6 +119,7 @@ Most content is universal. The rest carries **capability tags** — a project de
 | `laravel-cloud`      | app deploys to Laravel Cloud (pair with `hosting`)          | `boost-skills`      |
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
 | `release-automation` | opt-in — release flow content: README authoring, release notes, UPGRADING, CI changelog automation | `boost-skills`, `package-boost-php` |
+| `sentry`             | errors are tracked in Sentry, reachable through a Sentry MCP server | `boost-skills` |
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
 | `voice`              | opt-in — route every writing surface to one voice rule (ASD-STE100 Simplified Technical English) | `boost-skills`      |
 
@@ -154,6 +155,15 @@ Claude Code subagent definitions this package ships. A subagent runs in its own 
 
 | Subagent | What it does | Tags |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
+| `accessibility-reviewer` | Review interactive markup against WCAG 2.2 AA, citing the exact success criterion for every finding. | `frontend` |
+| `comment-analyzer`     | Check every comment a change added, changed or made false against the code, then judge whether it earns its place. | — |
+| `database-specialist`  | Judge what a MySQL schema change does in production: the algorithm, the lock, the timeout, and where it must run. | `laravel` `database` |
+| `db-inspector`         | Report the real schema, indexes and data through the Laravel Boost database tools, read-only. | `laravel` `database` |
+| `github-researcher`    | Mine git and GitHub history for the change, pull request and review behind a line of code. | `github` |
+| `performance-reviewer` | Find N+1s, unbounded queries, over-fetching and slow request-path work, with measured cost where it can measure. | `laravel` `database` |
+| `sentry-researcher`    | Pull the error signal from Sentry — trace, trend, release — for a bug or a release. | `sentry` |
+| `security-reviewer`    | Review authorization, injection and data exposure; every rated finding names attacker, source, sink and missing control. | `laravel` |
+| `silent-failure-hunter` | Find swallowed exceptions, masking fallbacks, and failures nobody is told about. | `laravel` |
 | `simplification-auditor` | Audit a change for code that does not need to exist, and return a ledger accounting for every unit it added. | —               |
 | `tech-lead-reviewer`   | Review the approach one altitude above the line: design size, value types, placement, one-way doors.  | —               |
 | `test-coverage-auditor` | Find the untested failure paths and the assertions that pass whatever the code does.                 | —               |

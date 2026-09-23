@@ -43,6 +43,7 @@ Look for:
 - **Input validation**: Unvalidated user input reaching critical paths
 - **Type safety**: Loose comparisons where strict is needed, missing type declarations
 - **Information disclosure**: Sensitive data in error messages or logs
+- **Independent pass**: when the change touches authorization, authentication, routes, raw queries, uploads or outbound requests, dispatch the `security-reviewer` subagent where the session has it. It traces each finding to an exploit scenario in a fresh context. Without it, trace source, sink and missing control yourself, and say the pass ran without a fresh context
 
 #### Functionality
 
@@ -51,8 +52,8 @@ Look for:
 - **Logic errors**: Conditions that don't match intent, off-by-one errors, wrong operator
 - **Missing edge cases**: Null handling, empty collections, zero values, boundary conditions
 - **Stale data**: Values computed once but displayed alongside live-updating data
-- **Duplicate work**: Same query or computation running multiple times unnecessarily
-- **Broken flows**: Actions that silently fail, missing error handling for expected failures
+- **Duplicate work**: Same query or computation running multiple times unnecessarily. When the change touches a query-heavy route, job or command, dispatch the `performance-reviewer` subagent where the session has it; it measures query count before it rates. Without it, mark every cost you did not measure as inferred
+- **Broken flows**: Actions that silently fail, missing error handling for expected failures. When the change touches `try`/`catch`, `rescue()`, `report()` or job failure handling, dispatch the `silent-failure-hunter` subagent where the session has it; without it, trace each catch to its caller yourself and say the pass ran without a fresh context
 - **Race conditions**: Concurrent requests causing data corruption (missing locks, non-atomic operations)
 - **Cross-version compatibility**: Does the code work across every runtime and framework version the project supports?
 
@@ -60,7 +61,7 @@ Look for:
 
 Look for:
 - **Project convention violations**: Does the code follow established patterns? Check sibling files.
-- **Over-engineering**: Unrequested abstractions, speculative generality, premature flexibility, or hand-rolled code a stdlib/native/framework feature or installed dependency replaces — could it be simpler or deleted without losing required behavior? Ask this **at altitude first**: inventory every file, class, interface, trait, config key, flag, route, migration, event, job and public method the change added, and ask of each whether the unit needs to exist at all. Dispatch the `simplification-auditor` subagent where the session has it, and the `tech-lead-reviewer` subagent when the change's approach is worth judging above the line. Reviewing your own change costs the distance these questions depend on, so without them, answer from the diff and the requirement rather than from what you meant to build, and say the pass ran without a fresh context. The question differs per unit — a class wants more than one caller or an inlined body, an interface wants a second implementation, a flag wants a value other than the default, an event wants a listener, a queued job wants a reason to leave the caller. The `evaluate` skill carries the same table, and the `simplification-auditor` subagent the fullest version; keep the three consistent when any of them changes. Answer every question against downstream consumers too, not this repository alone: a package's public API, a route, a console command, and a framework hook are called from outside. A line-level pass can only shorten a file, never remove one. Read the lines after that. Two floors reject a candidate: **brevity** (never cut validation, error handling, security, accessibility, requested functionality, or a test for non-trivial logic to shrink code) and **complexity** (fewer lines bought with deeper nesting, chained ternaries, a lost early return, or one opaque expression is a loss). Name the floor when you reject a candidate.
+- **Over-engineering**: Unrequested abstractions, speculative generality, premature flexibility, or hand-rolled code a stdlib/native/framework feature or installed dependency replaces — could it be simpler or deleted without losing required behavior? Ask this **at altitude first**: inventory every file, class, interface, trait, public method, config key, flag, route, migration, event, job and test the change added, and ask of each whether the unit needs to exist at all. Dispatch the `simplification-auditor` subagent where the session has it, and the `tech-lead-reviewer` subagent when the change's approach is worth judging above the line. Reviewing your own change costs the distance these questions depend on, so without them, answer from the diff and the requirement rather than from what you meant to build, and say the pass ran without a fresh context. The question differs per unit — a class wants more than one caller or an inlined body, an interface wants a second implementation, a flag wants a value other than the default, an event wants a listener, a queued job wants a reason to leave the caller. The `evaluate` skill carries the same table, and the `simplification-auditor` subagent the fullest version; keep the three consistent when any of them changes. Answer every question against downstream consumers too, not this repository alone: a package's public API, a route, a console command, and a framework hook are called from outside. A line-level pass can only shorten a file, never remove one. Read the lines after that. Two floors reject a candidate: **brevity** (never cut validation, error handling, security, accessibility, requested functionality, or a test for non-trivial logic to shrink code) and **complexity** (fewer lines bought with deeper nesting, indirection added to save a line, chained or nested ternaries, two guard clauses folded into one compound condition, a lost early return, one opaque expression or unreadable pipe chain, or a domain `match` or `switch` collapsed into a lookup is a loss). Name the floor when you reject a candidate.
 - **DRY violations**: Duplicated logic that should be extracted
 - **Dead code**: Unused variables, unreachable branches, commented-out code
 - **Type safety**: Missing return types, loose comparisons where strict is needed
@@ -74,7 +75,7 @@ Only when the change touches a user-facing interface. Look for:
 - **Error states**: What does the user see when something fails?
 - **Empty states**: What shows when there's no data?
 - **Consistency**: Do new elements match existing patterns (colors, spacing, button styles, icon sets)?
-- **Accessibility**: Missing labels, no keyboard support, insufficient contrast
+- **Accessibility**: Missing labels, no keyboard support, insufficient contrast. Dispatch the `accessibility-reviewer` subagent where the session has it; it cites a WCAG 2.2 success criterion per finding. Without it, check names, roles, keyboard operation and contrast yourself and say the pass ran without a fresh context
 - **Mobile/touch**: Hover-dependent interactions that break on touch devices
 - **Visual glitches**: Mismatched icon sizes, layout shifts on state change, inconsistent spacing
 
@@ -87,6 +88,7 @@ Look for:
 - **Fragile assertions**: Tests that pass for the wrong reason (e.g., an absence assertion matching unrelated text)
 - **Missing security tests**: No tests verifying auth/authorization on actions
 - **Test isolation**: Tests that depend on each other or on specific state
+- **Independent gap audit**: dispatch the `test-coverage-auditor` subagent where the session has it, unless the change touches only docs. It maps the suite onto the changed behaviour in a fresh context and rates each gap. Without it, walk the gaps from the diff yourself and say the testing pass ran without a fresh context.
 - **Tests that prove nothing**: assertions that restate the framework, mirror the implementation, or check only that work was scheduled with nothing anywhere running that work and asserting its effect — the `test-value` skill carries the full verdict pass and the cases where a shallow check is legitimate
 
 ### Phase 3: Compile Findings

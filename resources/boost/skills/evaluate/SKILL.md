@@ -128,7 +128,7 @@ Read through all files in the resolved scope and check for:
 | **Cross-version compat** | Works across every runtime and dependency version the project supports |
 | **Over-engineering** | Unrequested abstractions, speculative generality, premature flexibility; hand-rolled code a stdlib/native/framework feature or an already-installed dependency replaces; anything deletable without losing required behavior. A value carried in the wrong type belongs here too — the `simplify-shape` skill carries the ladder for it, and runs after the cutting pass below |
 
-**Judge the over-engineering row at altitude first.** Dispatch the `simplification-auditor` subagent where the session has it: the author of a change is the reader least able to see what it did not need, and that subagent judges the diff in a fresh context. Run inline when it is absent — the questions survive, the distance does not, so answer each row against the diff and the requirement rather than your memory of why you wrote it, and say in the report that the pass was not independent. Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, config key, flag, route, migration, event, job and public method** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
+**Judge the over-engineering row at altitude first.** Dispatch the `simplification-auditor` subagent where the session has it: the author of a change is the reader least able to see what it did not need, and that subagent judges the diff in a fresh context. Run inline when it is absent — the questions survive, the distance does not, so answer each row against the diff and the requirement rather than your memory of why you wrote it, and say in the report that the pass was not independent. Before you judge any line for it, inventory what the change added — every **file, class, interface, trait, public method, config key, flag, route, migration, event, job and test** — and ask of each: does this unit need to exist at all? A line-level pass can only shorten a file. It never removes one, and a whole file that nothing calls costs more than any line inside it.
 
 In a package or any code with downstream consumers, answer every row against those consumers too. An interface, event, config key or hook with no second implementation, listener or caller *in this repository* may still be the published extension point.
 
@@ -148,7 +148,7 @@ The `simplification-auditor` subagent carries this table in fuller form, plus th
 
 **Brevity has a floor.** Shortening code is a win only when nothing required is lost. Never trade away input validation at trust boundaries, error / data-loss handling, security, accessibility, explicitly-requested functionality, or a test for non-trivial logic to make code smaller. Delete the unrequested, not the necessary — and apply these cuts through the Phase 4 fix loop like any other finding.
 
-**Complexity is the second floor.** Fewer lines that are harder to follow is a loss, not a win. Reject a cut that deepens nesting, adds indirection to save a line, chains or nests ternaries, folds two guard clauses into one compound condition, removes an early return that flattens the method, or replaces named steps with one opaque expression. Name the floor you invoked, brevity or complexity, in the reason you reject a candidate. A line count on its own rewards dense code.
+**Complexity is the second floor.** Fewer lines that are harder to follow is a loss, not a win. Reject a cut that deepens nesting, adds indirection to save a line, chains or nests ternaries, folds two guard clauses into one compound condition, removes an early return that flattens the method, replaces named steps with one opaque expression or an unreadable pipe chain, or collapses a `match` or `switch` whose branches are the domain into a lookup nobody can read. Name the floor you invoked, brevity or complexity, in the reason you reject a candidate. A line count on its own rewards dense code.
 
 **Account for what you did not cut.** Report "nothing to over-engineer here" only with the list behind it: the units the change added, and for each one you kept, the caller or the floor that keeps it. Without that list a reader cannot tell a clean change from an unexamined one.
 
@@ -167,6 +167,8 @@ If a policy is shown above, scan the files **in the resolved evaluation scope** 
 ### Phase 3: Audit Code Comments
 
 Within the **same evaluation scope resolved in Phase 2** (do not re-derive or broaden it), find every comment **added or changed** in this work. This covers **all** comment syntaxes in the changed languages, not only the obvious ones: docblocks and `//` / `#` / `/* */`, and template comments (`{{-- --}}`, `<!-- -->`). Do not skip template comments. Never judge pre-existing comments outside that scope.
+
+Dispatch the `comment-analyzer` subagent where the session has it. It applies the ladder below in a fresh context, and it also checks the unchanged comments that describe code this work changed — a docblock above a method whose body changed, a comment beside a changed condition — for whether they are still true. Without it, read around every changed hunk for those comments yourself, and say in the report that the audit was not independent: the author reads a comment together with the intent behind it.
 
 A comment earns its place **only when both** are true:
 1. **Without it, a competent teammate reading the code (and any linked issue / PR) would draw the wrong conclusion or break it on edit** — not merely be curious. "Is there a real WHY?" is the wrong test; almost every line has one. A real-but-inferable why — the reader would understand it, just a little slower — is not enough to keep inline; that belongs in the tracker (a tracking link), not the source.
@@ -189,7 +191,7 @@ Prefer **Remove** and **Replace** over **Trim** — a comment that can be design
 
 Exempt — do not touch:
 - Comments required by tooling or convention (e.g. static-analysis annotations, `@var` and type-hint docblocks the project's conventions mandate, IDE/linter directives, license headers).
-- Comments outside the current diff (pre-existing code you did not modify).
+- Comments that describe code the change did not touch. An unchanged comment on code this work changed is not exempt: check that it is still true.
 
 Apply the Remove/Replace/Trim edits as part of this phase (this is your own work), then continue to Phase 4. If a rewrite needs a design decision, ask the user.
 
