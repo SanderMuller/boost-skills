@@ -25,8 +25,9 @@
 #                     Python: 'def|class'. Go: 'func|type'. Rust: 'fn|struct|trait|enum'.
 #   -- <pathspec>...  Limit where stale REFERENCES are searched for (e.g. -- src/ app/).
 #                     Default: the whole repo. The "is it still declared somewhere" check
-#                     stays repo-wide either way. Generated bundles (*.map, *.min.js) are
-#                     skipped by both.
+#                     stays repo-wide either way. Generated bundles (*.map, *.min.js),
+#                     Markdown (*.md) and PHPStan baselines (*baseline*.neon) are skipped
+#                     by both.
 #
 # Exit codes: 0 = nothing dangling, 1 = dangling references found, 2 = usage error.
 #
@@ -53,7 +54,11 @@ die() { printf 'dangling-symbols: %s\n' "$1" >&2; exit 2; }
 # scan, and they are excluded from BOTH passes. A stale reference inside one is not yours
 # to fix, and a build output still carrying a declaration the source dropped would mark
 # that name as declared — reporting a clean sweep over a tree whose source is broken.
-BUNDLES=(':(exclude)*.map' ':(exclude)*.min.js')
+# Markdown and PHPStan baselines are text, not code, and fail the same two ways: prose
+# naming a symbol reads as a reference, and a baseline message such as "Call to function
+# foo()" reads as a declaration of foo. Other .neon files stay in: configuration there
+# names real classes.
+EXCLUDES=(':(exclude)*.map' ':(exclude)*.min.js' ':(exclude)*.md' ':(exclude)*baseline*.neon')
 
 # git grep answers 0 for a match and 1 for none; anything higher is a real failure.
 # Treating those alike is how this script would answer "no dangling references" because
@@ -101,9 +106,19 @@ for ref in "$BASE" "$OURS"; do
         || die "cannot resolve ref '$ref'"
 done
 
+# PHP lines that match the declaration pattern without declaring the name after the
+# keyword: `use function f;` and `use const C;` import a name, and a typed constant
+# (`const int LIMIT = 1`, PHP 8.3) puts its type where the name is read from. The first
+# are dropped; the type is removed so the constant's own name is extracted.
+php_forms() {
+    grep -vE '^[-+]?[[:space:]]*use[[:space:]]+(function|const)[[:space:]]' \
+        | sed -E 's/const +[?A-Za-z0-9_\\()]+( *[|&] *[?A-Za-z0-9_\\()]+)* +([A-Za-z_][A-Za-z0-9_]* *=)/const \2/g'
+}
+
 # Declaration names on lines matching $1 ('^-' removed, '^+' added) of a diff on stdin.
 names() {
     grep -E "$1" \
+        | php_forms \
         | grep -oE "($KEYWORDS) +[A-Za-z_][A-Za-z0-9_]*" \
         | awk '{print $NF}' \
         | sort -u
@@ -130,9 +145,9 @@ removed_from_diff() {
 #   content before diffing, so a symbol can be transformed out of the diff.
 # Three dots: the merge base, not the other tip — a two-dot diff reports the other
 #   side's own files as removals and buries the real hits.
-DIFF_THEIRS=$(git diff --no-color --no-ext-diff --no-textconv "$OURS...$BASE") \
+DIFF_THEIRS=$(git diff --no-color --no-ext-diff --no-textconv "$OURS...$BASE" -- "${EXCLUDES[@]}") \
     || die "git diff $OURS...$BASE failed"
-DIFF_OURS=$(git diff --no-color --no-ext-diff --no-textconv "$BASE...$OURS") \
+DIFF_OURS=$(git diff --no-color --no-ext-diff --no-textconv "$BASE...$OURS" -- "${EXCLUDES[@]}") \
     || die "git diff $BASE...$OURS failed"
 
 workdir=$(mktemp -d) || die "cannot create a temporary directory"
@@ -166,9 +181,12 @@ awk '/^[A-Za-z_][A-Za-z0-9_]*$/' "$workdir/removed-by-base" "$workdir/removed-by
 # `import type MoneyAmount from './money'` reads as a declaration of the very alias the
 # other side removed, so the rename it is meant to catch would report clean. The names
 # come out of the surviving lines below.
-grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" -- "${BUNDLES[@]}"
+# `[?(]?` keeps a nullable or DNF typed constant (`const ?int LIMIT`), which php_forms
+# then reduces to its name.
+grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}) +[?(]?[A-Za-z_][A-Za-z0-9_]*" -- "${EXCLUDES[@]}"
 
 grep -vE '^[[:space:]]*import[[:space:]]' "$workdir/declarations" \
+    | php_forms \
     | grep -oE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" \
     | awk '{print $NF}' \
     | sort -u > "$workdir/declared"
@@ -196,9 +214,9 @@ if [ -s "$workdir/dangling" ]; then
         [ -n "$chunk" ] || continue
 
         if [ ${#PATHSPEC[@]} -gt 0 ]; then
-            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${PATHSPEC[@]}" "${BUNDLES[@]}"
+            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${PATHSPEC[@]}" "${EXCLUDES[@]}"
         else
-            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${BUNDLES[@]}"
+            grep_tree "$workdir/references" -znwoE "(${chunk})" -- "${EXCLUDES[@]}"
         fi
     done < <(xargs -n 200 < "$workdir/dangling" | tr ' ' '|')
 

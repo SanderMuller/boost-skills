@@ -446,6 +446,133 @@ function testADiffRewritingGitConfigCannotEmptyTheSweep() {
     fs.rmSync(cwd, { recursive: true, force: true });
 }
 
+// Starts a repo on `ours` with the given files committed as the merge base.
+function createBaseRepo(files) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dangling-'));
+    git(cwd, 'init', '-q', '.');
+    git(cwd, 'config', 'user.email', 'test@example.com');
+    git(cwd, 'config', 'user.name', 'Test');
+    git(cwd, 'checkout', '-q', '-b', 'ours');
+
+    for (const [file, content] of Object.entries(files)) {
+        write(cwd, file, content);
+    }
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'base');
+
+    return cwd;
+}
+
+// Commits `theirs` and `ours` changes on their own branches, then merges theirs into ours.
+function mergeSides(cwd, theirs, ours) {
+    git(cwd, 'checkout', '-q', '-b', 'theirs');
+    for (const [file, content] of Object.entries(theirs)) {
+        write(cwd, file, content);
+    }
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'their change');
+
+    git(cwd, 'checkout', '-q', 'ours');
+    for (const [file, content] of Object.entries(ours)) {
+        write(cwd, file, content);
+    }
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'our change');
+
+    mergeCleanly(cwd, 'theirs');
+}
+
+// PHP 8.3 typed class constants: `const int LIMIT` declares LIMIT, not `int`. Adding
+// a type to an existing constant is a common upgrade, and reading the type as the name
+// reports every use of the constant.
+function testATypedConstantKeepsItsName() {
+    const cwd = createBaseRepo({ 'src/Limits.php': '<?php\nclass Limits { const LIMIT = 1; }\n' });
+    mergeSides(
+        cwd,
+        { 'src/Limits.php': '<?php\nclass Limits { const ?int LIMIT = 1; }\n' },
+        { 'src/Order.php': '<?php\necho Limits::LIMIT;\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 0, `adding a type does not remove the constant: ${result.stdout}`);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+function testDetectsAStaleReferenceToARenamedTypedConstant() {
+    const cwd = createBaseRepo({ 'src/Limits.php': '<?php\nclass Limits { const int | string LIMIT = 1; }\n' });
+    mergeSides(
+        cwd,
+        { 'src/Limits.php': '<?php\nclass Limits { const int | string MAXIMUM = 1; }\n' },
+        { 'src/Order.php': '<?php\necho Limits::LIMIT;\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, 'a renamed typed constant is a removed declaration');
+    assert.match(result.stdout, /DANGLING {2}LIMIT/);
+    assert.match(result.stdout, /src\/Order\.php/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// A name one side removed still counts as declared when another file declares it as a
+// typed constant, nullable included.
+function testASurvivingTypedConstantStillCountsAsDeclared() {
+    const cwd = createBaseRepo({
+        'src/A.php': '<?php\nclass A { const LIMIT = 1; }\n',
+        'src/B.php': '<?php\nclass B\n{\n    const ?int LIMIT = 2;\n}\n',
+    });
+    mergeSides(
+        cwd,
+        { 'src/A.php': '<?php\nclass A { const MAXIMUM = 1; }\n' },
+        { 'src/Order.php': '<?php\necho B::LIMIT;\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 0, `src/B.php still declares LIMIT: ${result.stdout}`);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// `use function` and `use const` import a name; they declare nothing. Removing one must
+// not report every call to a built-in, and keeping one must not mark a name declared.
+function testAUseFunctionImportIsNotADeclaration() {
+    const cwd = createBaseRepo({
+        'src/Check.php': '<?php\nuse function method_exists;\nuse const PHP_EOL;\nmethod_exists($a, "b");\n',
+    });
+    mergeSides(
+        cwd,
+        { 'src/Check.php': '<?php\nmethod_exists($a, "b");\n' },
+        { 'src/Other.php': '<?php\nmethod_exists($c, "d") && print(PHP_EOL);\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 0, `removing an import removes no declaration: ${result.stdout}`);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// Markdown prose and PHPStan baselines are not code. Prose that names the old symbol is
+// not a stale reference, and a baseline message such as "Call to function formatAmount()"
+// must not count as a declaration that hides the real one.
+function testProseAndBaselinesAreNotCode() {
+    const cwd = createMergedRepo();
+    write(cwd, 'docs/notes.md', 'Call formatAmount() to format.\n');
+    write(cwd, 'phpstan-baseline.neon', "message: '#Call to function formatAmount\\(\\)#'\n");
+    write(cwd, 'config/services.neon', 'factory: formatAmount\n');
+    git(cwd, 'add', '-A');
+
+    const result = sweep(cwd, ['--base', 'theirs']);
+    assert.equal(result.status, 1, 'the baseline must not mark the name declared');
+    assert.match(result.stdout, /DANGLING {2}formatAmount/);
+    assert.match(result.stdout, /src\/receipt\.js/);
+    assert.doesNotMatch(result.stdout, /notes\.md|baseline\.neon/);
+    // Only baselines are skipped: other .neon files are configuration that names real code.
+    assert.match(result.stdout, /config\/services\.neon/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
 const tests = [
     testDetectsStaleReferenceToRenamedDeclaration,
     testCleanWhenTheCallerWasUpdatedToo,
@@ -465,6 +592,11 @@ const tests = [
     testAnImportDoesNotCountAsADeclaration,
     testAStaleBundleDeclarationDoesNotMaskADanglingReference,
     testADiffRewritingGitConfigCannotEmptyTheSweep,
+    testATypedConstantKeepsItsName,
+    testDetectsAStaleReferenceToARenamedTypedConstant,
+    testASurvivingTypedConstantStillCountsAsDeclared,
+    testAUseFunctionImportIsNotADeclaration,
+    testProseAndBaselinesAreNotCode,
 ];
 
 let failures = 0;
