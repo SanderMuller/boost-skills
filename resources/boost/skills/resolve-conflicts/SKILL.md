@@ -1,6 +1,6 @@
 ---
 name: resolve-conflicts
-description: "Resolves git merge conflicts without dropping functionality from either side. Merge is the main flow; rebase covered briefly. Activates when: merging branches, resolving conflicts, updating a branch, integrating work, or when user mentions: merge conflict, resolve conflicts, rebase conflict, integrate branch, update branch."
+description: "Resolves git merge conflicts without dropping functionality from either side. Merge is the main flow; rebase and stacked branches (gh stack) covered as auxiliaries. Activates when: merging branches, resolving conflicts, updating a branch, integrating work, rebasing a stack, or when user mentions: merge conflict, resolve conflicts, rebase conflict, integrate branch, update branch, stacked PRs, gh stack, update the stack."
 argument-hint: "[optional: branch to merge, e.g. main]"
 ---
 
@@ -14,6 +14,7 @@ The goal is not just to make the conflict markers go away — it is to produce c
 - User asks to update/sync a branch with the base branch
 - Git reports `CONFLICT` during merge, rebase, or cherry-pick
 - User mentions: merge conflict, resolve conflicts, rebase conflict, integrate branch, update branch
+- The branch belongs to a stack of pull requests — see [Stacked branches](#auxiliary-stacked-branches-gh-stack)
 
 ## Core Principle
 
@@ -40,6 +41,14 @@ Any output — stop and have the user commit or stash before merging. This is no
 - Phase 4's diffs then list those work-in-progress files right alongside the resolved ones, with nothing to distinguish local WIP from a resolution edit. The gate that is supposed to catch a dropped feature reports files you never merged.
 
 **Untracked files are excluded above on purpose, but they are not harmless.** `--untracked-files=no` keeps the gate practical — build output, `.env`, and editor droppings should not block a merge, and untracked files never show up in Phase 4's diffs, so they cannot muddy the verification. They can still stop the merge outright: if the incoming side adds a file at a path where an untracked file already sits, git refuses with `error: The following untracked working tree files would be overwritten by merge`. That is not a conflict and not a dirty-tree failure — move or delete the named file and re-run the merge.
+
+**Then check whether the branch belongs to a stack.** A stack is updated by rebase, never by merge, so the rest of this workflow does not apply to it:
+
+```bash
+gh stack view --json
+```
+
+JSON on stdout means the branch is in a stack: switch to [Stacked branches](#auxiliary-stacked-branches-gh-stack). `not part of a stack` on stderr means it is not — unless the user named a stack that is not checked out yet, which step 0 of that section handles. `unknown command "stack"` means the `gh stack` extension is not installed. In those two cases, continue here. Without the extension, a PR whose base is another feature branch instead of the default branch can still be a hand-built stack. Ask the user before merging into it.
 
 **Then detect conflicts without side effects.** `git merge-tree` performs the merge in memory and writes nothing to the working tree or index:
 
@@ -258,9 +267,79 @@ The workflow above is written for `git merge`. Rebase conflicts share most of th
 
 - Conflicts are resolved **per replayed commit**, not all at once.
 - Continue each step with `git rebase --continue`, not `git commit --no-edit`.
-- `ORIG_HEAD` is set to the pre-rebase tip and remains stable across the rebase, so the Phase 4 Check 1 diff forms still work.
+- **The sides are inverted.** During a rebase `HEAD` (and stage `:2:`) is the upstream side your commits are replayed onto. Your commit being replayed is stage `:3:`, also reachable as `REBASE_HEAD`. Read Phase 2 and the Core Principle with the labels swapped, or you keep the wrong side. In Phase 2 step 2, inspect the replayed change with `git show REBASE_HEAD -- <file>` and the upstream side with `git log HEAD --oneline -10 -- <file>`; `origin/<base-branch>` is the wrong side to read here.
+- `ORIG_HEAD` is set to the pre-rebase tip and remains stable across a single-branch rebase, so the Phase 4 Check 1 diff forms still work.
 - **Never** force-push a rebased shared branch without explicit user approval.
 
-If the rebase is non-trivial (multiple conflicting commits, or a long-running branch), consider aborting with `git rebase --abort` and doing a merge instead — merges are usually easier to review and revert.
+If the rebase is non-trivial (multiple conflicting commits, or a long-running branch), consider aborting with `git rebase --abort` and doing a merge instead — merges are usually easier to review and revert. This does not apply to a stack: stacked pull requests rely on rebase, and a merge commit breaks the chain.
+
+## Auxiliary: Stacked Branches (`gh stack`)
+
+A stack is a chain of branches, each one based on the branch below it: `main ← a ← b ← c`. The `gh stack` extension updates the whole chain with one cascading rebase. Everything in [Rebase conflicts](#auxiliary-rebase-conflicts) applies, including the inverted sides. The steps below add what the cascade changes. Behaviour here was observed on `gh stack` 0.0.8; check `gh stack rebase --help` when a newer version acts differently.
+
+**0. Get the stack locally.** When the user names a stack or a pull request that is not checked out, run `gh stack checkout <stack-or-pr-number>`. It fetches every branch and imports the stack, so `gh stack view --json` works afterwards.
+
+**1. Ask for the scope.** Show the stack with `gh stack view`, then ask the user how much of it to update. Skip the question when the user already said which part to update:
+
+| Scope | Command |
+|-------|---------|
+| The whole stack (trunk into every branch) | `gh stack rebase` |
+| Trunk up to one branch — "just this part" | check out that branch, then `gh stack rebase --downstack` |
+| One branch up to the top | check out that branch, then `gh stack rebase --upstack` |
+| Branches onto each other, without the trunk | `gh stack rebase --no-trunk` |
+
+`gh stack rebase <branch>` does **not** limit the rebase to that branch — it still rebased the full stack in testing. `--downstack` leaves the branches above untouched; `gh stack view` then marks them `needsRebase`. Tell the user that the upper branches are now behind.
+
+**2. Record every tip before the rebase.** `ORIG_HEAD` does not survive a cascade: it moves to each branch's old tip as that branch is rebased, so after the run it names only the last one. Save the tips first (the loops in this section need `jq`):
+
+```bash
+for b in $(gh stack view --json | jq -r '.branches[].name'); do
+  echo "$b $(git rev-parse "$b")"
+done > "$(git rev-parse --git-dir)/stack-tips-before"
+```
+
+The old tips are what Phase 4 Check 1 and Phase 5's "ours" baseline compare against, per branch.
+
+**3. Rebase and resolve.** Keep commit messages intact first. When `--continue` commits a conflicted step, git's default message cleanup deletes every line that starts with `#`, so a Markdown `## Heading` in a commit message disappears without a warning. Set the cleanup mode on every `gh stack rebase` call, `--continue` included, without touching the user's git config. Prefix each call instead of exporting once, because an agent's shell state may not carry over between commands:
+
+```bash
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.cleanup GIT_CONFIG_VALUE_0=scissors gh stack rebase --continue
+```
+
+Run the chosen command that way. On a conflict it stops at the first conflicting branch (exit 3, detached `HEAD`) and lists the conflicted files. Resolve with Phases 2–3, reading the sides as [Rebase conflicts](#auxiliary-rebase-conflicts) describes: the upstream side is the branch below, not the trunk. `git add` the files, then run `gh stack rebase --continue`, not `git rebase --continue`, so the cascade moves on to the next branch. Repeat until it reports `All branches in stack rebased`. `gh stack rebase --abort` restores every branch to its old tip; like `git merge --abort`, use it only when the user asks.
+
+A stack that was earlier updated with merge commits carries extra history: merge commits, and stale copies of lower-branch commits from before an earlier rebase. The rebase drops the merges and skips the stale copies that match a commit already below. That is expected. Afterwards, check that each branch holds only its own commits: `git log --oneline <lower-branch>..<branch>`.
+
+**4. Verify every rebased branch, not only the top one.** A resolution in a lower branch flows into every branch above it without a textual conflict, so the upper branches owe Phase 4 Check 2 and Phase 5 just as much. For each branch, the "base" is the branch directly below it, not `origin/<base-branch>` — that is correct only for the bottom branch:
+
+```bash
+# Per branch: did each replayed commit keep its change? (old parent, old tip, new parent, new tip)
+git range-diff <old-lower-tip>..<old-tip> <lower-branch>..<branch>
+
+# Cross-side consistency for that branch
+git checkout <branch>
+bash .claude/skills/resolve-conflicts/scripts/dangling-symbols.sh \
+  --base <lower-branch> --ours <old-tip> -- src/
+```
+
+Take `<old-tip>` and `<old-lower-tip>` from the saved file. For the bottom branch, `<lower-branch>` is `origin/<base-branch>`, and `<old-lower-tip>` is the trunk commit it forked from: `git merge-base <old-tip> origin/<base-branch>`. Pass `--ours` explicitly: the script's `ORIG_HEAD` default is wrong after a cascade. In `range-diff` output, `=` means the commit replayed unchanged. A pair marked `!` changed during the replay, and so did a commit shown only as removed (`<`) and added (`>`), which is how range-diff shows a commit that changed too much to pair. Read each changed commit against the conflict you resolved, and read the commit-message part of each `!` pair too: that is where a stripped message line shows.
+
+`<old-lower-tip>` is the wrong lower bound in two cases: a stack that was merge-synced before (the range also lists every trunk commit the merges brought in, all as `<`), and a branch that was already behind its lower branch before this rebase, for example after an earlier `--downstack` (the range lists old lower-branch commits as if they were dropped). In both cases, find the branch's first own commit in `git log --oneline <old-tip>` and use its parent as the lower bound. The `base` field in `gh stack view --json` does not help here: it already points at the new lower tip. A faster check for an upper branch that had no conflict of its own: `git diff <old-tip> <branch>` must equal the lower branch's own change, `git diff <old-lower-tip> <lower-branch>`. When they match, the branch lost nothing and gained only what came from below.
+
+Phase 5 on every branch is often not practical locally, for example when the tests need infrastructure the session does not have. Run the local checks on the highest branch the rebase changed (with `--downstack`, the top branch was not rebased), and use each pull request's CI as the per-branch Phase 5. Baseline a red CI job against both parents, as in Phase 5: the branch's old tip (its last CI run before the push) and the branch directly below it. Read the verdict from Phase 5's table. A red job on the trunk alone does not make the failure pre-existing: the rebase can break the same job in a new way.
+
+**5. Push only with approval.** `gh stack push` pushes every branch with `--force-with-lease --atomic`. It rewrites the history of every open pull request in the stack, so ask once for the whole stack before running it. `gh stack submit` also creates or updates pull requests; use `push` when the pull requests already exist.
+
+**6. Confirm on GitHub.** "Rebased locally" is not the same as "the pull requests no longer conflict". After the push, check every pull request in the stack:
+
+```bash
+for b in $(gh stack view --json | jq -r '.branches[].name'); do
+  echo "$b $(gh pr view "$b" --json mergeable,mergeStateStatus --jq '"\(.mergeable) \(.mergeStateStatus)"')"
+done
+```
+
+Re-run it while any pull request shows `UNKNOWN`; GitHub computes the value a few seconds after the push.
+
+**7. Report per branch:** which branches were rebased, which had conflicts and how each was resolved, the verification result for each branch, and which branches (if any) still need a rebase.
 </content>
 </invoke>
