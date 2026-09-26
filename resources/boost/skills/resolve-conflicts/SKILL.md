@@ -169,10 +169,10 @@ The diffs above answer *"did I keep both sides' changes?"* They cannot answer *"
 
 Constructed and observed: the base branch renames `Helper::formatAmount()` to `formatMoney()` and updates its own call site; your branch adds a new `Receipt.php` calling `formatAmount()`. Git merges the two cleanly — exit 0, empty `git status`, fully merged — and `Receipt.php` now calls a method that no longer exists. Run Check 1 on it and `git diff origin/<base-branch>` reports `Receipt.php`, two insertions: your own new file, added by your own branch, which is **precisely** the "only our refactor/feature" result you were told to expect. `Helper.php` does not appear at all, because after the merge your copy matches the base's exactly. Nothing in the output is wrong or missing. The rename and the stale call site simply never land in the same frame, so every element passes in isolation.
 
-This skill ships a companion that finds these. `boost sync` emits it beside the rendered `SKILL.md` in each agent's skill directory, so it is already on disk — under Claude Code at `.claude/skills/resolve-conflicts/scripts/dangling-symbols.sh` (swap the skills-dir prefix for another agent). Commands run from the project root, not the skill directory, so use that full path. Emitted assets carry no executable bit, so invoke via `bash <script>`, never directly:
+This skill ships a companion that finds these. `boost sync` emits it beside the rendered `SKILL.md` in each agent's skill directory, so it is already on disk — under Claude Code at `.claude/skills/resolve-conflicts/scripts/dangling-symbols.sh` (swap the skills-dir prefix for another agent). When this skill runs as `resolve-conflicts-user`, from a user-scope sync, the script is at `~/.claude/skills/resolve-conflicts-user/scripts/dangling-symbols.sh` instead. Commands run from the project root, not the skill directory, so use that full path. In the commands below, `<script>` is that path. Emitted assets carry no executable bit, so invoke via `bash <script>`, never directly:
 
 ```bash
-bash .claude/skills/resolve-conflicts/scripts/dangling-symbols.sh \
+bash <script> \
   --base origin/<base-branch> -- src/
 ```
 
@@ -316,9 +316,9 @@ A stack that was earlier updated with merge commits carries extra history: merge
 # Per branch: did each replayed commit keep its change? (old parent, old tip, new parent, new tip)
 git range-diff <old-lower-tip>..<old-tip> <lower-branch>..<branch>
 
-# Cross-side consistency for that branch
+# Cross-side consistency for that branch (<script> is the path from Phase 4 Check 2)
 git checkout <branch>
-bash .claude/skills/resolve-conflicts/scripts/dangling-symbols.sh \
+bash <script> \
   --base <lower-branch> --ours <old-tip> -- src/
 ```
 
