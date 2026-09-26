@@ -78,7 +78,7 @@ Each skill is published with a `-user` suffix, for example `/interview-user`, so
 
 ## Skills
 
-The inventory below is the catalog's contract — CI checks it against the shipped skills and their tags, so it stays exact. The same list, rendered, is on the [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page.
+CI checks this inventory against the shipped skills and their tags. The [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page renders the same list.
 
 <details>
 <summary>36 skills — click to expand the inventory</summary>
@@ -130,6 +130,9 @@ Most content is universal. The rest carries **capability tags** — a project de
 
 `github` and `github-issues` are independent: `github` is any GitHub-hosted repo (PR and release skills), `github-issues` only projects tracking issues there. A GitHub repo using Jira declares `github` alone.
 
+<details>
+<summary>14 tags — click to expand</summary>
+
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
 | `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
@@ -147,13 +150,13 @@ Most content is universal. The rest carries **capability tags** — a project de
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
 | `voice`              | opt-in — route every writing surface to one voice rule (ASD-STE100 Simplified Technical English) | `boost-skills`      |
 
-`boost-core` also ships forward-compatible enum cases no skill here targets yet (`Tag::Filament`, `Tag::Livewire`, `Tag::Pest`, and more). Declaring one is harmless and survives picker re-runs; see `Tag::*` in `boost-core`.
+</details>
 
 ## Guidelines
 
-Short Markdown files of project-wide convention, folded into `CLAUDE.md` / `AGENTS.md`. Unlike skills they are always active — no on-demand activation. They are tagged like skills, but from a sidecar `.boost-tags.yaml` manifest, since a guideline file stays frontmatter-free for `laravel/boost` compatibility.
+Short project-wide conventions, folded into `CLAUDE.md` / `AGENTS.md` and always active. Their tags come from a sidecar `.boost-tags.yaml`, because a guideline file stays frontmatter-free for `laravel/boost`.
 
-A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes those to your agent directories, so they apply on the machine rather than in one project (needs `boost-core` >= 1.10.0). The two sidecars answer different questions and do not interact: tags pick which projects a guideline reaches, and the user-scope list picks whether it ships outside a project at all. `voice` is in both. A user-scope guideline must render token-free, because user scope has no `boost.php` to resolve a conventions token against.
+A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes them outside a project (needs `boost-core` >= 1.10.0). A user-scope guideline must render token-free, because user scope has no `boost.php`.
 
 <details>
 <summary>10 guidelines — click to expand</summary>
@@ -175,7 +178,10 @@ A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in an
 
 ## Subagents
 
-Claude Code subagent definitions this package ships. A subagent runs in its own context, which is the point: an adversarial pass judges a change as code somebody else wrote, and the same rules applied by the author who wrote it are a weaker check. `boost-core` emits them to `.claude/agents/boost/<vendor>__<package>/`, a subtree it owns; hand-written definitions at the top of `.claude/agents/` are untouched. Targets with no subagent concept receive nothing.
+Claude Code subagents this package ships. Each runs in its own context, so it judges a change as code somebody else wrote. `boost-core` >= 1.9.0 emits them to `.claude/agents/boost/<vendor>__<package>/` and leaves your own files in `.claude/agents/` alone. An older engine and agents without subagents get nothing.
+
+<details>
+<summary>12 subagents — click to expand</summary>
 
 | Subagent | What it does | Tags |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
@@ -192,9 +198,9 @@ Claude Code subagent definitions this package ships. A subagent runs in its own 
 | `tech-lead-reviewer`   | Review the approach one altitude above the line: design size, value types, placement, one-way doors.  | —               |
 | `test-coverage-auditor` | Find the untested failure paths and the assertions that pass whatever the code does.                 | —               |
 
-`boost-core` 1.9.0 added the subagent channel; an older engine ignores the directory entirely, so this costs a consumer on an earlier version nothing.
+</details>
 
-**Already wrote one of these yourself?** Claude Code resolves a dispatch by the frontmatter `name`, not by path, so your `.claude/agents/tech-lead-reviewer.md` and the shipped one are two files claiming one name — and which one loads is filesystem read order. Delete or rename your copy when you adopt the shipped version; `boost sync` warns about the overlap until you do. A skill that dispatches one should say what its inline fallback loses — see the `ai-guidelines` skill.
+**Already wrote one yourself?** Claude Code picks a subagent by its frontmatter `name`, so your `.claude/agents/tech-lead-reviewer.md` and the shipped one clash, and read order decides which loads. Delete or rename yours; `boost sync` warns until you do.
 
 ## Editing skills and guidelines
 
@@ -214,7 +220,7 @@ Found a vulnerability? Email `github@scode.nl` rather than opening a public issu
 
 Static skill scanners such as [SkillSpector](https://github.com/NVIDIA/skillspector) flag this package. The findings are false positives. Three patterns cause them:
 
-- **HTML comments read as prompt injection.** Every `<!--boost:conv …-->` token is a `boost-core` conventions placeholder that the sync resolves. So are the `<!-- verified-sha: … -->` and `<!-- spec:planned-at … -->` anchors. A scanner cannot tell them from a hidden instruction.
+- **HTML comments read as prompt injection.** A `<!--boost:conv …-->` token is a `boost-core` placeholder that the sync resolves, and `<!-- verified-sha: … -->` and `<!-- spec:planned-at … -->` are anchors. A scanner cannot tell them from a hidden instruction.
 - **Anti-pattern prose read as an instruction.** A skill that lists "without asking" or "skip verification" as a thing *not* to do matches the same string as a skill that tells an agent to do it.
 - **Documented shell commands read as tool misuse.** The `autoresearch` skill prints `git reset --hard HEAD~1` because its loop commits before it measures, so a rejected experiment reverts in one step.
 
