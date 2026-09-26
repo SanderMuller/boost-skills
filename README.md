@@ -40,6 +40,30 @@ vendor/bin/boost sync
 
 Under `laravel/boost` instead, follow [its setup](https://github.com/laravel/boost) and include this package in what it syncs. Tag filtering and Project Conventions slots are inert there; skills carry visible defaults, so a slot still reads sensibly.
 
+### In every project
+
+To use some skills outside a project, install the catalog globally and list the skills you want in `~/.boost/user-scope.php` (needs `boost-core` >= 1.13.0):
+
+```bash
+composer global require sandermuller/boost-skills
+```
+
+```php
+<?php
+
+return [
+    'skills' => [
+        'sandermuller/boost-skills' => ['interview', 'promptimize', 'write-spec'],
+    ],
+];
+```
+
+```bash
+boost sync --scope=user --all
+```
+
+Each skill is published with a `-user` suffix, for example `/interview-user`, so it never hides a project's own copy. A listed skill also brings the skills it names in `boost-requires`. A package with no entry publishes every skill. User scope has no `boost.php`, so tags do not apply and conventions slots show their defaults. See [Choose user-scope skills](https://sandermuller.github.io/boost-core/guide/automating-sync#choose-user-scope-skills).
+
 ## Documentation
 
 | Topic | Page |
