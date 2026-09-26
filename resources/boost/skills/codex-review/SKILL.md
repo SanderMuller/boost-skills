@@ -2,6 +2,7 @@
 name: codex-review
 description: "Requests an independent code review from OpenAI Codex CLI, critically evaluates its findings, applies warranted fixes, and re-reviews until clean. Activates when: the user says /codex-review, asks for a Codex review, or wants an external AI review of changes."
 metadata:
+  boost-requires: "code-review"
   schema-required: "^1"
 ---
 

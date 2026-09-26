@@ -2,6 +2,8 @@
 name: test-value
 description: "Judges the tests a change added or changed, in both directions: the ones that prove nothing, and the behaviour with no test at all. Applies delete / rewrite / keep verdicts and covers the real gaps. Activates when: reviewing a change's tests, trimming a suite, asking whether a test is worth keeping or what is untested, or when user mentions: test value, useless tests, do these tests prove anything, trim tests, missing assertions, test coverage gaps."
 argument-hint: "[optional: commit range or files, if not already resolved]"
+metadata:
+  boost-requires: "test-writing"
 ---
 
 # Judge Test Value

@@ -337,7 +337,7 @@ Removing tracked files is a change to the base branch, so it ships via a PR like
 1. Branch from an up-to-date base (name it per the project's branch conventions — a keyless housekeeping change, so the project's no-issue/`chore` pattern where one exists; the Step 5 confirmation is the go-ahead).
 2. `git rm -- "$SPEC"` for each surviving spec — the batch-confirmed `DELETE-ELIGIBLE` ones, plus any `PROPOSED` spec the user confirmed individually.
 3. Commit with a message that names the housekeeping (e.g. `Remove specs for features shipped to <base>`).
-4. Create the PR via the **`pull-requests`** skill (never a direct `gh pr create`). It is a docs-only change with no behavioural effect — low risk — and the PR body lists the removed specs and the evidence that shipped each.
+4. Open the PR through the project's usual flow: the **`pull-requests`** skill where the project has it synced, otherwise the project's own PR process. It is a docs-only change with no behavioural effect — low risk — and the PR body lists the removed specs and the evidence that shipped each.
 
 For a single-spec argument the user may prefer to just `git rm` it inside an existing related branch — follow their lead, but the code still only reaches the base branch through a PR.
 

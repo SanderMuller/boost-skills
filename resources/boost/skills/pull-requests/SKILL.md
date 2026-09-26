@@ -4,7 +4,7 @@ description: "Creates and manages your own GitHub PRs via the gh CLI — analyze
 argument-hint: "[PR number or target branch]"
 metadata:
   boost-tags: "github"
-  boost-requires: "resolve-conflicts"
+  boost-requires: "resolve-conflicts pr-review-feedback"
   schema-required: "^1"
 ---
 

@@ -242,7 +242,7 @@ Then ask the user, per thread, how they want to handle it:
 
 ### Phase 4: Verify Quality
 
-After applying feedback, use the `backend-quality` skill (Tier 1: Pint + related tests).
+After applying feedback, run the quality checks for the files you changed: the `backend-quality` skill (Tier 1: Pint + related tests) for backend files and the `frontend-quality` skill for frontend files, where the project has them synced; otherwise the project's own commands.
 
 **Confirm every fix is covered by a test** (the test should already exist from Phase 3, step 2 — verify it here, add it now if you skipped ahead):
 - If the feedback was a **bug fix**, a regression test must reproduce the bug and pass — unless existing tests already cover the scenario.

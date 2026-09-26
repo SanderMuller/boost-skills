@@ -3,6 +3,7 @@ name: write-spec
 description: "Writes implementation-ready specification files with progress-trackable phases. Activates when: writing a spec, creating a spec file, documenting a feature plan, or when user mentions: write spec, create spec, spec format, spec template."
 argument-hint: [feature name or description]
 metadata:
+  boost-requires: "interview"
   schema-required: "^1"
 ---
 
