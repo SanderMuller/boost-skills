@@ -28,7 +28,7 @@ const DEFAULT_TIMEOUT_MS = 900_000;
 // the Codex CLI defaults, which move between CLI releases and can cost far more
 // plan usage per review than a bounded run needs. Pin both here instead.
 const DEFAULT_EFFORT = 'medium';
-const DEFAULT_MODEL = 'gpt-6-sol';
+const DEFAULT_MODEL = 'gpt-6.1-sol';
 const EFFORT_LEVELS = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'default']);
 const KILL_GRACE_MS = 5_000;
 const PREFLIGHT_TIMEOUT_MS = 10_000;
