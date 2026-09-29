@@ -1,5 +1,11 @@
 # Upgrading
 
+## From 2.48.x to 2.49.0 (codex-review model — no floor change)
+
+**Not breaking. The `boost-core` floor stays `^1.4`.**
+
+- **codex-review defaults to `gpt-6.1-sol`.** Codex CLI 0.156.1 rejects that model on a ChatGPT account; 0.159.0 accepts it. Update the CLI, or pass `--model gpt-6-sol` / set `CODEX_REVIEW_MODEL`.
+
 ## From 2.45.x to 2.46.0 (nine more subagents — no floor change)
 
 **Not breaking. The `boost-core` floor stays `^1.4`.** 2.46.0 adds nine subagents. Most carry tags, so a project receives only the ones its `withTags()` declares; `comment-analyzer` is untagged and ships everywhere. The README Subagents table lists each one with its tags.
