@@ -89,7 +89,7 @@
             "properties": {
                 "title_format": {
                     "type": "string",
-                    "description": "Template for PR titles. Recognized placeholders: {issue_key} (full Jira key like 'HPB-1234'), {short_title}."
+                    "description": "Template for PR titles. Recognized placeholders: {issue_key} (full Jira key like 'ABC-123'), {short_title}, {type} (the bare Conventional Commits type, e.g. 'feat'; a breaking change adds '!' directly before the ':')."
                 },
                 "template_path": {
                     "type": "string",

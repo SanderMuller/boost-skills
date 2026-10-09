@@ -353,10 +353,11 @@ This skill applies the label; it does not enforce it. Nothing here blocks a PR t
 
 Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline"-->none configured — ask the user once per session for the desired title format<!--boost:conv:end-->. Recognized placeholders:
 
-- `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`HPB-1234`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
+- `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`ABC-123`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
+- `{type}` — the bare Conventional Commits type (`feat`, `fix`, …), chosen per the `conventional-commits` guideline. When the change is breaking, put `!` directly before the `:`, after the scope when there is one: `{type}({issue_key}): {short_title}` → `feat(ABC-123)!: Drop the legacy client`.
 
-If a placeholder resolves empty (e.g. a chore branch with no issue key), the placeholder is omitted along with any now-redundant decoration around it — a single adjacent dash or `#`, and any brackets left wrapping nothing. Examples: `[HPB-XXXX] Short title` with no issue → `Short title`; `[#{issue_key}] {short_title}` → `[#1234] Add export` when resolved, or `Add export` when not.
+If a placeholder resolves empty (e.g. a chore branch with no issue key), the placeholder is omitted along with any now-redundant decoration around it — a single adjacent dash or `#`, and any brackets or parentheses left wrapping nothing. Examples: `[ABC-XXXX] Short title` with no issue → `Short title`; `[#{issue_key}] {short_title}` → `[#1234] Add export` when resolved, or `Add export` when not; `{type}({issue_key}): {short_title}` → `feat: Add export` when no key resolves.
 
 General guidance regardless of format:
 - Use imperative mood.

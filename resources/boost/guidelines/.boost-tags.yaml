@@ -7,9 +7,11 @@
 # This sidecar exists because guideline files stay frontmatter-free for
 # laravel/boost compatibility — tags cannot live in the file itself. The
 # manifest is inert on boost-core < 0.6.0 and under laravel/boost.
+conventional-commits.md: "conventional-commits"
 database-safety.md: "database"
 javascript.md: "frontend"
 migrations.md: "database"
 phpstan-fixing.md: "php"
+release-please.md: "conventional-commits github release-please"
 single-issue-scope.md: "single-issue-scope"
 voice.md: "voice"

@@ -13,6 +13,8 @@ metadata:
 - Reviewing a PR that bumps the version
 - Asked to "summarize what's new" for a tag
 
+Not in a repository with `release-please-config.json`. There, release-please generates the release body from the PR titles.
+
 ## Structure
 
 The whole body is a list of bullets under `## ` sections. The only other elements allowed anywhere: fenced code blocks under a bullet, the optional adoption block, the changelog link, and the first-line `verified-sha` comment that `pre-release` requires. Nothing else — no intro, no `###`, no paragraphs.

@@ -10,6 +10,8 @@ metadata:
 
 Run this full gauntlet before pushing commits that may be tagged as a release or before drafting release notes. It catches regressions the two-tier `backend-quality` skill skips — Rector drift and stale docs shipped to downstream projects.
 
+**In a release-please repository, most of this skill does not apply.** When `release-please-config.json` exists at the repository root, run steps 0–5 as a quality gate only. Land every fix through a PR with a Conventional Commits title, and then stop. Steps 6–8, the release-notes file, the `verified-sha` pin and the `gh release create` handoff do not apply: release-please writes the changelog and creates the tag when the user merges its release PR. The `release-please` skill owns the rest of the release, including the CI gate on the release PR. Where that skill is not synced, follow the `release-please` guideline.
+
 ## When to Use This Skill
 
 Activate when:

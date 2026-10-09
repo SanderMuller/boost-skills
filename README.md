@@ -81,7 +81,7 @@ Each skill is published with a `-user` suffix, for example `/interview-user`, so
 CI checks this inventory against the shipped skills and their tags. The [skill catalog](https://sandermuller.github.io/boost-core/packages/boost-skills/catalog) page renders the same list.
 
 <details>
-<summary>36 skills — click to expand the inventory</summary>
+<summary>38 skills — click to expand the inventory</summary>
 
 | Skill                  | What it does                                                                                         | Tags            |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
@@ -93,6 +93,7 @@ CI checks this inventory against the shipped skills and their tags. The [skill c
 | `clean-specs`          | Command-only (`/clean-specs`): remove spec files whose work is fully implemented and proven on the base branch, keeping only live work.               | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
+| `conventional-commits` | Choose the Conventional Commits type and breaking marker for a commit or PR title; set up the PR-title check. | `conventional-commits` |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |
 | `eloquent-models`      | Create and maintain Eloquent models with column/relation constants, comprehensive docblocks, and FK constants. | `laravel`       |
 | `evaluate`             | Self-review a full implementation and fix the issues it surfaces.                                    | —               |
@@ -114,6 +115,7 @@ CI checks this inventory against the shipped skills and their tags. The [skill c
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
 | `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, a problem-first opening, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, length budget, voice, breaking-change callouts, what to omit. | `release-automation` |
+| `release-please`       | Set up, run and repair release-please releases: config, token, release-PR gate, merge handoff, overrides. | `conventional-commits` `github` `release-please` |
 | `resolve-conflicts`    | Resolve git merge conflicts without dropping functionality from either side.                         | —               |
 | `simplify-shape`       | Judge whether a change carries its values in the right type: enum, form request, DTO, query-builder method. | `php`           |
 | `test-value`          | Judge the tests a change touched: delete what proves nothing, cover what nothing tests.               | —               |
@@ -131,11 +133,12 @@ Most content is universal. The rest carries **capability tags** — a project de
 `github` and `github-issues` are independent: `github` is any GitHub-hosted repo (PR and release skills), `github-issues` only projects tracking issues there. A GitHub repo using Jira declares `github` alone.
 
 <details>
-<summary>14 tags — click to expand</summary>
+<summary>16 tags — click to expand</summary>
 
 | Tag                  | Meaning                                                     | Owner               |
 |----------------------|-------------------------------------------------------------|---------------------|
 | `boost-extension`    | opt-in — extending boost-core (custom skills + FileEmitters) | `package-boost-php` |
+| `conventional-commits` | opt-in — commit headers and PR titles follow Conventional Commits | `boost-skills` |
 | `database`           | project has a database                                      | `boost-skills`      |
 | `frontend`           | project has a user-facing UI — templates, styles, JS, or any mix; the JS checks skip what the project lacks | `boost-skills` |
 | `github`             | hosted on GitHub                                            | `boost-skills`      |
@@ -146,6 +149,7 @@ Most content is universal. The rest carries **capability tags** — a project de
 | `laravel-cloud`      | app deploys to Laravel Cloud (pair with `hosting`)          | `boost-skills`      |
 | `php`                | PHP toolchain — Pint, PHPStan, Rector                       | `boost-skills`      |
 | `release-automation` | opt-in — release flow content: README authoring, release notes, UPGRADING, CI changelog automation | `boost-skills`, `package-boost-php` |
+| `release-please`     | opt-in — release-please owns versions, changelog and tags; needs `conventional-commits` and `github` | `boost-skills` |
 | `sentry`             | errors are tracked in Sentry, reachable through a Sentry MCP server | `boost-skills` |
 | `single-issue-scope` | opt-in — enforce single-issue PR/branch/session discipline  | `boost-skills`      |
 | `voice`              | opt-in — route every writing surface to one voice rule (ASD-STE100 Simplified Technical English) | `boost-skills`      |
@@ -159,15 +163,17 @@ Short project-wide conventions, folded into `CLAUDE.md` / `AGENTS.md` and always
 A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes them outside a project (needs `boost-core` >= 1.10.0). A user-scope guideline must render token-free, because user scope has no `boost.php`.
 
 <details>
-<summary>10 guidelines — click to expand</summary>
+<summary>12 guidelines — click to expand</summary>
 
 | Guideline                        | What it covers                                                                          | Tags       |
 |-----------------------------------|------------------------------------------------------------------------------------------|------------|
 | `ask-user-question`               | Avoid first/second-person pronouns in AskUserQuestion payloads — name the actor instead. | —          |
+| `conventional-commits`            | Commit headers and PR titles are Conventional Commits; the PR title is the squash commit. | `conventional-commits` (opt-in) |
 | `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.   | `database` |
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
+| `release-please`                  | release-please owns version, changelog and tag; the user merges the release PR; commit bodies are release input. | `conventional-commits` `github` `release-please` (opt-in) |
 | `signed-commits`                  | Never fall back to an unsigned commit when signing is enabled — surface the failure to fix it instead. | —          |
 | `single-issue-scope`              | Keep each session, branch, and PR focused on exactly one issue.                          | `single-issue-scope` (opt-in) |
 | `task-scope`                      | Keep the change to what the task asks, pick one reading of an ambiguous ask, and edit in place. | —          |
