@@ -42,6 +42,14 @@ Any output — stop and have the user commit or stash before merging. This is no
 
 **Untracked files are excluded above on purpose, but they are not harmless.** `--untracked-files=no` keeps the gate practical — build output, `.env`, and editor droppings should not block a merge, and untracked files never show up in Phase 4's diffs, so they cannot muddy the verification. They can still stop the merge outright: if the incoming side adds a file at a path where an untracked file already sits, git refuses with `error: The following untracked working tree files would be overwritten by merge`. That is not a conflict and not a dirty-tree failure — move or delete the named file and re-run the merge.
 
+**Asked to sync a pull request whose head is not checked out?** Read its branches with `gh pr view <number> --json headRefName,baseRefName`. When this checkout passes the clean-tree check above, run `gh pr checkout <number>` here: its tool caches (installed dependencies, a static-analysis result cache) are warm. Use a worktree only when this checkout holds other work or must stay on its branch:
+
+```bash
+git worktree add --track -b <head> ../<head>-merge origin/<head>
+```
+
+Copy untracked local config the checks need (for example `.env`) into the worktree. Copy the dependency directories (for example `vendor/`) only when the lock file matches: `git diff --quiet HEAD origin/<head> -- <lock-file>`. Otherwise install fresh there. Never symlink a dependency directory: the autoloader resolves paths through the link and loads the other checkout's source. If the merge changes the lock file, install again before Phase 5. Expect the worktree's first static-analysis run to be cold — minutes where the warm checkout takes seconds. Result caches generally do not transfer between checkouts: PHPStan, for example, rejects a copied cache because its metadata records the project paths.
+
 **Then check whether the branch belongs to a stack.** A stack is updated by rebase, never by merge, so the rest of this workflow does not apply to it:
 
 ```bash
@@ -194,15 +202,33 @@ Both skills already scope checks to the touched files first and keep the slower,
 
 In addition to what those skills cover, also run **targeted feature tests** for any endpoint, job, or action the merged files participate in (not just the unit tests on the resolved class itself — a merge can break integration points that unit tests miss).
 
+Keep the static-analysis part of that run cheap:
+
+- **Analyse the whole project, not the touched files** — the one exception to the touched-files-first scoping above. A path list misses the result cache, so it is often slower than a warm full run, and it cannot see a break in a file the merge did not touch: the stale call site in Phase 4 Check 2 is exactly that.
+- **In a cold checkout, such as a fresh worktree, start static analysis in the background right after the merge**, so its run overlaps the tests instead of following them.
+- **When the project runs its analyser through a Composer script, call the binary directly on a cold cache** (for example `vendor/bin/phpstan analyse`). Composer stops a script after its `process-timeout`, 300 seconds by default (`composer config process-timeout` shows it), and a cold run can take longer.
+
 **Before fixing a failure, establish that the merge caused it — and baseline against *both* parents.** The quality skills demand zero failures, which is the right bar for code you wrote; a merge also inherits whatever was already red, and that is not yours to fix mid-merge. But "already red on my branch" is **not** enough to call a failure pre-existing. A merge has two parents, and a test that was red on yours may well have been *fixed* on the incoming one — in which case a red result after the merge means your resolution dropped that fix. Checking only your own side calls that "pre-existing" and ships exactly the dropped-functionality bug this whole skill exists to prevent.
+
+**Check CI before you build a baseline.** For a check that CI runs, the last CI run on each parent commit is a free baseline. A check CI never runs has none. Your own side has a run only if its tip was pushed. Filter to the project's CI workflow, because other workflows run on the same commit:
+
+```bash
+gh run list --workflow <ci-workflow> --commit "$(git rev-parse origin/<base-branch>)" --json databaseId,conclusion
+gh run list --workflow <ci-workflow> --commit "$(git rev-parse ORIG_HEAD)" --json databaseId,conclusion
+gh run view <databaseId> --json jobs --jq '.jobs[] | "\(.name) \(.conclusion)"'
+```
+
+Read the job, not the run: a run's conclusion does not say which job was red. A `cancelled` job is no baseline. Compare like with like: a test that is red locally but green in CI on the same commit shows an environment difference, not a cell in the table below. Confirm that it also fails locally on the incoming side, and report it as local-only.
+
+**Start with theirs — it is the decisive baseline.** Only the fail/pass row changes what you do, and a failure that is red on the incoming side is not the merge's doing either way. Add ours only when theirs passes. Before you create a worktree, run `git worktree list`: a checkout that is already clean at that exact commit is a ready baseline.
 
 Mid-merge, the obvious approaches do not work: with unmerged paths in the index, `git checkout ORIG_HEAD` refuses (`you need to resolve your current index first`) and `git stash` refuses (`could not write index`). Use side worktrees, which leave the in-progress merge untouched:
 
 ```bash
-git worktree add ../baseline-ours   ORIG_HEAD               # your pre-merge tip (HEAD^1 once committed)
-git worktree add ../baseline-theirs origin/<base-branch>    # the incoming side
-# install dependencies in each if the project needs them, then run the same failing test in both
-git worktree remove ../baseline-ours && git worktree remove ../baseline-theirs
+git worktree add ../baseline-theirs origin/<base-branch>    # the incoming side — first
+git worktree add ../baseline-ours   ORIG_HEAD               # only if theirs passes; your pre-merge tip (HEAD^1 once committed)
+# install dependencies in each if the project needs them, then run the same failing test there
+git worktree remove ../baseline-theirs                      # and ../baseline-ours, if you built it
 ```
 
 | Ours (`ORIG_HEAD`) | Theirs (`origin/<base>`) | Verdict |
