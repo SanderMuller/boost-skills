@@ -16,18 +16,23 @@
 # our branch calls" and "we renamed something their branch calls" are both real.
 #
 # Usage:
-#   bash dangling-symbols.sh --base <ref> [--ours <ref>] [--keywords <regex>] [-- <pathspec>...]
+#   bash dangling-symbols.sh --base <ref> [--ours <ref>] [--keywords <regex>]
+#                            [--exclude <pathspec>]... [-- <pathspec>...]
 #
 #   --base <ref>      Required. The branch that was merged in (e.g. origin/main).
-#   --ours <ref>      Our pre-merge tip. Defaults to HEAD^1 when HEAD is a merge
-#                     commit, else ORIG_HEAD.
+#   --ours <ref>      Our pre-merge tip. Defaults to HEAD while a merge is in progress
+#                     (MERGE_HEAD exists), HEAD^1 when HEAD is a merge commit, else
+#                     ORIG_HEAD. Pass it explicitly after a rebase cascade.
 #   --keywords <re>   Declaration keywords to scan for. Default covers PHP/JS/TS.
 #                     Python: 'def|class'. Go: 'func|type'. Rust: 'fn|struct|trait|enum'.
+#   --exclude <spec>  Skip a path in both passes, like the built-in exclusions below.
+#                     Repeatable. Use it for committed build output, for example
+#                     --exclude 'public/*.js'.
 #   -- <pathspec>...  Limit where stale REFERENCES are searched for (e.g. -- src/ app/).
 #                     Default: the whole repo. The "is it still declared somewhere" check
 #                     stays repo-wide either way. Generated bundles (*.map, *.min.js),
 #                     Markdown (*.md) and PHPStan baselines (*baseline*.neon) are skipped
-#                     by both.
+#                     by both. A pathspec that matches no tracked file is a usage error.
 #
 # Exit codes: 0 = nothing dangling, 1 = dangling references found, 2 = usage error.
 #
@@ -81,6 +86,7 @@ while [ $# -gt 0 ]; do
         --base)     [ $# -ge 2 ] || die "--base needs a ref"; BASE="$2"; shift 2 ;;
         --ours)     [ $# -ge 2 ] || die "--ours needs a ref"; OURS="$2"; shift 2 ;;
         --keywords) [ $# -ge 2 ] || die "--keywords needs a regex"; KEYWORDS="$2"; shift 2 ;;
+        --exclude)  [ $# -ge 2 ] || die "--exclude needs a pathspec"; EXCLUDES+=(":(exclude)$2"); shift 2 ;;
         --) shift; PATHSPEC=("$@"); break ;;
         # Print the header block verbatim: every comment line after the shebang,
         # stopping at the first line that isn't one. No hardcoded line range to
@@ -93,8 +99,13 @@ done
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 [ -n "$BASE" ] || die "--base is required (the branch that was merged in)"
 
+# Mid-merge (`git merge --no-commit`, or a merge stopped on a conflict), HEAD is still our
+# pre-merge tip. That holds even when the tip is itself an earlier sync merge, whose HEAD^1
+# would move the merge base back past that sync and lose what its resolution changed.
 if [ -z "$OURS" ]; then
-    if git rev-parse --verify --quiet HEAD^2 >/dev/null 2>&1; then
+    if git rev-parse --verify --quiet MERGE_HEAD >/dev/null 2>&1; then
+        OURS='HEAD'
+    elif git rev-parse --verify --quiet HEAD^2 >/dev/null 2>&1; then
         OURS='HEAD^1'
     else
         OURS='ORIG_HEAD'
@@ -106,19 +117,35 @@ for ref in "$BASE" "$OURS"; do
         || die "cannot resolve ref '$ref'"
 done
 
-# PHP lines that match the declaration pattern without declaring the name after the
-# keyword: `use function f;` and `use const C;` import a name, and a typed constant
-# (`const int LIMIT = 1`, PHP 8.3) puts its type where the name is read from. The first
-# are dropped; the type is removed so the constant's own name is extracted.
-php_forms() {
-    grep -vE '^[-+]?[[:space:]]*use[[:space:]]+(function|const)[[:space:]]' \
-        | sed -E 's/const +[?A-Za-z0-9_\\()]+( *[|&] *[?A-Za-z0-9_\\()]+)* +([A-Za-z_][A-Za-z0-9_]* *=)/const \2/g'
+# A pathspec that matches nothing makes every reference search exit 1, which reads as "no
+# match", so a typo such as `-- scr/` would report a clean sweep over files it never read.
+for spec in ${PATHSPEC[@]+"${PATHSPEC[@]}"}; do
+    git ls-files --error-unmatch -- "$spec" >/dev/null 2>&1 \
+        || die "pathspec '$spec' matches no tracked file, or is not a valid pathspec"
+done
+
+# Lines that match the declaration pattern without declaring the name after the keyword,
+# or that declare a name without the keyword. Applied to both passes so they agree:
+# - Comment lines are dropped: `// the function foo moved` is not a declaration, and
+#   counting it hides a real removal of foo(). A PHP attribute line (`#[Override]`) is code
+#   and stays.
+# - `use function f;` and `use const C;` import a name, so they are dropped.
+# - A typed constant (`const int LIMIT = 1`, PHP 8.3) puts its type where the name is read
+#   from, so the type is removed and the constant's own name is extracted.
+# - An enum case (`case Archived = 'archived';` or `case Archived;`) is rewritten to a
+#   constant declaration so it is tracked like one. Only a name followed by `=` or `;` is
+#   rewritten, so a switch label (`case Archived:`, `case 1:`) is left alone.
+declaration_forms() {
+    grep -vE '^[-+]?[[:space:]]*(//|/\*|\*|#([^[]|$))' \
+        | grep -vE '^[-+]?[[:space:]]*use[[:space:]]+(function|const)[[:space:]]' \
+        | sed -E -e 's/const +[?A-Za-z0-9_\\()]+( *[|&] *[?A-Za-z0-9_\\()]+)* +([A-Za-z_][A-Za-z0-9_]* *=)/const \2/g' \
+                 -e 's/^([-+]?[[:space:]]*)case +([A-Za-z_][A-Za-z0-9_]*) *(=|;)/\1const \2 =/'
 }
 
 # Declaration names on lines matching $1 ('^-' removed, '^+' added) of a diff on stdin.
 names() {
     grep -E "$1" \
-        | php_forms \
+        | declaration_forms \
         | grep -oE "($KEYWORDS) +[A-Za-z_][A-Za-z0-9_]*" \
         | awk '{print $NF}' \
         | sort -u
@@ -181,12 +208,13 @@ awk '/^[A-Za-z_][A-Za-z0-9_]*$/' "$workdir/removed-by-base" "$workdir/removed-by
 # `import type MoneyAmount from './money'` reads as a declaration of the very alias the
 # other side removed, so the rename it is meant to catch would report clean. The names
 # come out of the surviving lines below.
-# `[?(]?` keeps a nullable or DNF typed constant (`const ?int LIMIT`), which php_forms
-# then reduces to its name.
-grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}) +[?(]?[A-Za-z_][A-Za-z0-9_]*" -- "${EXCLUDES[@]}"
+# `[?(]?` keeps a nullable or DNF typed constant (`const ?int LIMIT`), which
+# declaration_forms then reduces to its name. `case` lines are selected so that an enum
+# case still declared somewhere counts; declaration_forms drops the switch labels.
+grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}|case) +[?(]?[A-Za-z_][A-Za-z0-9_]*" -- "${EXCLUDES[@]}"
 
 grep -vE '^[[:space:]]*import[[:space:]]' "$workdir/declarations" \
-    | php_forms \
+    | declaration_forms \
     | grep -oE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" \
     | awk '{print $NF}' \
     | sort -u > "$workdir/declared"

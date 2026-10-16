@@ -332,9 +332,11 @@ function testAGitFailureStopsTheSweepInsteadOfReportingClean() {
 // The grep_tree guard is the centrepiece of the batched form: a git grep that errors must
 // stop the sweep. Nothing else exercises that branch, so an edit dropping the status
 // capture would turn a hard failure back into a silent clean with every test still green.
+// An unbalanced --keywords regex makes the declaration pass's git grep fail. (A bad
+// pathspec no longer reaches git grep: the pathspec check rejects it first.)
 function testAFailingGitGrepStopsTheSweep() {
     const cwd = createMergedRepo();
-    const result = sweep(cwd, ['--base', 'theirs', '--', ':(bogus)src/']);
+    const result = sweep(cwd, ['--base', 'theirs', '--keywords', '(', '--', 'src/']);
 
     assert.equal(result.status, 2, 'a failing git grep must exit 2');
     assert.match(result.stderr, /git grep failed/);
@@ -573,6 +575,141 @@ function testProseAndBaselinesAreNotCode() {
     fs.rmSync(cwd, { recursive: true, force: true });
 }
 
+// Mid-merge on a branch whose tip is itself an earlier sync merge: HEAD is our side, and
+// HEAD^1 is the tip before that sync. Reading HEAD^1 moves the merge base back past the
+// sync and loses what the sync resolution changed, here the removal of legacyHelper.
+function testMidMergeOnAnEarlierSyncMergeReadsHeadAsOurs() {
+    const cwd = createBaseRepo({
+        'src/helper.js': 'function legacyHelper() {}\n',
+        'src/a.js': 'a();\n',
+    });
+    git(cwd, 'checkout', '-q', '-b', 'theirs');
+    write(cwd, 'src/b.js', 'b();\n');
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'their first change');
+
+    git(cwd, 'checkout', '-q', 'ours');
+    write(cwd, 'src/a.js', 'a2();\n');
+    git(cwd, 'commit', '-qam', 'our change');
+    mergeCleanly(cwd, 'theirs');
+    write(cwd, 'src/helper.js', '\n');
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'sync theirs, dropping legacyHelper in the resolution');
+
+    git(cwd, 'checkout', '-q', 'theirs');
+    write(cwd, 'src/report.js', 'legacyHelper();\n');
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', 'their new caller');
+    git(cwd, 'checkout', '-q', 'ours');
+    mergeCleanly(cwd, 'theirs');
+
+    const result = sweep(cwd, ['--base', 'theirs']);
+    assert.equal(result.status, 1, `the sync's removal must count: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}legacyHelper/);
+    assert.match(result.stdout, /src\/report\.js/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// A pathspec typo matches no file, every reference search then finds nothing, and the
+// sweep would report a clean tree it never looked at.
+function testAPathspecMatchingNoFileIsAUsageError() {
+    const cwd = createMergedRepo();
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'scr/']);
+    assert.equal(result.status, 2, `a pathspec that matches nothing is a usage error: ${result.stdout}`);
+    assert.match(result.stderr, /matches no tracked file/);
+    assert.doesNotMatch(result.stdout, /No dangling references/);
+
+    const invalid = sweep(cwd, ['--base', 'theirs', '--', ':(bogus)src/']);
+    assert.equal(invalid.status, 2, 'an invalid pathspec is a usage error too');
+    assert.match(invalid.stderr, /not a valid pathspec/);
+
+    // A pathspec that matches, including an exclude-only one, still runs the sweep.
+    const excludeOnly = sweep(cwd, ['--base', 'theirs', '--', ':(exclude)lib/']);
+    assert.equal(excludeOnly.status, 1, `an exclude-only pathspec still sweeps: ${excludeOnly.stderr}`);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// A comment that names a removed declaration is not a declaration. Counting it marks the
+// name as still declared and hides the real removal.
+function testACommentDoesNotCountAsADeclaration() {
+    const cwd = createMergedRepo();
+    write(cwd, 'lib/notes.js', '// the function formatAmount moved to helper.js\n');
+    write(cwd, 'lib/doc.php', '<?php\n/**\n * function formatAmount is deprecated\n */\n');
+    git(cwd, 'add', '-A');
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, `a comment must not mark the name declared: ${result.stdout}`);
+    assert.match(result.stdout, /DANGLING {2}formatAmount/);
+    assert.match(result.stdout, /src\/receipt\.js/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// A PHP attribute line is code, not a `#` comment: `#[Override] public function f()`
+// declares f, and dropping the line would hide its removal.
+function testAnAttributeLineStillDeclares() {
+    const cwd = createBaseRepo({
+        'src/Job.php': '<?php\nclass Job {\n    #[Override] public function legacyRun() {}\n}\n',
+    });
+    mergeSides(
+        cwd,
+        { 'src/Job.php': '<?php\nclass Job {\n    #[Override] public function run() {}\n}\n' },
+        { 'src/Worker.php': '<?php\n$job->legacyRun();\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, `the removed method must be caught: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}legacyRun/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// An enum case is a declaration. A renamed case that the other side still reads is the
+// same stale reference as a renamed function. A switch label (`case Archived:`) is not a
+// declaration, so it must not mark the old name as declared.
+function testARenamedEnumCaseIsTracked() {
+    const cwd = createBaseRepo({
+        'src/Status.php': "<?php\nenum Status: string\n{\n    case Archived = 'archived';\n}\n",
+    });
+    mergeSides(
+        cwd,
+        { 'src/Status.php': "<?php\nenum Status: string\n{\n    case Removed = 'archived';\n}\n" },
+        {
+            'src/Report.php': '<?php\nreturn Status::Archived;\n',
+            'src/legacy.js': 'switch (s) {\n    case Archived:\n        break;\n}\n',
+        },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, `a renamed enum case must be caught: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}Archived/);
+    assert.match(result.stdout, /src\/Report\.php/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
+// A committed build output (for example compiled assets under public/) that still declares
+// the old name masks the dangling reference. --exclude drops a path from both passes.
+function testAnExcludedPathIsSkippedByBothPasses() {
+    const cwd = createMergedRepo();
+    write(cwd, 'public/app.js', 'function formatAmount() {}\nformatAmount();\n');
+    git(cwd, 'add', '-A');
+
+    const masked = sweep(cwd, ['--base', 'theirs']);
+    assert.equal(masked.status, 0, `without --exclude the bundle masks the name: ${masked.stdout}`);
+
+    const result = sweep(cwd, ['--base', 'theirs', '--exclude', 'public/*.js']);
+    assert.equal(result.status, 1, `the excluded bundle must not mask the name: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}formatAmount/);
+    assert.match(result.stdout, /src\/receipt\.js/);
+    assert.doesNotMatch(result.stdout, /public\/app\.js/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
 const tests = [
     testDetectsStaleReferenceToRenamedDeclaration,
     testCleanWhenTheCallerWasUpdatedToo,
@@ -597,6 +734,12 @@ const tests = [
     testASurvivingTypedConstantStillCountsAsDeclared,
     testAUseFunctionImportIsNotADeclaration,
     testProseAndBaselinesAreNotCode,
+    testMidMergeOnAnEarlierSyncMergeReadsHeadAsOurs,
+    testAPathspecMatchingNoFileIsAUsageError,
+    testACommentDoesNotCountAsADeclaration,
+    testAnAttributeLineStillDeclares,
+    testARenamedEnumCaseIsTracked,
+    testAnExcludedPathIsSkippedByBothPasses,
 ];
 
 let failures = 0;

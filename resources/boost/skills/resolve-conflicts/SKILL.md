@@ -184,7 +184,7 @@ bash <script> \
   --base origin/<base-branch> -- src/
 ```
 
-It checks **both** directions (they removed something you call, *and* you removed something they call — a one-directional sweep passes half the cases), resolves our side automatically (`HEAD^1` after the merge commit, else `ORIG_HEAD`), and works before the merge is committed as well as after. Exit 1 means it found something; `--keywords` retargets it at another language and `--help` documents the rest. The pathspec narrows where stale references are looked for, never where declarations count. Generated bundles (`*.map`, `*.min.js`) are skipped by both passes: a stale reference inside one is not yours to fix, and a bundle still carrying a declaration the source dropped would mark that name as declared. Markdown (`*.md`) and PHPStan baselines (`*baseline*.neon`) are skipped for the same two reasons. A sweep takes seconds even on a merge that removes hundreds of declarations.
+It checks **both** directions (they removed something you call, *and* you removed something they call — a one-directional sweep passes half the cases), resolves our side automatically (`HEAD` while the merge is in progress, `HEAD^1` after the merge commit, else `ORIG_HEAD`), and works before the merge is committed as well as after. Exit 1 means it found something; `--keywords` retargets it at another language and `--help` documents the rest. The pathspec narrows where stale references are looked for, never where declarations count. Generated bundles (`*.map`, `*.min.js`) are skipped by both passes: a stale reference inside one is not yours to fix, and a bundle still carrying a declaration the source dropped would mark that name as declared. Markdown (`*.md`) and PHPStan baselines (`*baseline*.neon`) are skipped for the same two reasons. Skip other committed build output the same way with `--exclude`, for example `--exclude 'public/*.js'`. A pathspec that matches no tracked file stops the sweep with exit 2, so a typo cannot report a clean tree. A sweep takes seconds even on a merge that removes hundreds of declarations.
 
 Treat hits as candidates, not verdicts — short or generic names over-match. **Phase 5 is the authoritative pass:** the test suite and static analysis settle what this only flags. Its value is speed and reach — it runs in seconds, and it runs even when git reported no conflict at all.
 
@@ -301,7 +301,7 @@ If the rebase is non-trivial (multiple conflicting commits, or a long-running br
 
 ## Auxiliary: Stacked Branches (`gh stack`)
 
-A stack is a chain of branches, each one based on the branch below it: `main ← a ← b ← c`. The `gh stack` extension updates the whole chain with one cascading rebase. Everything in [Rebase conflicts](#auxiliary-rebase-conflicts) applies, including the inverted sides. The steps below add what the cascade changes. Behaviour here was observed on `gh stack` 0.0.8; check `gh stack rebase --help` when a newer version acts differently.
+A stack is a chain of branches, each one based on the branch below it: `main ← a ← b ← c`. The `gh stack` extension updates the whole chain with one cascading rebase. Everything in [Rebase conflicts](#auxiliary-rebase-conflicts) applies, including the inverted sides. The steps below add what the cascade changes. Use `gh stack` 0.1.0 or later; check the version with `gh extension list`. Version 0.0.8 can replay an amended lower-branch commit into the branch above it, which creates duplicate history or spurious conflicts, and 0.1.0 fixed that. The behaviour notes below were observed on 0.0.8; check `gh stack rebase --help` when a later version acts differently.
 
 **0. Get the stack locally.** When the user names a stack or a pull request that is not checked out, run `gh stack checkout <stack-or-pr-number>`. It fetches every branch and imports the stack, so `gh stack view --json` works afterwards.
 
@@ -326,15 +326,16 @@ done > "$(git rev-parse --git-dir)/stack-tips-before"
 
 The old tips are what Phase 4 Check 1 and Phase 5's "ours" baseline compare against, per branch.
 
-**3. Rebase and resolve.** Keep commit messages intact first. When `--continue` commits a conflicted step, git's default message cleanup deletes every line that starts with `#`, so a Markdown `## Heading` in a commit message disappears without a warning. Set the cleanup mode on every `gh stack rebase` call, `--continue` included, without touching the user's git config. Prefix each call instead of exporting once, because an agent's shell state may not carry over between commands:
+**3. Rebase and resolve.** Keep commit messages intact first. When `--continue` commits a conflicted step, git's default message cleanup deletes every line that starts with `#`, so a Markdown `## Heading` in a commit message disappears without a warning. Set the cleanup mode on every `gh stack rebase` call, without touching the user's git config. That includes the first call, the one that stops on the conflict: git writes its `# Conflicts:` note into the message at that point, and a note written without `scissors` stays in the commit. Prefix each call instead of exporting once, because an agent's shell state may not carry over between commands:
 
 ```bash
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.cleanup GIT_CONFIG_VALUE_0=scissors gh stack rebase
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.cleanup GIT_CONFIG_VALUE_0=scissors gh stack rebase --continue
 ```
 
 Run the chosen command that way. On a conflict it stops at the first conflicting branch (exit 3, detached `HEAD`) and lists the conflicted files. Resolve with Phases 2–3, reading the sides as [Rebase conflicts](#auxiliary-rebase-conflicts) describes: the upstream side is the branch below, not the trunk. `git add` the files, then run `gh stack rebase --continue`, not `git rebase --continue`, so the cascade moves on to the next branch. Repeat until it reports `All branches in stack rebased`. `gh stack rebase --abort` restores every branch to its old tip; like `git merge --abort`, use it only when the user asks.
 
-A stack that was earlier updated with merge commits carries extra history: merge commits, and stale copies of lower-branch commits from before an earlier rebase. The rebase drops the merges and skips the stale copies that match a commit already below. That is expected. Afterwards, check that each branch holds only its own commits: `git log --oneline <lower-branch>..<branch>`.
+A stack that was earlier updated with merge commits carries extra history: merge commits, and stale copies of lower-branch commits from before an earlier rebase. The rebase drops the merges and skips the stale copies that match a commit already below. That is expected. Afterwards, check that each branch holds only its own commits: `git log --oneline <lower-branch>..<branch>`. A lower-branch commit that shows up there again is a duplicate. Do not push it: stop and ask the user.
 
 **4. Verify every rebased branch, not only the top one.** A resolution in a lower branch flows into every branch above it without a textual conflict, so the upper branches owe Phase 4 Check 2 and Phase 5 just as much. For each branch, the "base" is the branch directly below it, not `origin/<base-branch>` — that is correct only for the bottom branch:
 
@@ -354,7 +355,7 @@ Take `<old-tip>` and `<old-lower-tip>` from the saved file. For the bottom branc
 
 Phase 5 on every branch is often not practical locally, for example when the tests need infrastructure the session does not have. Run the local checks on the highest branch the rebase changed (with `--downstack`, the top branch was not rebased), and use each pull request's CI as the per-branch Phase 5. Baseline a red CI job against both parents, as in Phase 5: the branch's old tip (its last CI run before the push) and the branch directly below it. Read the verdict from Phase 5's table. A red job on the trunk alone does not make the failure pre-existing: the rebase can break the same job in a new way.
 
-**5. Push only with approval.** `gh stack push` pushes every branch with `--force-with-lease --atomic`. It rewrites the history of every open pull request in the stack, so ask once for the whole stack before running it. `gh stack submit` also creates or updates pull requests; use `push` when the pull requests already exist.
+**5. Push only with approval.** `gh stack push` pushes every branch with a per-branch `--force-with-lease`. It rewrites the history of every open pull request in the stack, so ask once for the whole stack before running it. The push is not atomic: when one branch is rejected, the others still update. On a rejection, compare each branch with `git ls-remote origin <branch>` against its local tip, fix the rejected branch, and run the push again; branches already pushed stay as they are. Do not use `gh stack submit` to create a missing pull request: create it with the `pull-requests` skill, so it gets the project's title, description and label conventions.
 
 **6. Confirm on GitHub.** "Rebased locally" is not the same as "the pull requests no longer conflict". After the push, check every pull request in the stack:
 
