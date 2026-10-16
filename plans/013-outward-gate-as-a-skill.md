@@ -17,6 +17,11 @@
 > **Since this plan was written**: `humanizer` now states its own scope — it covers
 > prose a person reads and never agent-to-agent traffic. §7's skill inherits that
 > boundary rather than re-deciding what "outward" means.
+>
+> **Plan 016 (2026-10-16)** gives `humanizer` a gate mode and a register and volume rule. When it
+> ships, §9's second STOP condition fires: reduce this plan to the PR-verification half. The
+> user-scope guideline copy found during that research is dated 2026-09-10 and lags the repo's
+> `voice.md`; how boost writes it is still unconfirmed.
 
 ## Status
 
