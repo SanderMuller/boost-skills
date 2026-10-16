@@ -664,6 +664,22 @@ function testAnAttributeLineStillDeclares() {
     fs.rmSync(cwd, { recursive: true, force: true });
 }
 
+// Stripping a leading block comment must not expose an import as a declaration.
+function testAnImportAfterAnInlineBlockCommentIsNotADeclaration() {
+    const cwd = createBaseRepo({ 'src/money.ts': 'export type MoneyAmount = number;\n' });
+    mergeSides(
+        cwd,
+        { 'src/money.ts': 'export type Money = number;\n' },
+        { 'src/cart.ts': "/* note */ import type MoneyAmount from './money';\nlet total: MoneyAmount;\n" },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, `the import must not mark the alias declared: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}MoneyAmount/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
 // A line that opens with a closed block comment still holds the declaration after it.
 function testADeclarationAfterAnInlineBlockCommentCounts() {
     const cwd = createBaseRepo({
@@ -868,6 +884,7 @@ const tests = [
     testACommentDoesNotCountAsADeclaration,
     testAnAttributeLineStillDeclares,
     testADeclarationAfterAnInlineBlockCommentCounts,
+    testAnImportAfterAnInlineBlockCommentIsNotADeclaration,
     testARenamedEnumCaseIsTracked,
     testAnExcludedPathIsSkippedInTheTreeAndReferencePasses,
     testACommentInTheDiffDoesNotCancelARemoval,

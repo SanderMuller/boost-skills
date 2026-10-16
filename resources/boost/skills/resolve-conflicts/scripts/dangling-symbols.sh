@@ -236,8 +236,10 @@ awk '/^[A-Za-z_][A-Za-z0-9_]*$/' "$workdir/removed-by-base" "$workdir/removed-by
 # extraction below ignores it.
 grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}|case) +[?(]?[A-Za-z_][A-Za-z0-9_]*" -- "${EXCLUDES[@]}"
 
-grep -vE '^[[:space:]]*import[[:space:]]' "$workdir/declarations" \
-    | declaration_forms \
+# The import filter runs after declaration_forms, which strips a leading block comment that
+# would otherwise hide the `import` keyword from it.
+declaration_forms < "$workdir/declarations" \
+    | grep -vE '^[[:space:]]*import[[:space:]]' \
     | grep -oE "(${KEYWORDS}) +[A-Za-z_][A-Za-z0-9_]*" \
     | awk '{print $NF}' \
     | sort -u > "$workdir/declared"
