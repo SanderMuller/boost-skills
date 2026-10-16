@@ -807,6 +807,14 @@ function testAnExcludedPathDoesNotCancelARemovalInTheDiff() {
     assert.match(result.stdout, /DANGLING {2}formatAmount/);
     assert.doesNotMatch(result.stdout, /public\/app\.js|dist\/app\.js/);
 
+    // Pathspec magic merges with the exclusion instead of reading as literal path text.
+    const magic = sweep(cwd, ['--base', 'theirs', '--exclude', ':(glob)public/**', '--exclude', 'dist/*.js']);
+    assert.equal(magic.status, 1, `a magic --exclude must still apply: ${magic.stdout}${magic.stderr}`);
+    assert.doesNotMatch(magic.stdout, /public\/app\.js/);
+
+    const shortMagic = sweep(cwd, ['--base', 'theirs', '--exclude', ':!public/']);
+    assert.equal(shortMagic.status, 2, 'short-form magic in --exclude is a usage error');
+
     const missingValue = sweep(cwd, ['--base', 'theirs', '--exclude']);
     assert.equal(missingValue.status, 2, '--exclude without a value is a usage error');
 

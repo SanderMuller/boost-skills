@@ -162,7 +162,7 @@ both.
 > If you come from manual deploys: instead of copying files yourself, you describe the target state.
 
 **After:**
-> You describe the target state, and the tool copies the files.
+> You describe the target state instead of copying files yourself.
 
 ### B5. Stacked qualifiers
 
@@ -203,10 +203,10 @@ actor clearer. Imperative commit subjects and terse reference lines ("Optional. 
 `false`.") follow their own conventions and stay.
 
 **Before:**
-> No configuration file needed. The results are cached automatically.
+> No configuration file needed. The results are cached automatically by the CLI.
 
 **After:**
-> You do not need a configuration file. The tool caches the results.
+> You do not need a configuration file. The CLI caches the results.
 
 ---
 
@@ -508,7 +508,7 @@ changelog, a release note, a migration guide, or a commit message, which are abo
 caveat that changes what the reader does stays.
 
 **Before:**
-> This function was added to replace the previous approach of scanning every row.
+> This function was added to replace the previous approach of scanning every row: it looks rows up by key.
 
 **After:**
 > This function looks rows up by key instead of scanning every row.

@@ -133,7 +133,12 @@ done
 for spec in ${EXCLUDE_ARGS[@]+"${EXCLUDE_ARGS[@]}"}; do
     git ls-files --error-unmatch -- "$spec" >/dev/null 2>&1 \
         || die "--exclude '$spec' matches no tracked file, or is not a valid pathspec"
-    EXCLUDES+=(":(exclude)$spec")
+    # A second magic prefix reads as literal path text, so long-form magic is merged into one.
+    case "$spec" in
+        ':('*) EXCLUDES+=(":(exclude,${spec#:(}") ;;
+        ':'*)  die "--exclude '$spec': use long-form pathspec magic, for example ':(glob)public/**'" ;;
+        *)     EXCLUDES+=(":(exclude)$spec") ;;
+    esac
 done
 
 # Lines that match the declaration pattern without declaring the name after the keyword,
