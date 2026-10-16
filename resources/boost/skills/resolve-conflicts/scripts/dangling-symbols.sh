@@ -22,12 +22,15 @@
 #   --base <ref>      Required. The branch that was merged in (e.g. origin/main).
 #   --ours <ref>      Our pre-merge tip. Defaults to HEAD while a merge is in progress
 #                     (MERGE_HEAD exists), HEAD^1 when HEAD is a merge commit, else
-#                     ORIG_HEAD. Pass it explicitly after a rebase cascade.
+#                     ORIG_HEAD. Pass it explicitly after a stacked rebase, where
+#                     ORIG_HEAD names only the last branch rebased.
 #   --keywords <re>   Declaration keywords to scan for. Default covers PHP/JS/TS.
 #                     Python: 'def|class'. Go: 'func|type'. Rust: 'fn|struct|trait|enum'.
-#   --exclude <spec>  Skip a path in both passes, like the built-in exclusions below.
+#   --exclude <spec>  Skip a path everywhere, like the built-in exclusions below: its
+#                     removals, declarations and references all stop counting.
 #                     Repeatable. Use it for committed build output, for example
-#                     --exclude 'public/*.js'.
+#                     --exclude 'public/*.js'. One that matches no tracked file is a
+#                     usage error.
 #   -- <pathspec>...  Limit where stale REFERENCES are searched for (e.g. -- src/ app/).
 #                     Default: the whole repo. The "is it still declared somewhere" check
 #                     stays repo-wide either way. Generated bundles (*.map, *.min.js),
@@ -52,6 +55,7 @@ KEYWORDS='function|class|interface|trait|const|enum|type'
 BASE=''
 OURS=''
 PATHSPEC=()
+EXCLUDE_ARGS=()
 
 die() { printf 'dangling-symbols: %s\n' "$1" >&2; exit 2; }
 
@@ -86,7 +90,7 @@ while [ $# -gt 0 ]; do
         --base)     [ $# -ge 2 ] || die "--base needs a ref"; BASE="$2"; shift 2 ;;
         --ours)     [ $# -ge 2 ] || die "--ours needs a ref"; OURS="$2"; shift 2 ;;
         --keywords) [ $# -ge 2 ] || die "--keywords needs a regex"; KEYWORDS="$2"; shift 2 ;;
-        --exclude)  [ $# -ge 2 ] || die "--exclude needs a pathspec"; EXCLUDES+=(":(exclude)$2"); shift 2 ;;
+        --exclude)  [ $# -ge 2 ] || die "--exclude needs a pathspec"; EXCLUDE_ARGS+=("$2"); shift 2 ;;
         --) shift; PATHSPEC=("$@"); break ;;
         # Print the header block verbatim: every comment line after the shebang,
         # stopping at the first line that isn't one. No hardcoded line range to
@@ -124,22 +128,31 @@ for spec in ${PATHSPEC[@]+"${PATHSPEC[@]}"}; do
         || die "pathspec '$spec' matches no tracked file, or is not a valid pathspec"
 done
 
+# A mistyped --exclude is the same trap: the build output it meant to skip still masks the
+# names it declares.
+for spec in ${EXCLUDE_ARGS[@]+"${EXCLUDE_ARGS[@]}"}; do
+    git ls-files --error-unmatch -- "$spec" >/dev/null 2>&1 \
+        || die "--exclude '$spec' matches no tracked file, or is not a valid pathspec"
+    EXCLUDES+=(":(exclude)$spec")
+done
+
 # Lines that match the declaration pattern without declaring the name after the keyword,
 # or that declare a name without the keyword. Applied to both passes so they agree:
-# - Comment lines are dropped: `// the function foo moved` is not a declaration, and
-#   counting it hides a real removal of foo(). A PHP attribute line (`#[Override]`) is code
-#   and stays.
+# - Lines that start with a comment marker are dropped: `// the function foo moved` is not
+#   a declaration, and counting it hides a real removal of foo(). A trailing comment after
+#   code is not detected. A PHP attribute line (`#[Override]`) is code and stays.
 # - `use function f;` and `use const C;` import a name, so they are dropped.
 # - A typed constant (`const int LIMIT = 1`, PHP 8.3) puts its type where the name is read
 #   from, so the type is removed and the constant's own name is extracted.
 # - An enum case (`case Archived = 'archived';` or `case Archived;`) is rewritten to a
-#   constant declaration so it is tracked like one. Only a name followed by `=` or `;` is
-#   rewritten, so a switch label (`case Archived:`, `case 1:`) is left alone.
+#   constant declaration, so it is tracked while `const` is in --keywords. Only a name
+#   followed by `=` (not `==`) or `;` is rewritten, so a switch label (`case Archived:`,
+#   `case x === 1:`) is left alone.
 declaration_forms() {
     grep -vE '^[-+]?[[:space:]]*(//|/\*|\*|#([^[]|$))' \
         | grep -vE '^[-+]?[[:space:]]*use[[:space:]]+(function|const)[[:space:]]' \
         | sed -E -e 's/const +[?A-Za-z0-9_\\()]+( *[|&] *[?A-Za-z0-9_\\()]+)* +([A-Za-z_][A-Za-z0-9_]* *=)/const \2/g' \
-                 -e 's/^([-+]?[[:space:]]*)case +([A-Za-z_][A-Za-z0-9_]*) *(=|;)/\1const \2 =/'
+                 -e 's/^([-+]?[[:space:]]*)case +([A-Za-z_][A-Za-z0-9_]*) *(=([^=]|$)|;)/\1const \2 =/'
 }
 
 # Declaration names on lines matching $1 ('^-' removed, '^+' added) of a diff on stdin.
@@ -210,7 +223,8 @@ awk '/^[A-Za-z_][A-Za-z0-9_]*$/' "$workdir/removed-by-base" "$workdir/removed-by
 # come out of the surviving lines below.
 # `[?(]?` keeps a nullable or DNF typed constant (`const ?int LIMIT`), which
 # declaration_forms then reduces to its name. `case` lines are selected so that an enum
-# case still declared somewhere counts; declaration_forms drops the switch labels.
+# case still declared somewhere counts. A switch label is not rewritten, so the keyword
+# extraction below ignores it.
 grep_tree "$workdir/declarations" -hwE "(${KEYWORDS}|case) +[?(]?[A-Za-z_][A-Za-z0-9_]*" -- "${EXCLUDES[@]}"
 
 grep -vE '^[[:space:]]*import[[:space:]]' "$workdir/declarations" \

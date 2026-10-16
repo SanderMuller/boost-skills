@@ -31,7 +31,7 @@
   is deliberate: shorter output, fewer edits to text that is already good.
 - **Depends on**: nothing.
 - **Planned at**: boost-skills `2.51.0` (`e28f79b` for the skill), boost-core `1.13.0`.
-- **Implemented**: 2026-10-16, working tree. `SKILL.md` 206 lines plus `references/patterns.md` and
+- **Implemented**: 2026-10-16, commit `b137867`. `SKILL.md` 206 lines plus `references/patterns.md` and
   `references/licenses.md`; `voice.md` and `AGENTS.md` row narrowed; eval cases in
   `.ai/evals/humanizer/`. The eval found one gap (quality verbs in F2), fixed and re-run on 3
   models. `license:` removed from the frontmatter as the §7 default; the legal question stays open.

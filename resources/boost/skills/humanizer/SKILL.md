@@ -137,6 +137,7 @@ The patterns, with examples, are in [`references/patterns.md`](references/patter
 - G. Plain words: filler, business jargon, metaphor nouns, false agency, Wh- openers, narrator
   from a distance
 - H. Over-correction: tells the rewrite creates
+- A worked example of a PR description in gate mode
 
 Read the catalogue in chat, review and file mode. In gate mode on short text (a reply, a commit
 body), the quick checks below are enough, unless a strong tell shows. Then read the catalogue.

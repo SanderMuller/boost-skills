@@ -709,6 +709,31 @@ explain, and a real aside or self-correction.
 
 ---
 
+## Worked example: a PR description in gate mode
+
+**Before:**
+> ## Summary
+>
+> This PR introduces a robust retry mechanism that seamlessly handles transient failures — ensuring the import job stays reliable. It's not just a retry; it's a safety net.
+>
+> - **Retries:** The job now retries up to 3 times.
+> - **Backoff:** Backoff has been added between attempts, doubling each time.
+> - **Logging:** Logging has been enhanced.
+>
+> I hope this helps! Let me know if you'd like any changes.
+
+**Tells:** A1 (contrast), B3 (dash), C1 and C5 ("robust", "seamlessly"), C4 ("ensuring"), D1 (bold
+labels), E1 (chatbot residue), F2 ("enhanced"). The heading stays if the project's PR template
+asks for it.
+
+**After (gate mode returns only this):**
+> The import job now retries a transient failure up to 3 times, and the wait between attempts doubles each time. The logging also changes.
+
+"The logging also changes" is as specific as the source allows. In chat mode, the change list
+would say that the source does not state what changed in the logging.
+
+---
+
 ## Historical indicators
 
 These marked older models. Remove them where they appear, but do not hunt for them, and do not
