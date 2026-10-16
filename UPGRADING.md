@@ -8,7 +8,7 @@
 
 ## From 2.45.x to 2.46.0 (nine more subagents — no floor change)
 
-**Not breaking. The `boost-core` floor stays `^1.4`.** 2.46.0 adds nine subagents. Most carry tags, so a project receives only the ones its `withTags()` declares; `comment-analyzer` is untagged and ships everywhere. The README Subagents table lists each one with its tags.
+**Not breaking. The `boost-core` floor stays `^1.4`.** 2.46.0 adds nine subagents. Most carry tags, so a project receives only the ones its `withTags()` declares; `comment-analyzer` is untagged and ships everywhere. `CATALOG.md` lists each one with its tags.
 
 - **A hand-written subagent with the same name now collides.** Claude Code picks one of two same-named definitions by filesystem order. If your project keeps its own `security-reviewer`, `performance-reviewer`, `database-specialist` or another shipped name, delete or rename your copy, or exclude the shipped one with `withExcludedSkills(['sandermuller/boost-skills:<name>'])`. `boost sync` warns until you do.
 - **New tag `sentry`** gates `sentry-researcher`. `Tag::Sentry` exists from `boost-core` 1.11; the string `'sentry'` works on any 1.x.

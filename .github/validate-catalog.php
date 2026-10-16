@@ -8,19 +8,19 @@ declare(strict_types=1);
  * validate-skills.php validates each SKILL.md's *format* (via
  * stolt/skill-validator) and that each guideline .boost-tags.yaml *parses*.
  * Neither it nor stolt/skill-validator ever inspects `metadata.boost-tags`, the
- * README tables, or the conventions schema — so the tag contract consumers rely
- * on (README ↔ frontmatter ↔ sidecar ↔ schema) can silently drift while CI
+ * catalog tables, or the conventions schema — so the tag contract consumers rely
+ * on (catalog ↔ frontmatter ↔ sidecar ↔ schema) can silently drift while CI
  * stays green. This script closes that gap with cross-file invariants:
  *
  *   A. every skill's `name` == its directory name
- *   B. README "## Skills" Tags cell == that skill's `metadata.boost-tags` (set-equal)
- *   C. skill inventory is bijective: skill dir <-> exactly one README Skills row
- *   D. guideline files <-> README "## Guidelines" rows <-> .boost-tags.yaml
- *   E. every tag used (skills + sidecar) is documented in the README "## Tags" table
+ *   B. catalog "## Skills" Tags cell == that skill's `metadata.boost-tags` (set-equal)
+ *   C. skill inventory is bijective: skill dir <-> exactly one catalog Skills row
+ *   D. guideline files <-> catalog "## Guidelines" rows <-> .boost-tags.yaml
+ *   E. every tag used (skills + sidecar) is documented in the catalog "## Tags" table
  *   I. every `boost-requires` token names a skill or subagent this package ships
- *   H. subagent files <-> README "## Subagents" rows, name == filename stem,
+ *   H. subagent files <-> catalog "## Subagents" rows, name == filename stem,
  *      non-empty description, string-valued tags. Prose is NOT compared: the
- *      README "What it does" cell is a summary, exactly as for skills, and the
+ *      catalog "What it does" cell is a summary, exactly as for skills, and the
  *      invariant is inventory + tags, not wording.
  *   J. `.boost-user-scope.yaml` entries name a real guideline that holds no
  *      conventions token — user scope has no boost.php to resolve one against
@@ -39,7 +39,7 @@ $root = dirname(__DIR__);
 $skillsDir = $root . '/resources/boost/skills';
 $guidelinesDir = $root . '/resources/boost/guidelines';
 $subagentsDir = $root . '/resources/boost/subagents';
-$readmePath = $root . '/README.md';
+$catalogPath = $root . '/CATALOG.md';
 $schemaPath = $root . '/resources/boost/conventions-schema.json';
 
 /** @var list<string> $violations */
@@ -71,7 +71,7 @@ $backtickTokens = static function (string $cell): array {
  * Return the data rows of the first markdown table appearing under the given
  * `## Heading` / `### Heading` line, each row as a list of trimmed cells.
  * Throws if the heading or a table under it can't be found — a structural
- * README change should fail loud, not silently pass.
+ * catalog change should fail loud, not silently pass.
  *
  * @return list<list<string>>
  */
@@ -176,7 +176,7 @@ $setsEqual = static function (array $a, array $b): bool {
 // Load sources
 // ---------------------------------------------------------------------------
 
-$readmeLines = explode("\n", (string) file_get_contents($readmePath));
+$catalogLines = explode("\n", (string) file_get_contents($catalogPath));
 $schema = json_decode((string) file_get_contents($schemaPath), true, 512, JSON_THROW_ON_ERROR);
 
 $skillDirs = array_values(array_filter(
@@ -191,7 +191,7 @@ sort($guidelineFiles);
 // a fail-closed condition the way an empty skill list is.
 // Recursive, matching boost-core's loader: it walks subdirectories because a
 // subagent's identity is its frontmatter `name`, never its path. A flat glob
-// would let `subagents/review/foo.md` ship without a README row.
+// would let `subagents/review/foo.md` ship without a catalog row.
 $subagentFiles = [];
 if (is_dir($subagentsDir)) {
     $walk = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($subagentsDir, FilesystemIterator::SKIP_DOTS));
@@ -213,50 +213,50 @@ if ($skillDirs === [] || $guidelineFiles === []) {
 $sidecarPath = $guidelinesDir . '/.boost-tags.yaml';
 $sidecar = is_file($sidecarPath) ? (Yaml::parseFile($sidecarPath) ?? []) : [];
 
-$skillsRows = $sectionTable($readmeLines, '## Skills');
-$tagsRows = $sectionTable($readmeLines, '## Tags');
-$guidelinesRows = $sectionTable($readmeLines, '## Guidelines');
+$skillsRows = $sectionTable($catalogLines, '## Skills');
+$tagsRows = $sectionTable($catalogLines, '## Tags');
+$guidelinesRows = $sectionTable($catalogLines, '## Guidelines');
 // Read the section whenever the heading exists, never gated on the file
-// inventory: gating would let a README row outlive the last subagent it
+// inventory: gating would let a catalog row outlive the last subagent it
 // described. Absent heading with no files is the legitimate empty catalog.
-$hasSubagentsHeading = in_array('## Subagents', array_map('trim', $readmeLines), true);
-$subagentsRows = $hasSubagentsHeading ? $sectionTable($readmeLines, '## Subagents') : [];
+$hasSubagentsHeading = in_array('## Subagents', array_map('trim', $catalogLines), true);
+$subagentsRows = $hasSubagentsHeading ? $sectionTable($catalogLines, '## Subagents') : [];
 if (! $hasSubagentsHeading && $subagentFiles !== []) {
-    $fail('subagent files exist but README has no "## Subagents" section');
+    $fail('subagent files exist but catalog has no "## Subagents" section');
 }
 
-// README Skills table: name => tag set. A repeated name is a bijection
+// catalog Skills table: name => tag set. A repeated name is a bijection
 // violation (invariant C), not a last-write-wins overwrite — fail on it.
-$readmeSkillTags = [];
+$catalogSkillTags = [];
 foreach ($skillsRows as $row) {
     $name = $backtickTokens($row[0])[0] ?? null;
     if ($name === null) {
         continue;
     }
-    if (array_key_exists($name, $readmeSkillTags)) {
-        $fail("README ## Skills lists '{$name}' more than once");
+    if (array_key_exists($name, $catalogSkillTags)) {
+        $fail("catalog ## Skills lists '{$name}' more than once");
 
         continue;
     }
-    $readmeSkillTags[$name] = $backtickTokens($row[count($row) - 1]);
+    $catalogSkillTags[$name] = $backtickTokens($row[count($row) - 1]);
 }
 
-// README Guidelines table: name(.md-less) => tag set. Same duplicate guard.
-$readmeGuidelineTags = [];
+// catalog Guidelines table: name(.md-less) => tag set. Same duplicate guard.
+$catalogGuidelineTags = [];
 foreach ($guidelinesRows as $row) {
     $name = $backtickTokens($row[0])[0] ?? null;
     if ($name === null) {
         continue;
     }
-    if (array_key_exists($name, $readmeGuidelineTags)) {
-        $fail("README ## Guidelines lists '{$name}' more than once");
+    if (array_key_exists($name, $catalogGuidelineTags)) {
+        $fail("catalog ## Guidelines lists '{$name}' more than once");
 
         continue;
     }
-    $readmeGuidelineTags[$name] = $backtickTokens($row[count($row) - 1]);
+    $catalogGuidelineTags[$name] = $backtickTokens($row[count($row) - 1]);
 }
 
-// README Tags table: documented tag vocabulary (first column).
+// catalog Tags table: documented tag vocabulary (first column).
 $documentedTags = [];
 foreach ($tagsRows as $row) {
     foreach ($backtickTokens($row[0]) as $tag) {
@@ -290,14 +290,14 @@ foreach ($skillDirs as $dir) {
         $usedTags[$t] = true;
     }
 
-    // B: README Skills tags == frontmatter tags
-    if (! array_key_exists($dir, $readmeSkillTags)) {
-        $fail("skill '{$dir}': no row in README ## Skills table");
-    } elseif (! $setsEqual($tags, $readmeSkillTags[$dir])) {
+    // B: catalog Skills tags == frontmatter tags
+    if (! array_key_exists($dir, $catalogSkillTags)) {
+        $fail("skill '{$dir}': no row in catalog ## Skills table");
+    } elseif (! $setsEqual($tags, $catalogSkillTags[$dir])) {
         $fail(sprintf(
-            "skill '%s': README tags [%s] != frontmatter boost-tags [%s]",
+            "skill '%s': catalog tags [%s] != frontmatter boost-tags [%s]",
             $dir,
-            implode(' ', $readmeSkillTags[$dir]),
+            implode(' ', $catalogSkillTags[$dir]),
             implode(' ', $tags),
         ));
     }
@@ -322,22 +322,22 @@ foreach ($skillDirs as $dir) {
     }
 }
 
-// C: no phantom README Skills rows
-foreach (array_keys($readmeSkillTags) as $name) {
+// C: no phantom catalog Skills rows
+foreach (array_keys($catalogSkillTags) as $name) {
     if (! in_array($name, $skillDirs, true)) {
-        $fail("README ## Skills lists '{$name}' but no such skill directory exists");
+        $fail("catalog ## Skills lists '{$name}' but no such skill directory exists");
     }
 }
 
 // ---------------------------------------------------------------------------
-// Invariant D — guidelines (files <-> README <-> sidecar)
+// Invariant D — guidelines (files <-> catalog <-> sidecar)
 // ---------------------------------------------------------------------------
 
 $guidelineNames = array_map(static fn (string $f): string => substr($f, 0, -3), $guidelineFiles); // strip .md
 
 foreach ($guidelineNames as $name) {
-    if (! array_key_exists($name, $readmeGuidelineTags)) {
-        $fail("guideline '{$name}.md' has no row in README ## Guidelines table");
+    if (! array_key_exists($name, $catalogGuidelineTags)) {
+        $fail("guideline '{$name}.md' has no row in catalog ## Guidelines table");
 
         continue;
     }
@@ -349,19 +349,19 @@ foreach ($guidelineNames as $name) {
     foreach ($sidecarTags as $t) {
         $usedTags[$t] = true;
     }
-    if (! $setsEqual($sidecarTags, $readmeGuidelineTags[$name])) {
+    if (! $setsEqual($sidecarTags, $catalogGuidelineTags[$name])) {
         $fail(sprintf(
-            "guideline '%s': README tags [%s] != .boost-tags.yaml tags [%s]",
+            "guideline '%s': catalog tags [%s] != .boost-tags.yaml tags [%s]",
             $name,
-            implode(' ', $readmeGuidelineTags[$name]),
+            implode(' ', $catalogGuidelineTags[$name]),
             implode(' ', $sidecarTags),
         ));
     }
 }
 
-foreach (array_keys($readmeGuidelineTags) as $name) {
+foreach (array_keys($catalogGuidelineTags) as $name) {
     if (! in_array($name, $guidelineNames, true)) {
-        $fail("README ## Guidelines lists '{$name}' but no such guideline file exists");
+        $fail("catalog ## Guidelines lists '{$name}' but no such guideline file exists");
     }
 }
 // (A .boost-tags.yaml key referencing a nonexistent guideline file is caught by
@@ -436,7 +436,7 @@ if (is_file($userScopePath)) {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant H — subagents (files <-> README <-> frontmatter)
+// Invariant H — subagents (files <-> catalog <-> frontmatter)
 // ---------------------------------------------------------------------------
 //
 // A subagent is one flat `<name>.md` whose identity is its frontmatter `name`
@@ -444,23 +444,23 @@ if (is_file($userScopePath)) {
 // the file's own `metadata.boost-tags`, verified to load unchanged, so there is
 // no sidecar here — unlike guidelines, which stay frontmatter-free.
 
-$readmeSubagentTags = [];
+$catalogSubagentTags = [];
 foreach ($subagentsRows as $row) {
     // A data row with no backticked name is malformed, never something to skip:
     // this table claims a bijection with the files, and a row nobody can parse
     // would sit beside a valid one unnoticed.
     $name = $backtickTokens($row[0])[0] ?? null;
     if ($name === null) {
-        $fail('README ## Subagents has a row whose first cell names no subagent: ' . trim($row[0]));
+        $fail('catalog ## Subagents has a row whose first cell names no subagent: ' . trim($row[0]));
 
         continue;
     }
-    if (array_key_exists($name, $readmeSubagentTags)) {
-        $fail("README ## Subagents lists '{$name}' more than once");
+    if (array_key_exists($name, $catalogSubagentTags)) {
+        $fail("catalog ## Subagents lists '{$name}' more than once");
 
         continue;
     }
-    $readmeSubagentTags[$name] = $backtickTokens($row[count($row) - 1]);
+    $catalogSubagentTags[$name] = $backtickTokens($row[count($row) - 1]);
 }
 
 $subagentNames = [];
@@ -489,7 +489,7 @@ foreach ($subagentFiles as $file) {
     $subagentNames[] = $stem;
 
     // Match BoostTags::parse(): a non-string value is invalid, not coerced. A
-    // YAML list would stringify to "Array" here and could match a README cell,
+    // YAML list would stringify to "Array" here and could match a catalog cell,
     // while boost-core reads it as malformed and ships the subagent nowhere.
     $tags = [];
     if (array_key_exists('boost-tags', $frontmatterData['metadata'] ?? [])) {
@@ -504,24 +504,24 @@ foreach ($subagentFiles as $file) {
         $usedTags[$t] = true;
     }
 
-    if (! array_key_exists($stem, $readmeSubagentTags)) {
-        $fail("subagent '{$file}' has no row in README ## Subagents table");
+    if (! array_key_exists($stem, $catalogSubagentTags)) {
+        $fail("subagent '{$file}' has no row in catalog ## Subagents table");
 
         continue;
     }
-    if (! $setsEqual($tags, $readmeSubagentTags[$stem])) {
+    if (! $setsEqual($tags, $catalogSubagentTags[$stem])) {
         $fail(sprintf(
-            "subagent '%s': README tags [%s] != frontmatter metadata.boost-tags [%s]",
+            "subagent '%s': catalog tags [%s] != frontmatter metadata.boost-tags [%s]",
             $stem,
-            implode(' ', $readmeSubagentTags[$stem]),
+            implode(' ', $catalogSubagentTags[$stem]),
             implode(' ', $tags),
         ));
     }
 }
 
-foreach (array_keys($readmeSubagentTags) as $name) {
+foreach (array_keys($catalogSubagentTags) as $name) {
     if (! in_array($name, $subagentNames, true)) {
-        $fail("README ## Subagents lists '{$name}' but no such subagent file exists");
+        $fail("catalog ## Subagents lists '{$name}' but no such subagent file exists");
     }
 }
 
@@ -563,12 +563,12 @@ foreach ($skillDirs as $dir) {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant E — tag vocabulary documented in README ## Tags
+// Invariant E — tag vocabulary documented in catalog ## Tags
 // ---------------------------------------------------------------------------
 
 foreach (array_keys($usedTags) as $tag) {
     if (! isset($documentedTags[$tag])) {
-        $fail("tag '{$tag}' is used by a skill/guideline but not documented in the README ## Tags table");
+        $fail("tag '{$tag}' is used by a skill/guideline but not documented in the catalog ## Tags table");
     }
 }
 
@@ -583,7 +583,7 @@ $subagentCount = count($subagentNames);
 if ($violations === []) {
     echo "PASS  catalog consistency\n";
     echo "        {$skillCount} skills, {$guidelineCount} guidelines, {$subagentCount} subagents\n";
-    echo "        checks: name↔dir, README↔frontmatter tags, inventory, guideline sidecar, user-scope sidecar, subagent name↔file↔README, boost-requires resolvable, tag vocabulary, conv-slot, schema-required\n";
+    echo "        checks: name↔dir, catalog↔frontmatter tags, inventory, guideline sidecar, user-scope sidecar, subagent name↔file↔catalog, boost-requires resolvable, tag vocabulary, conv-slot, schema-required\n";
     exit(0);
 }
 
