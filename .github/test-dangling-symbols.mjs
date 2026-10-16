@@ -664,6 +664,24 @@ function testAnAttributeLineStillDeclares() {
     fs.rmSync(cwd, { recursive: true, force: true });
 }
 
+// A line that opens with a closed block comment still holds the declaration after it.
+function testADeclarationAfterAnInlineBlockCommentCounts() {
+    const cwd = createBaseRepo({
+        'src/Job.php': '<?php\nclass Job {\n    /** @deprecated */ public function legacyRun() {}\n}\n',
+    });
+    mergeSides(
+        cwd,
+        { 'src/Job.php': '<?php\nclass Job {\n    /** @deprecated */ public function run() {}\n}\n' },
+        { 'src/Worker.php': '<?php\n$job->legacyRun();\n' },
+    );
+
+    const result = sweep(cwd, ['--base', 'theirs', '--', 'src/']);
+    assert.equal(result.status, 1, `the declaration after the comment must count: ${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /DANGLING {2}legacyRun/);
+
+    fs.rmSync(cwd, { recursive: true, force: true });
+}
+
 // A switch label (`case Archived:`, `case Archived === s:`) is not a declaration, so it
 // must not mark the old name as declared.
 function testARenamedEnumCaseIsTracked() {
@@ -849,6 +867,7 @@ const tests = [
     testAPathspecMatchingNoFileIsAUsageError,
     testACommentDoesNotCountAsADeclaration,
     testAnAttributeLineStillDeclares,
+    testADeclarationAfterAnInlineBlockCommentCounts,
     testARenamedEnumCaseIsTracked,
     testAnExcludedPathIsSkippedInTheTreeAndReferencePasses,
     testACommentInTheDiffDoesNotCancelARemoval,

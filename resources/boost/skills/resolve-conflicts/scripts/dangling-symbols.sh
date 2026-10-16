@@ -145,7 +145,9 @@ done
 # or that declare a name without the keyword. Applied to both passes so they agree:
 # - Lines that start with a comment marker are dropped: `// the function foo moved` is not
 #   a declaration, and counting it hides a real removal of foo(). A trailing comment after
-#   code is not detected. A PHP attribute line (`#[Override]`) is code and stays.
+#   code is not detected. A closed block comment at the start of a line is stripped first,
+#   so `/** @deprecated */ public function f()` still declares f. A PHP attribute line
+#   (`#[Override]`) is code and stays.
 # - `use function f;` and `use const C;` import a name, so they are dropped.
 # - A typed constant (`const int LIMIT = 1`, PHP 8.3) puts its type where the name is read
 #   from, so the type is removed and the constant's own name is extracted.
@@ -154,7 +156,9 @@ done
 #   followed by `=` (not `==`) or `;` is rewritten, so a switch label (`case Archived:`,
 #   `case x === 1:`) is left alone.
 declaration_forms() {
-    grep -vE '^[-+]?[[:space:]]*(//|/\*|\*|#([^[]|$))' \
+    sed -E -e 's#^([-+]?[[:space:]]*)/\*([^*]|\*+[^*/])*\*+/[[:space:]]*#\1#' \
+           -e 's#^([-+]?[[:space:]]*)/\*([^*]|\*+[^*/])*\*+/[[:space:]]*#\1#' \
+        | grep -vE '^[-+]?[[:space:]]*(//|/\*|\*|#([^[]|$))' \
         | grep -vE '^[-+]?[[:space:]]*use[[:space:]]+(function|const)[[:space:]]' \
         | sed -E -e 's/const +[?A-Za-z0-9_\\()]+( *[|&] *[?A-Za-z0-9_\\()]+)* +([A-Za-z_][A-Za-z0-9_]* *=)/const \2/g' \
                  -e 's/^([-+]?[[:space:]]*)case +([A-Za-z_][A-Za-z0-9_]*) *(=([^=]|$)|;)/\1const \2 =/'
