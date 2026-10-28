@@ -32,6 +32,7 @@ Keep it to a few rounds and stop as soon as intent is clear. Ask only what chang
 With intent clear, examine the request critically:
 
 - **Gaps & wrong assumptions** — what is missing or quietly assumed that would derail the output?
+- **Vague quality words** — "concise", "professional", "detailed", "high quality", and words like them, with no number or example behind them. Replace each with a measurable target ("under 150 words") or a concrete example of the wanted result. Take the target from the user or the referenced material; when neither gives one, ask, or insert an `[INSERT target]` placeholder rather than invent it.
 - **Useful additions** — context, constraints, or examples that measurably improve the result.
 - **External material** — if the user referenced screenshots, documents, files, or URLs, actually inspect them now (Read / WebFetch / image tools) and fold what you learn into the prompt.
 

@@ -34,10 +34,11 @@ Do NOT use for:
 
 The questioning disciplines live in the `clarify` skill — **read it first**. Apply all of them throughout the interview, one thread at a time (this overrides any "batch a round of questions" habit):
 
-- **Code-First** — read the codebase before asking; only ask the user what code can't answer (intent, priorities, business rules, UX trade-offs).
+- **Code-First** — read the codebase before asking; only ask the user what code can't answer (intent, priorities, business rules, UX trade-offs). Keep asking the questions that do not depend on a running research subagent.
 - **Bisect toward intent** — halve the possibility space each question while the ask is fuzzy (Phase 0).
-- **One question at a time, with a recommended answer** — recommendation first, 2-3 alternatives.
-- **Sharpen fuzzy terms** — resolve overloaded words to a canonical one.
+- **Coverage scan** — mark each category Clear / Partial / Missing and ask the gaps with the highest impact × uncertainty first. Run it once intent has a direction (after Phase 0, or at the start when Phase 0 is skipped) to decide which phases need depth, and again before Phase 7.
+- **One question at a time, with a recommended answer** — recommendation first, 1-2 alternatives, `Research better` last. Research before each question so the recommendation rests on evidence.
+- **Sharpen fuzzy terms** — resolve overloaded words to a canonical one, and turn quality words ("fast", "robust") into a number or a concrete behaviour.
 - **Stress-test with concrete scenarios** — force a precise answer on each edge.
 - **Cross-reference stated behavior against code** — surface contradictions immediately.
 - **Assumptions audit** — flag every AI-introduced inference and grill it (Phase 7 runs this in full).
@@ -59,9 +60,11 @@ Trigger this phase only when, with all context in hand, the request is still fuz
 
 What problem does this solve? Who is affected? What's the current workaround? What does success look like?
 
+Ask for **anti-goals** too: what outcome would count as a failure even if the feature works as built? For example, "the import succeeds, but support gets more tickets than before". An anti-goal guards against a spec that passes every test and still misses the point.
+
 ### Phase 2: Scope & Boundaries
 
-Minimum viable version? Explicitly out of scope? Related features to integrate with? What existing patterns should this follow? *(Check the code yourself before asking — see Code-First.)*
+Minimum viable version? Explicitly out of scope (the **non-goals**, each with the reason it is out)? Related features to integrate with? What existing patterns should this follow? *(Check the code yourself before asking — see Code-First.)*
 
 ### Phase 3: User Experience
 
@@ -107,6 +110,6 @@ Present your own assessment first, then ask the user to confirm or override.
 
 ## Output
 
-This skill produces gathered requirements, not a spec file. At handoff, pass `write-spec` everything gathered: problem and goals, scope, user flow, technical decisions, edge cases, acceptance criteria, the running Resolved Questions tally, the assumptions ledger from Phase 7, and the feature-flag decision.
+This skill produces gathered requirements, not a spec file. At handoff, pass `write-spec` everything gathered: problem and goals, non-goals and anti-goals, scope, user flow, technical decisions, edge cases, acceptance criteria, the running Resolved Questions tally, the assumptions ledger from Phase 7, the deferred gaps from the coverage scan (for `## Open Questions`), and the feature-flag decision.
 
 > Once requirements are gathered, produce the spec with the `write-spec` skill.

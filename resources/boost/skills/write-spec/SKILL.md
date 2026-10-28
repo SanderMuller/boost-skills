@@ -98,7 +98,7 @@ Before writing from a fresh template, check whether a spec for this work already
 | Loose notes / neither | Treat as input; fall through to the from-scratch flow. |
 | More than one candidate file for the same work | **Stop and ask** which is authoritative — never pick silently. |
 
-**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## STOP Conditions`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, the `**Personas:**` line, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
+**Convert in place** rather than rewriting from a fresh template — rewriting silently drops captured decisions. Carry forward verbatim, unless a later step explicitly supersedes it: `## Overview`, `## Non-Goals`, `## Assumptions` (the user's skim-only sign-off ledger — never drop or wholesale-rewrite it), `## Terminology`, `## STOP Conditions`, `## Open Questions`, `## Resolved Questions`, `## Findings`, the issue link, the `**Personas:**` line, problem statement, edge-cases table, and acceptance criteria. Then **add** the technical sections and Implementation phases. When a later audit corrects an inherited `## Assumptions` or resolves an inherited `## Open Questions` entry, update it in place (and log the decision in `## Resolved Questions`) rather than leaving two contradictory bullets — the skim ledger must show exactly one truth per topic.
 
 **Stamp on conversion**: if the existing spec carries a `spec:planned-at` stamp, refresh it to the current `HEAD` when the conversion materially re-bases the spec's `file:line` references on today's code — otherwise the drift preflight diffs against a stale baseline and reports false drift on a just-revalidated spec. Leave the stamp untouched when you only add sections without re-validating existing references. If no stamp exists and the repo is git, add one (see [Planning Commit Stamp](#planning-commit-stamp)).
 
@@ -134,6 +134,13 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 
 {2-3 sentences: what this does and why it matters.}
 
+## Non-Goals
+
+<!-- What this spec deliberately leaves out, and what would count as failure even when it works. Write "None." only after you checked. -->
+
+- **Out of scope:** {what this spec does not do} — {why, or where it goes instead}
+- **Anti-goal:** {an outcome that counts as failure even when every task passes}
+
 ## Assumptions
 
 <!-- The Assumptions Audit (below) fills this ledger — one bullet per AI-introduced inference, kept so the user can sign off by skimming this section alone. Carried forward verbatim in Conversion Mode. -->
@@ -141,7 +148,9 @@ Both end with the same closing sections: **Open Questions**, **Resolved Question
 ---
 ```
 
-After the overview and assumptions ledger, use numbered top-level sections (`## 1. Data Model`, `## 2. API Design`, etc.) for the technical design. Adapt sections to fit the feature.
+An out-of-scope line stops an implementer from "helpfully" building the adjacent feature. An anti-goal names a failure that the tests cannot catch, for example "the new filter works, but the list page gets slower". Take both from the interview when it ran; otherwise derive them from the issue and confirm them in the Assumptions Audit.
+
+After the overview, non-goals, and assumptions ledger, use numbered top-level sections (`## 1. Data Model`, `## 2. API Design`, etc.) for the technical design. Adapt sections to fit the feature.
 
 After the technical sections, include `## Edge Cases` — a compact table the Edge Case Sweep (below) fills in. Each row names a scenario the feature must handle and how the app handles it.
 
@@ -216,6 +225,13 @@ For focused changes that don't need multiple phases.
 ## Overview
 
 {2-3 sentences: what this fixes/improves and why.}
+
+## Non-Goals
+
+<!-- Omit when nothing near this change is deliberately left out. -->
+
+- **Out of scope:** {what this change does not do} — {why}
+- **Anti-goal:** {an outcome that counts as failure even when every task passes; omit when none}
 
 ## Assumptions
 
@@ -360,12 +376,33 @@ This audit runs even when the requirements came from the `interview` skill — `
 - **Edge-case handling the AI chose** — every `## Edge Cases` row whose handling you decided rather than confirmed from code or an explicit user statement, plus any retry / conflict / timeout / missing-record / parallel-invocation behaviour the table doesn't cover.
 - **"Recommended" choices accepted without engaging with the framing.**
 - **MVP trade-offs worth re-flagging** — an earlier accepted shortcut that's load-bearing enough to re-confirm now.
+- **Unquantified quality words** — "fast", "robust", "intuitive", "scalable", "secure", "user-friendly", or "minimal" with no number or concrete behaviour behind it. Propose the number or behaviour as the assumption ("Fast means under 2 seconds for 1,000 rows"). A word that no test can check is not a requirement.
 
-**Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, plus 1-2 concrete alternatives (`AskUserQuestion` appends its own free-text "Other", so don't add a manual escape-hatch option). Never batch.
+**Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, 1-2 concrete alternatives, and `Research better` last (`AskUserQuestion` appends its own free-text "Other", so don't add a manual escape-hatch option; `Research better` is not one, because it asks for a defined action). When the user picks `Research better`, research the assumption deeper (code, tests, git history, project docs), then ask again with the options the new evidence supports, and say in one line what the research found. Never batch.
 
-**Step 3 — Record outcomes.** Capture each into a `## Assumptions` section near the top of the spec — the complete audit ledger, one bullet per scanned item regardless of outcome. This is the contract that lets the user sign off by skimming `## Assumptions` alone. Promote anything that became a real decision into `## Resolved Questions`; route anything still undecided to `## Open Questions`.
+**Step 3 — Record outcomes.** Capture each into a `## Assumptions` section near the top of the spec — the complete audit ledger, one bullet per scanned item regardless of outcome. The Cold-Reader Check (below) adds its minor decisions here too, marked as the assistant's call. This is the contract that lets the user sign off by skimming `## Assumptions` alone. Promote anything that became a real decision into `## Resolved Questions`; route anything still undecided to `## Open Questions`.
 
 **Step 4 — Derive STOP Conditions.** Scan the confirmed ledger for *load-bearing* assumptions — those whose falsity would invalidate a phase's approach (not cosmetic defaults like a message string or a TTL). Restate each as an "if X proves false, stop and report" line in the `## STOP Conditions` section. This gives the implementer an in-flight contract without duplicating the ledger — STOP Conditions is the actionable view of the load-bearing subset, while `## Assumptions` remains the source of truth. Use "None." when nothing is load-bearing.
+
+## Cold-Reader Check — Required Before Finalising
+
+After the Assumptions Audit, test the spec on a reader who has none of the conversation. The author cannot see the gaps that the conversation filled in, and the implementer will not have that conversation.
+
+Run it for every multi-phase spec. For a single-phase spec, run it when the change alters behaviour; skip it for a pure restructure or cleanup.
+
+**Step 1 — Dispatch a fresh read-only subagent** with only the spec path and this brief. Use an agent type that reads whole files (for example Claude Code's `general-purpose`), not one that skims excerpts, and never a fork that inherits this conversation:
+
+> Read this spec and the code it references. You will implement it with no other context. List the questions you would have to answer before or during the work, where a wrong guess would change the result. Rank them, most damaging guess first. Do not answer them, and do not list style nits.
+
+Do not pass the conversation, the interview notes, or your own summary of the spec. When the agent cannot dispatch a subagent, re-read the spec top to bottom as the implementer, and say in the summary that the check ran without a fresh reader.
+
+**Step 2 — Sort each question into one pile:**
+
+- **Already answered** — the spec answers it, but the reader missed it. Make the answer easier to find (move it, or link it from the phase that needs it). Do not add a second copy.
+- **Minor** — a wrong guess is cheap to undo. Decide it yourself, write the decision into the spec, and add it to `## Assumptions` marked as the assistant's call, so the user can still overrule it by skimming the ledger.
+- **The user's** — a product, UX, or business decision. Ask it in the same format as the Assumptions Audit, Step 2, one at a time.
+
+**Step 3 — Fold the answers back in.** Update the affected sections, `## Assumptions`, and `## STOP Conditions` when an answer is load-bearing. A question that stays unresolved goes to `## Open Questions`. Run the check once, unless the answers changed the spec's approach; wording changes never trigger a second run.
 
 ## Writing Guidelines
 
