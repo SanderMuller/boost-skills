@@ -57,7 +57,7 @@ $splitRow = static function (string $line): array {
     $line = trim($line);
     $line = trim($line, '|');
 
-    return array_map('trim', explode('|', $line));
+    return array_map(trim(...), explode('|', $line));
 };
 
 /** All backtick-wrapped tokens in a cell, in order. */
@@ -180,11 +180,11 @@ $catalogLines = explode("\n", (string) file_get_contents($catalogPath));
 $schema = json_decode((string) file_get_contents($schemaPath), true, 512, JSON_THROW_ON_ERROR);
 
 $skillDirs = array_values(array_filter(
-    array_map('basename', (array) glob($skillsDir . '/*', GLOB_ONLYDIR)),
+    array_map(basename(...), (array) glob($skillsDir . '/*', GLOB_ONLYDIR)),
 ));
 sort($skillDirs);
 
-$guidelineFiles = array_values(array_map('basename', (array) glob($guidelinesDir . '/*.md')));
+$guidelineFiles = array_map(basename(...), (array) glob($guidelinesDir . '/*.md'));
 sort($guidelineFiles);
 
 // Subagents are optional: a catalog with none is valid, so an empty list is not
@@ -219,7 +219,7 @@ $guidelinesRows = $sectionTable($catalogLines, '## Guidelines');
 // Read the section whenever the heading exists, never gated on the file
 // inventory: gating would let a catalog row outlive the last subagent it
 // described. Absent heading with no files is the legitimate empty catalog.
-$hasSubagentsHeading = in_array('## Subagents', array_map('trim', $catalogLines), true);
+$hasSubagentsHeading = in_array('## Subagents', array_map(trim(...), $catalogLines), true);
 $subagentsRows = $hasSubagentsHeading ? $sectionTable($catalogLines, '## Subagents') : [];
 if (! $hasSubagentsHeading && $subagentFiles !== []) {
     $fail('subagent files exist but catalog has no "## Subagents" section');
