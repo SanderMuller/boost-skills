@@ -35,6 +35,10 @@ If a question is answerable by reading the codebase, **read instead of asking**:
 
 Only ask the user what the code cannot answer: intent, priorities, business rules, UX trade-offs, future plans. If the project ships reference docs (architecture, domain glossary, relationship maps), consult them first so terminology matches project canon.
 
+**Research before every question, not only at the start.** Each question carries a recommendation, and that recommendation must rest on evidence: the code, the tests, the project docs, the linked issue, recent history. Before you ask, check: would one more lookup change the recommended option? If yes, do the lookup first. A recommendation built on plausibility pushes the user toward the wrong answer, and a user who has to request more research is a sign this step was skipped.
+
+**Keep asking while research runs.** Research blocks only the question it feeds. While a research subagent runs, ask the open questions that do not depend on its result. Hold the dependent question, and every question downstream of it, until the brief comes back.
+
 ### 2. Bisect toward intent
 
 When the ask is one sentence, uses overloaded terms, or has several plausible readings, ask **bisecting questions** that cut the possibility space roughly in half each turn — not open-ended "tell me about X", but "is this A or B" until intent converges.
@@ -47,20 +51,43 @@ Example — ask: "Improve sharing"
 
 After 2-4 such questions intent is usually sharp. Bisecting also applies mid-flow: if any answer reveals new fuzziness, drop in a bisecting question before continuing.
 
-### 3. One question at a time, with a recommended answer
+### 3. Coverage scan — find the categories nobody asked about
 
-Default to **one question per turn**, each with a recommended answer plus 2-3 alternatives, so the user reacts (accept / pick another / push back) instead of drafting from scratch. Use `AskUserQuestion` with predefined options, recommendation first:
+Once intent has a direction, scan the ask against these categories and mark each one **Clear**, **Partial**, or **Missing**:
+
+- **Scope** — what is in, what is out, and what would count as failure even when it works.
+- **Users and flow** — who uses it, how they reach it, and what they see at each step.
+- **Data** — what is stored, changed, migrated, or deleted.
+- **Rules and permissions** — business rules, who may do what, and what happens on a denial.
+- **Failure handling** — errors, retries, timeouts, partial failure, and external systems that are down.
+- **Non-functional needs** — performance, scale, reliability, and accessibility.
+- **Security and privacy** — sensitive data, audit needs, and compliance.
+- **Observability** — logs, metrics, and alerts that tell the team it works in production.
+- **Integration** — other features, services, or packages that this change touches.
+- **Terminology** — terms that still have more than one meaning.
+- **Done criteria** — how the user will know the work is complete.
+
+Skip a category that cannot apply to the ask, and answer from the code where the code can (Code-First). Rank each Partial or Missing category by impact × uncertainty: how much a wrong guess would cost, multiplied by how unsure you are. Ask the highest-ranked gaps first. A gap you do not ask about before "enough is enough" is not dropped: list it as deferred, so the host skill records it (for example under `## Open Questions`, or as an `[INSERT X]` placeholder when the host's output has no such section). Scan again before the assumptions audit, because answers move categories.
+
+### 4. One question at a time, with a recommended answer
+
+Default to **one question per turn**, each with a recommended answer plus 1-2 alternatives, so the user reacts (accept / pick another / push back) instead of drafting from scratch. Use `AskUserQuestion` with predefined options, recommendation first, and **`Research better` always last**:
 
 ```
 "How should errors be displayed?"
 - Inline validation messages (Recommended)
 - Toast notifications
 - Modal dialog
+- Research better
 ```
 
-Group questions only when they are clearly orthogonal and small. (`AskUserQuestion` appends its own free-text "Other", so never add a manual escape-hatch option.)
+`AskUserQuestion` takes at most 4 options, so `Research better` caps the alternatives at 2. Its description says what the extra research would check (for example "Check how the other forms in the app show errors").
 
-### 4. Sharpen fuzzy terms
+**When the user picks `Research better`**, do not re-ask the same question with the same options. Research the question deeper than the first pass: a wider sweep (delegate it, per Code-First), the tests, the git history, the project docs, the linked issue. Then ask again with a recommendation built on the new evidence, and say in one line what the research found and whether the recommendation changed.
+
+Group questions only when they are clearly orthogonal and small. (`AskUserQuestion` appends its own free-text "Other", so never add a manual escape-hatch option. `Research better` is not an escape hatch: it asks for a defined action.)
+
+### 5. Sharpen fuzzy terms
 
 When the user uses a vague or overloaded term, stop and resolve it to a canonical one:
 
@@ -68,20 +95,24 @@ When the user uses a vague or overloaded term, stop and resolve it to a canonica
 
 Check the project reference docs for the canonical name before proposing one.
 
-### 5. Stress-test with concrete scenarios
+Quality words are fuzzy terms too. When the user says "fast", "robust", "intuitive", "secure", or "scalable", ask for the number or the concrete behaviour behind the word:
+
+> "You said the export must be fast. Is that under 2 seconds for 1,000 rows, or is it about a progress bar while it runs?"
+
+### 6. Stress-test with concrete scenarios
 
 When the user states a rule, invent a specific edge case that probes its boundary and force a precise answer. Don't accept "we'd handle that" — make them say what happens.
 
 > User: "Editors can edit any record in their workspace."
 > You: "An editor opens a record moved into their workspace yesterday, from a workspace whose owner just revoked their access. Can they edit it?"
 
-### 6. Cross-reference stated behavior against code
+### 7. Cross-reference stated behavior against code
 
 When the user describes how something currently works, **verify it against the actual code** before building on it. Surface any contradiction immediately:
 
 > "You said deleting a parent also deletes its children. The handler actually orphans them to the grandparent. Which behavior do you want here?"
 
-### 7. Assumptions audit — the gap reducer
+### 8. Assumptions audit — the gap reducer
 
 Before wrapping up, walk everything gathered and flag every place *you* silently inferred something the user did not say, then grill each one. Flag a statement when it meets **any** of these:
 
@@ -95,7 +126,7 @@ Before wrapping up, walk everything gathered and flag every place *you* silently
 - **Implicit edge-case behaviour** — retry, conflict, timeout, missing related record, parallel invocation.
 - **"Recommended" options accepted without engaging** — they took the recommendation; did they weigh the trade-off?
 
-Exclude purely cosmetic inferences that don't change observable behaviour. Ask each via `AskUserQuestion` with the assumption in plain language (no jargon, no class names), "Correct as stated" as the first option, plus 1-2 concrete alternatives. **Never batch** — the answer to assumption N often changes whether N+1 still applies.
+Exclude purely cosmetic inferences that don't change observable behaviour. Ask each via `AskUserQuestion` with the assumption in plain language (no jargon, no class names), "Correct as stated" as the first option, 1-2 concrete alternatives, and `Research better` last (see discipline 4). **Never batch** — the answer to assumption N often changes whether N+1 still applies.
 
 ## Guardrails
 
@@ -106,4 +137,4 @@ Exclude purely cosmetic inferences that don't change observable behaviour. Ask e
 
 ## Output
 
-This skill produces **sharpened intent**, not a document: a running tally of resolved questions, the assumptions ledger from the audit, and any terminology settled along the way. A host skill (`interview`, `promptimize`) takes it from there; used standalone, hand the summary back to the user.
+This skill produces **sharpened intent**, not a document: a running tally of resolved questions, the assumptions ledger from the audit, the deferred gaps from the coverage scan, and any terminology settled along the way. A host skill (`interview`, `promptimize`) takes it from there; used standalone, hand the summary back to the user.
