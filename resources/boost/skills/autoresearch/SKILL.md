@@ -109,7 +109,7 @@ set -euo pipefail
 BASE=$(git rev-parse "$1"); CAND=$(git rev-parse "$2"); PAIRS=${3:-10}
 BENCH=autoresearch/{slug}-bench.php
 ORIG=$(git symbolic-ref --short HEAD)
-[ -z "$(git status --porcelain)" ] || { echo "compare: commit or stash changes first" >&2; exit 1; }
+[ -z "$(git status --porcelain)" ] || { echo "compare: commit, stash, or ignore every change first" >&2; exit 1; }
 OUT=$(mktemp -d)
 # The tree was clean at start, so --force only discards what a benchmark run wrote.
 trap 'git checkout --quiet --force "$ORIG"; rm -rf "$OUT"' EXIT
@@ -117,7 +117,7 @@ trap 'git checkout --quiet --force "$ORIG"; rm -rf "$OUT"' EXIT
 sample() { # $1 = side, $2 = sha
   git checkout --quiet --detach "$2"
   php "$BENCH" > "$OUT/$1.last" 2>> "$OUT/err.log" || { tail -20 "$OUT/err.log" >&2; exit 1; }
-  [ -z "$(git status --porcelain)" ] || { echo "compare: the benchmark changed tracked files" >&2; exit 1; }
+  [ -z "$(git status --porcelain)" ] || { echo "compare: the benchmark changed or created files" >&2; exit 1; }
   sed -n 's/^METRIC execution_median_ms=//p' "$OUT/$1.last" >> "$OUT/$1"
 }
 
@@ -147,7 +147,7 @@ printf("METRIC base_median_ms=%.2f\nMETRIC cand_median_ms=%.2f\nMETRIC delta_ms=
 ' "$OUT/base" "$OUT/cand" "$PAIRS"
 ```
 
-`base_median_ms` and `cand_median_ms` are the medians over all samples. The `Median (ms)` progress column takes `cand_median_ms`. `delta_ms` is the median of the paired differences `base − candidate`: positive means the candidate is faster. `conf` is `delta_ms` divided by its standard error, so it grows with the number of pairs: a re-run with more pairs can confirm a real small gain. The script resolves both refs before its first checkout, so `HEAD~1` is safe to pass. Choose `pairs` so one compare takes about two minutes or less, and never fewer than 5. The script fails when the tree is dirty, when a benchmark run changes a tracked file, or when a process does not print exactly one positive timing.
+`base_median_ms` and `cand_median_ms` are the medians over all samples. The `Median (ms)` progress column takes `cand_median_ms`. `delta_ms` is the median of the paired differences `base − candidate`: positive means the candidate is faster. `conf` is `delta_ms` divided by its standard error, so it grows with the number of pairs: a re-run with more pairs can confirm a real small gain. The script resolves both refs before its first checkout, so `HEAD~1` is safe to pass. Choose `pairs` so one compare takes about two minutes or less, and never fewer than 5. The script fails when the tree has any change or untracked file, when a benchmark run changes or creates a file outside ignored paths, or when a process does not print exactly one positive timing.
 
 The runner needs a clean tree: commit the candidate before running it.
 
