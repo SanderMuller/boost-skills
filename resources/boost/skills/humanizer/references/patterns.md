@@ -103,7 +103,7 @@ leftover from an earlier draft. Remove the defence. Keep an option a reader woul
 
 ### A6. Salience flags and verdict labels
 
-**Watch for:** This matters., Why X matters, worth noting, worth stating plainly, worth flagging,
+**Watch for:** This matters., Why X matters, worth stating plainly, worth flagging,
 the key insight, the real problem, the honest answer, the most interesting part, the part that
 matters most.
 
@@ -761,13 +761,17 @@ explain, and a real aside or self-correction.
 
 ### H5. Fake candor
 
-**Watch for:** honestly, genuinely, frankly, "I don't know how to feel about this", "I keep coming
-back to", "here's what gets me", "what I didn't expect to find", "most people I've talked to", and
-"just" or "actually" spread evenly through every paragraph.
+**Watch for, in text the rewrite added:** honestly, genuinely, frankly, "I don't know how to feel
+about this", "I keep coming back to", "here's what gets me", "what I didn't expect to find", "most
+people I've talked to", and "just" or "actually" spread evenly through every paragraph.
 
 **Problem:** A rewrite that tries to add voice reaches for a stock casual register. Readers who see
 a lot of AI text recognise it as quickly as the encyclopedic one. Voice comes from what the writer
-gave you: a specific detail, a stated opinion, an uneven sentence. Add none of the above.
+gave you: a specific detail, a stated opinion, an uneven sentence. Add none of the above. The same
+word in the writer's own text is theirs, and H4 keeps it.
+
+**Original:**
+> Moving 40 services to the new cluster took four months.
 
 **Bad rewrite:**
 > Honestly? I don't know how to feel about this one. Four months. Forty services.

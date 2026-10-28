@@ -1,5 +1,12 @@
 # Upgrading
 
+## From 2.52.x to 2.53.0 (PHP and boost-core floors raised)
+
+**Breaking: requires PHP `^8.4` and `boost-core ^1.6`.** 2.53.0 drops PHP 8.3 and `boost-core` 1.4–1.5 from the accepted range. This is a support-policy cutoff, not a hard requirement of the shipped skills, which contain no PHP code.
+
+- **PHP 8.3:** stay on 2.52.x, or move the project to PHP 8.4.
+- **boost-core 1.4 or 1.5:** run `composer update sandermuller/boost-core`. 1.6 adds no breaking change: `boost sync` deletes only the files boost owns, and `boost doctor` reports coexistence with `laravel/boost`.
+
 ## From 2.48.x to 2.49.0 (codex-review model — no floor change)
 
 **Not breaking. The `boost-core` floor stays `^1.4`.**

@@ -168,11 +168,11 @@ One line per check. The ID points into the catalogue.
 - A deep-sounding saying or a pull-quote line? Replace it with the claim, or cut it (A3).
 - A run-up ("Here's the thing", "Let's dive in", "Honestly?")? Start with the point (A4).
 - An objection or option nobody raised? Remove the defence (A5).
-- "This matters", "the key insight", "the honest answer", "worth noting"? Cut the label (A6).
+- "This matters", "the key insight", "the honest answer", "worth stating plainly"? Cut the label (A6).
 - Three items where the meaning has fewer? Keep only the real ones (B1).
 - Dashes everywhere? Replace each by its role. Not in code, ranges or a writer's own style (B3).
 - A hyphen dropped before a noun? Put it back (B6).
-- Every sentence 8 to 20 words, with only periods and commas? Join some and vary the length (B8).
+- Every sentence 8 to 20 words, with only periods and commas? Join some and vary the length. Weak alone; on a `voice` surface, stay inside its sentence limits (B8).
 - "Crucial", "pivotal", "robust", "showcase", or a hype word with nothing behind it? State the fact (C1).
 - "Marks a pivotal moment", "sets the stage", "the future looks bright"? Keep the fact only (C2).
 - An -ing rider ("ensuring...", "highlighting...")? Make it a real clause, or cut it (C4).
@@ -188,7 +188,7 @@ One line per check. The ID points into the catalogue.
 - A reply that rebuilds context the reader has? Lead with the answer (F3).
 - "Utilize", "leverage", "lean into", "substrate", "flywheel"? Use the plain word (G1–G3).
 - After the rewrite: clipped fragments, comma splices, a lost "because" or "only"? Fix them (H1–H3).
-- After the rewrite: "honestly", "genuinely", "I keep coming back to"? Remove the fake candor (H5).
+- After the rewrite: "honestly", "genuinely", "I keep coming back to" that the source did not have? Remove it (H5).
 
 ## Sources and licence
 
