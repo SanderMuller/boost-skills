@@ -49,7 +49,7 @@ Record the rate. After the fix, run the same loop again. The fix is verified onl
 
 ## Races
 
-- Make the timing window wider on purpose, for example a short `usleep()` between the read and the write, to raise the failure rate. Keep it in place for both the before and the after loop, so the two rates are comparable. Remove it after the fix is verified, then run the loop once more.
+- Make the timing window wider on purpose, for example a short `usleep()` between the read and the write, to raise the failure rate. Tag it with the Phase 4 debug marker, so the cleanup search finds it. Keep it in place for both the before and the after loop, so the two rates are comparable. Remove it after the fix is verified, then run the loop once more.
 - Look for check-then-act code with no lock or transaction, and for jobs that run in a different order than the code assumes.
 - Fix the race with a lock, a transaction, an atomic update, or a unique constraint. A wait for a condition is acceptable in a test; a fixed sleep is not.
 

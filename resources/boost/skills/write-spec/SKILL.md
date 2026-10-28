@@ -376,6 +376,7 @@ This audit runs even when the requirements came from the `interview` skill — `
 - **Edge-case handling the AI chose** — every `## Edge Cases` row whose handling you decided rather than confirmed from code or an explicit user statement, plus any retry / conflict / timeout / missing-record / parallel-invocation behaviour the table doesn't cover.
 - **"Recommended" choices accepted without engaging with the framing.**
 - **MVP trade-offs worth re-flagging** — an earlier accepted shortcut that's load-bearing enough to re-confirm now.
+- **Derived non-goals and anti-goals** — every `## Non-Goals` line taken from the issue rather than stated by the user.
 - **Unquantified quality words** — "fast", "robust", "intuitive", "scalable", "secure", "user-friendly", or "minimal" with no number or concrete behaviour behind it. Propose the number or behaviour as the assumption ("Fast means under 2 seconds for 1,000 rows"). A word that no test can check is not a requirement.
 
 **Step 2 — Grill one assumption at a time** via `AskUserQuestion`: the assumption in plain language, "Correct as stated" first, 1-2 concrete alternatives, and `Research better` last (`AskUserQuestion` appends its own free-text "Other", so don't add a manual escape-hatch option; `Research better` is not one, because it asks for a defined action). When the user picks `Research better`, research the assumption deeper (code, tests, git history, project docs), then ask again with the options the new evidence supports, and say in one line what the research found. Never batch.

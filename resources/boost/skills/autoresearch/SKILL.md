@@ -68,6 +68,7 @@ The loop runs `git reset --hard` and checks out other commits, so it needs a cle
 git status --porcelain                  # must print nothing — stop and ask the user if it does
 git check-ignore -q autoresearch/ || echo "autoresearch/" >> "$(git rev-parse --git-path info/exclude)"
 git switch -c autoresearch/{slug}
+mkdir -p autoresearch/patches
 git rev-parse HEAD                      # the base commit
 ```
 
@@ -106,12 +107,14 @@ Create `autoresearch/{slug}-compare.sh`. It checks out the base and the candidat
 #!/usr/bin/env bash
 # Usage: autoresearch/{slug}-compare.sh <base-ref> <cand-ref> [pairs]
 set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
 BASE=$(git rev-parse "$1"); CAND=$(git rev-parse "$2"); PAIRS=${3:-10}
 BENCH=autoresearch/{slug}-bench.php
 ORIG=$(git symbolic-ref --short HEAD)
 [ -z "$(git status --porcelain)" ] || { echo "compare: commit, stash, or ignore every change first" >&2; exit 1; }
 OUT=$(mktemp -d)
-# The tree was clean at start, so --force only discards what a benchmark run wrote.
+# The tree was clean at start, so --force only discards tracked changes a benchmark run made.
+# A file the benchmark created stays behind; delete it by hand before the next run.
 trap 'git checkout --quiet --force "$ORIG"; rm -rf "$OUT"' EXIT
 
 sample() { # $1 = side, $2 = sha
@@ -495,7 +498,7 @@ bash autoresearch/{slug}-compare.sh {base-commit} HEAD {2 × pairs}
 AUTORESEARCH_SCENARIO=holdout bash autoresearch/{slug}-compare.sh {base-commit} HEAD {2 × pairs}
 ```
 
-The first run gives the final main-scenario result. The holdout must not be slower than the base: a `conf` of -2 or lower fails the check. A holdout gain much smaller than the main gain is a warning: find the change that tunes for the main scenario and test its removal as in Step 3. Report the holdout result either way.
+The first run gives the final main-scenario result. The holdout must not be slower than the base: a `conf` of -2 or lower fails the check. On a failure, find the change that slows the holdout and test its removal as in Step 3. Do not present until the holdout passes or the user accepts the regression. A holdout gain much smaller than the main gain is a warning: find the change that tunes for the main scenario and test its removal as in Step 3. Report the holdout result either way.
 
 ### Step 6: Final Verification
 
@@ -505,7 +508,7 @@ Use the `backend-quality` skill's completion tier (Pint, PHPStan, and the full t
 
 1. Update the research document's "Results" section: base → final, main and holdout, with confidence
 2. List the surviving changes with gain and cost each, and the dropped changes with the reason
-3. Offer a clean branch: `autoresearch/{slug}-final` from the base commit, with the surviving changes cherry-picked in order and the reverted pairs left out. Check that `git diff autoresearch/{slug} autoresearch/{slug}-final` prints nothing. If a cherry-pick conflicts, offer one squashed commit instead.
+3. Offer a clean branch: `autoresearch/{slug}-final` from the base commit, with every commit since the base cherry-picked in order, except the reverted changes and their revert commits. Check that `git diff autoresearch/{slug} autoresearch/{slug}-final` prints nothing. If a cherry-pick conflicts, offer one squashed commit instead.
 4. List the remaining entries in the ideas file as possible follow-ups
 
 Stop there. The user decides what to merge or push.

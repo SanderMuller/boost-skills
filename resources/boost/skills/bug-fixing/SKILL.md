@@ -108,9 +108,9 @@ Read the failure message as well as the result. The failure must show the report
 
 **Shrink the scenario** once the test is red for the reported symptom. Remove inputs, records, and steps one at a time, and run the test after each cut. Stop when removing any remaining part turns the test green or changes the failure. Every part left is then needed to trigger the bug.
 
-**Regression with a known good version:** when the bug did not exist at an earlier commit or tag, let `git bisect` find the commit that introduced it. Choose a good commit where the code under test already exists. The red test does not exist at the old commits, so put it in a file of its own (for PHPUnit, the class name matches the file name), move that file outside the repository, and copy it in for each step.
+**Regression with a known good version:** when the bug did not exist at an earlier commit or tag, let `git bisect` find the commit that introduced it. Start from a clean working tree. Choose a good commit where the code under test already exists. The red test does not exist at the old commits, so put it in a file of its own (for PHPUnit, the class name matches the file name), move that file outside the repository, and copy it in for each step.
 
-`git bisect run` marks a commit bad for any exit code from 1 to 127 except 125, which skips the commit. Pest and PHPUnit exit with 1 for a failed assertion and with 2 for an error, so the script below counts only exit 1 as bad and skips every other failure. A commit where the test cannot run then does not count as the regression. PHPUnit also exits with 1 on a warning or a deprecation when `phpunit.xml` sets `failOnWarning` or `failOnDeprecation`. Turn those settings off for the bisect, or an unrelated warning can become the first bad commit.
+`git bisect run` marks a commit bad for any exit code from 1 to 127 except 125, which skips the commit. Pest and PHPUnit exit with 1 for a failed assertion and with 2 for an error, so the script below counts only exit 1 as bad and skips every other failure. A commit where the test cannot run then does not count as the regression. PHPUnit also exits with 1 on a warning, a deprecation, a risky or a skipped test when a `failOn*` setting in `phpunit.xml` or a `--fail-on-*` flag asks for it. Turn every one of them off for the bisect, or an unrelated warning can become the first bad commit.
 
 For this to work, the bug must show as a failed assertion. When the symptom is an exception, catch only that exception in the test and turn it into a failed assertion with `$this->fail($e->getMessage())`. Let every other exception propagate, so a commit that breaks in a different way is skipped.
 
@@ -135,7 +135,7 @@ git bisect reset
 mv /tmp/CartRegressionTest.php tests/Unit/
 ```
 
-Start from a clean working tree. `vendor/` does not change between checkouts, so each old commit runs against the current dependencies. When `composer.lock` changes inside the range, a step can fail, or pass, only because of that mismatch. In that case, add `composer install --quiet || exit 125` as the first line of the script, and run `composer install` again after `git bisect reset`. Read the diff of the commit that bisect reports before you form a hypothesis. When skipped commits sit next to it, bisect lists all of them as candidates; read each diff.
+`vendor/` does not change between checkouts, so each old commit runs against the current dependencies. When `composer.lock` changes inside the range, a step can fail, or pass, only because of that mismatch. In that case, add `composer install --quiet || exit 125` as the first line of the script, and run `composer install` again after `git bisect reset`. Read the diff of the commit that bisect reports before you form a hypothesis. When skipped commits sit next to it, bisect lists all of them as candidates; read each diff.
 
 ### Phase 4: Find the Root Cause
 
