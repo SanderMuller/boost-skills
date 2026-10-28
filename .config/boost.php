@@ -3,6 +3,7 @@
 use SanderMuller\BoostCore\Config\BoostConfig;
 use SanderMuller\BoostCore\Enums\Agent;
 use SanderMuller\BoostCore\Enums\Tag;
+use SanderMuller\BoostCore\Skills\Remote\RemoteSkillSource;
 
 /**
  * boost-core configuration — which AI agents `vendor/bin/boost sync` writes to,
@@ -39,5 +40,10 @@ return BoostConfig::configure()
         Tag::Php,
         'release-automation',
         'voice',
+    ])
+    ->withRemoteSkills([
+        RemoteSkillSource::githubPath('cloudflare/security-audit-skill', 'c1c8a8c1471069fb0e188eeaff69b8e8db6564a8', [
+            'security-audit' => 'skills/security-audit',
+        ]),
     ])
     ->withDisabledEmitters([]);
