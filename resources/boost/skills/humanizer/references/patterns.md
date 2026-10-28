@@ -75,7 +75,8 @@ claim, or cut it.
 
 **Watch for:** Let's dive in, let's break this down, here's what you need to know, without further
 ado, In this section, we'll; Here's the thing, The uncomfortable truth is, It turns out, Make no
-mistake; Honestly?, Look,, Real talk, Think about it:, Here's what I mean:.
+mistake; Honestly?, Look,, Real talk, Think about it:, Here's what I mean:; bridges between
+paragraphs such as Looking ahead, adds another layer, what comes next, This is where X comes in.
 
 **Problem:** The writer announces the point instead of making it. Remove the run-up. "Honestly" or
 "look" inside a casual sentence is ordinary. The tell is the standalone opener.
@@ -99,6 +100,23 @@ leftover from an earlier draft. Remove the defence. Keep an option a reader woul
 
 **After:**
 > Tokens are stored as hashes.
+
+### A6. Salience flags and verdict labels
+
+**Watch for:** This matters., Why X matters, worth noting, worth stating plainly, worth flagging,
+the key insight, the real problem, the honest answer, the most interesting part, the part that
+matters most.
+
+**Problem:** The sentence tells the reader that a point is important, true or interesting instead
+of showing why. In measurements of 2026 Claude output this is the most frequent single tell, ahead
+of any word. Cut the label and keep the point. If the importance is real, state the consequence the
+source gives.
+
+**Before:**
+> The cache now expires after an hour. This matters. The key insight is that stale prices were the main source of support tickets.
+
+**After:**
+> The cache now expires after an hour. Stale prices were the main source of support tickets.
 
 ---
 
@@ -143,6 +161,10 @@ role:
 Swapping every dash for another mark keeps the hesitation. Rewrite the sentence when it could not
 decide where to stop. Leave dashes inside code, commands, paths, URLs and number ranges ("pages
 10–12") alone. A writer's sample that uses dashes overrides this pattern.
+
+Judge the rate, not the character. Some current models suppress dashes almost completely and now
+use far fewer than people do, so a long text with no dash, semicolon or parenthesis anywhere is a
+tell of its own (B8). Do not chase zero.
 
 **Before:**
 > The flag — added in 2.4 — skips the write step — which makes it safe for CI.
@@ -208,6 +230,25 @@ actor clearer. Imperative commit subjects and terse reference lines ("Optional. 
 **After:**
 > You do not need a configuration file. The CLI caches the results.
 
+### B8. Uniform rhythm
+
+*Weak alone.*
+
+**Watch for:** sentence after sentence of 8 to 20 words; runs of four or more short sentences;
+only periods and commas in the whole text; paragraphs of near-equal length.
+
+**Problem:** Models trained away from dashes lean on short sentences of even size. Each sentence
+reads fine, and the text still reads as machine-made, because human writing is uneven. Join two
+sentences that carry one idea with "because", "so" or "although". Keep a short sentence where it
+carries a new fact. On a surface the `voice` guideline governs, keep its sentence limits and vary
+length inside them.
+
+**Before:**
+> The build failed on Tuesday. The cause was a stale lockfile. The fix took ten minutes. We added a CI check. It runs on every pull request.
+
+**After:**
+> Tuesday's build failed on a stale lockfile. The fix took ten minutes, and we added a CI check that runs on every pull request.
+
 ---
 
 ## C. Inflation and borrowed authority
@@ -220,6 +261,10 @@ The fact underneath is usually sound. Keep it and remove the dressing.
 enhance, fostering, garner, highlight (verb), interplay, intricate, key (adjective), landscape
 (abstract), meticulous, pivotal, robust (figurative), showcase, tapestry, testament, underscore
 (verb), valuable, vibrant.
+
+**Newer favourites (2026 models):** dependable, steady, thoughtful, meaningful, quietly,
+multifaceted, prioritize, echoed, universally. Approval adjectives such as "dependable" fit almost
+anything: replace one with what the thing does, or cut it.
 
 **Hype words:** battle-tested, table stakes, north star, game-changer, blazing-fast.
 
@@ -297,6 +342,11 @@ praise that names no property.
 
 **Watch for:** experts agree, observers note, industry reports, several sources, featured in [a
 list of outlets], trusted by teams worldwide, "such as" before a list the source does not support.
+
+Also watch for invented texture: an expert with a stock name and title ("Dr. Sarah Chen, a leading
+researcher"), quotes that sound like the surrounding prose, "notes" or "explains" where a person
+writes "says", and "most teams I've worked with". Readers who see a lot of AI text spot these
+quickly.
 
 **Problem:** An unnamed authority or a list of names stands in for what was said. When the source
 names who said what, use that. Otherwise cut the claim. A missing citation alone is not a tell.
@@ -612,7 +662,9 @@ An isolated "in order to" is a human habit. Act on it only with other tells near
 ### G3. Metaphor nouns and mannered prose
 
 **Watch for:** substrate, nexus, flywheel, bedrock, endgame, vector (meaning "a way"), wedge in;
-figurative verbs ("the plan holds it", "rides along"); a flourish where a literal phrase exists
+figurative verbs ("the plan holds it", "rides along"); the stock figures of current models: doing
+real work, earns its keep, the risk lives in, sit with, lands, compounds, the trap is, the shape of;
+a flourish where a literal phrase exists
 ("a dial worth turning" for "a parameter worth varying").
 
 **Check the context first:** surface ("API surface"), primitive, harness, scaffolding. These are
@@ -706,6 +758,22 @@ changes. Check every cut sentence for these words.
 **Problem:** A human writer's hedge, aside, opinion or odd detail is removed because it looks like
 a pattern. Keep a specific, unusual detail, mixed feelings, a first-person choice the writer can
 explain, and a real aside or self-correction.
+
+### H5. Fake candor
+
+**Watch for:** honestly, genuinely, frankly, "I don't know how to feel about this", "I keep coming
+back to", "here's what gets me", "what I didn't expect to find", "most people I've talked to", and
+"just" or "actually" spread evenly through every paragraph.
+
+**Problem:** A rewrite that tries to add voice reaches for a stock casual register. Readers who see
+a lot of AI text recognise it as quickly as the encyclopedic one. Voice comes from what the writer
+gave you: a specific detail, a stated opinion, an uneven sentence. Add none of the above.
+
+**Bad rewrite:**
+> Honestly? I don't know how to feel about this one. Four months. Forty services.
+
+**Good rewrite:**
+> Moving 40 services to the new cluster took four months.
 
 ---
 
