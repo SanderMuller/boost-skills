@@ -17,8 +17,9 @@ jobs:
       actions: write
 
     steps:
-      # phpstan.yml, pint-check.yml and rector-check.yml save one cache entry per
-      # commit on main. Delete superseded entries before they fill the repository
+      # Each QA workflow the repo has (phpstan.yml, pint-check.yml, rector-check.yml)
+      # saves one cache entry per commit on main. A prefix with no workflow finds no
+      # entries. Delete superseded entries before they fill the repository
       # cache limit and evict other caches. Scheduled, not chained onto the QA
       # workflows, so `actions: write` stays out of every job that runs third-party
       # actions.
