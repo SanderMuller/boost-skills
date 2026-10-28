@@ -30,3 +30,5 @@ jobs:
       - run: php .github/validate-catalog.php
 
       - run: node .github/test-dangling-symbols.mjs
+
+      - run: composer validate-gitattributes
