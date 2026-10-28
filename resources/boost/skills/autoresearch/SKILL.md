@@ -164,6 +164,12 @@ bash autoresearch/{slug}-compare.sh HEAD HEAD
 
 Record `diff_mad_ms` (the noise of one sample pair) and the A/A `conf` in the research doc.
 
+Run one A/A compare for the holdout scenario too, so a broken holdout shows up now and not at the end of distill:
+
+```bash
+AUTORESEARCH_SCENARIO=holdout bash autoresearch/{slug}-compare.sh HEAD HEAD
+```
+
 Fix the benchmark before the loop starts when either of these holds. More in-process iterations, a larger input, or a quieter machine usually help.
 
 - The A/A `|conf|` is 2 or more. Identical code should not differ, so the run order biases the result.
@@ -459,8 +465,11 @@ If `revert_exit` is not 0, or `HEAD` is still `{pre-sha}`, the revert failed. Ru
 
 ```bash
 vendor/bin/pest --filter={related_test}; echo "tests_exit=$?"
+vendor/bin/phpstan analyse --no-progress <changed-files>; echo "phpstan_exit=$?"
 bash autoresearch/{slug}-compare.sh HEAD~1 HEAD {2 × pairs}; echo "compare_exit=$?"
 ```
+
+Apply the same PHPStan rule as the loop: skip the line when the project has no PHPStan, and treat `phpstan_exit` as 0.
 
 Here the base is the tree WITH the change and the candidate is the tree WITHOUT it. A positive `delta_ms` means the tree is faster without the change.
 
@@ -468,7 +477,7 @@ Here the base is the tree WITH the change and the candidate is the tree WITHOUT 
 loss_pct = -delta_pct        (what removing the change costs)
 conf     = -(the compare's conf)
 
-IF tests fail:                  git reset --hard {pre-sha}; keep the change
+IF tests_exit != 0 OR phpstan_exit != 0: git reset --hard {pre-sha}; keep the change
 ELIF compare_exit != 0:         git reset --hard {pre-sha}; keep the change, mark "unmeasured"
 ELIF conf < 2:                  removal is free — keep the revert, drop the change
 ELIF loss_pct < required_gain(cost): the gain no longer pays — keep the revert, drop the change
@@ -487,7 +496,7 @@ Read the full diff `git diff {base-commit} HEAD` as one change. Look for:
 - A helper or a cache that a later change made unnecessary
 - Dead branches and leftover instrumentation
 
-Make each simplification one commit. Measure it like a loop iteration. Keep it when `conf > -1`, because equal speed with less code is a win.
+Make each simplification one commit. Check and measure it like a loop iteration. Keep it when `conf > -1`, because equal speed with less code is a win.
 
 ### Step 5: Measure the Result and Check the Holdout
 
