@@ -88,7 +88,7 @@ CI checks this inventory against the shipped skills and their tags. The [skill c
 | `ai-guidelines`        | Create and maintain AI skills and guideline files (`.ai/`, `CLAUDE.md`, `AGENTS.md`).                | —               |
 | `autoresearch`         | Autonomous performance loop: benchmark, change code, then keep or revert by measured result.         | `php`           |
 | `backend-quality`      | Two-tier PHP quality gate: Pint + related tests on every change, PHPStan + full suite on completion. | `php`           |
-| `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
+| `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, find the root cause, then fix it.          | —               |
 | `clarify`              | Turn a fuzzy ask into sharp, fact-checked intent — reduce ambiguity, sharpen terms, surface assumptions. Shared core of `interview` and `promptimize`. | —               |
 | `clean-specs`          | Command-only (`/clean-specs`): remove spec files whose work is fully implemented and proven on the base branch, keeping only live work.               | —               |
 | `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
