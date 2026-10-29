@@ -68,7 +68,8 @@ names the pipelines it found. Run the checks normally then, and never guess whic
 
 Exit 0 means every check the pipeline ran passed against **the code currently on disk**. The tree
 is fingerprinted, so this is a comparison rather than a judgement. It answers criterion 3 above
-with a measurement instead of your memory. The message names the steps it counted:
+with a measurement instead of your memory. The fingerprint reads file content, not the commit, so
+a commit of all the verified code keeps the receipt valid. The message names the steps it counted:
 
 > Run [r-4f2a] passed all 5 step(s) the server verified against this tree: [phpstan],
 > [pint-test], [typecheck], [test-js], [lint-all].
@@ -90,8 +91,10 @@ correct. Skip only what the names cover.
 
 Any non-zero exit means run the checks normally. It reports evidence too weak to skip anything
 on. The causes differ — no run recorded, a run against different code, a walk that did not
-finish, a step the server ran and failed, a run that verified nothing, or several pipelines with
-none named. Treat them alike. Do not read the reason as a reason to skip anything.
+finish, a step the server ran and failed, a run that verified nothing, a run under an older
+pipeline definition, a partial commit (the commit moved and the tree still holds uncommitted
+changes), or several pipelines with none named. Treat them alike. Do not read the reason as a
+reason to skip anything.
 
 This is the whole point of the split — the pipeline owns mechanical checks, this skill owns
 judgement. Without it both run the same formatter, analyser and suite, and the project pays twice
