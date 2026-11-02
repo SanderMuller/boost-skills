@@ -5,9 +5,11 @@ declare(strict_types=1);
 /**
  * Validates shipped boost content:
  *  - every SKILL.md against the Agent Skills format (stolt/skill-validator);
- *  - every guideline `.boost-tags.yaml` sidecar manifest as well-formed YAML.
+ *  - every guideline `.boost-tags.yaml` sidecar manifest as well-formed YAML;
+ *  - every companion script under a skill's `scripts/` for syntax
+ *    (`node --check`, `bash -n`, `php -l`).
  * Run in CI by .github/workflows/validate-skills.yml; exits non-zero if any
- * skill or manifest is invalid.
+ * skill, manifest or companion script is invalid.
  */
 
 use Stolt\Ai\Skill\Validator;
@@ -137,6 +139,28 @@ if ($shFiles !== []) {
                     echo "        {$line}\n";
                 }
             }
+        }
+    }
+}
+
+// PHP companions get the same treatment via `php -l`, run with the PHP binary
+// that runs this script, so no probe or skip is needed.
+$phpFiles = glob($skillsDir . '/*/scripts/*.php') ?: [];
+sort($phpFiles);
+
+foreach ($phpFiles as $php) {
+    $rel = str_replace($skillsDir . '/', '', $php);
+    $checkOut = [];
+    $checkStatus = 1;
+    exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($php) . ' 2>&1', $checkOut, $checkStatus);
+
+    if ($checkStatus === 0) {
+        echo "\nPASS  {$rel} syntax (php -l)\n";
+    } else {
+        $assetFailed++;
+        echo "\nFAIL  {$rel} syntax (php -l)\n";
+        foreach ($checkOut as $line) {
+            echo "        {$line}\n";
         }
     }
 }
