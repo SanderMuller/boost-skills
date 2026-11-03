@@ -33,7 +33,7 @@ Everything `sandermuller/boost-skills` ships: skills, tags, guidelines and subag
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
 | `promptimize`          | Turn a rough prompt into one optimized, model-agnostic prompt — close gaps, fact-check against the codebase, rewrite, return only the prompt. | —               |
-| `prune-tests`          | Command-only (`/prune-tests`): audit a PHPUnit suite for low-value tests, refute each deletion independently, remove the rest and prove the result. | `php`           |
+| `prune-tests`          | Command-only (`/prune-tests`): audit a PHPUnit or Pest suite for low-value tests, refute each deletion independently, remove the rest and prove the result. | `php`           |
 | `pull-requests`        | Create and manage your own GitHub PRs via `gh`: write the description, verify, route by risk.        | `github`        |
 | `readme`               | Author and maintain a concise README for a Composer package — stub, comprehensive, or docs-site shape, a problem-first opening, length budgets, curated coverage, voice, staleness/verbosity + docs index/link audits. | `release-automation` |
 | `release-notes`        | Draft GitHub release bodies for Composer packages — structure, length budget, voice, breaking-change callouts, what to omit. | `release-automation` |

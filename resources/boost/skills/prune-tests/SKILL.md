@@ -1,6 +1,6 @@
 ---
 name: prune-tests
-description: "Command-only — invoke with `/prune-tests`; never activates on its own. Audits a PHPUnit suite for low-value tests (framework restatements, echoes, exact duplicates, redundant data-provider rows, tests of deployed migrations and one-offs), has an independent refuter check every proposed deletion, removes the approved tests with a companion script, and proves the result against a baseline before it opens a cleanup PR."
+description: "Command-only — invoke with `/prune-tests`; never activates on its own. Audits a PHPUnit or Pest suite for low-value tests (framework restatements, echoes, exact duplicates, redundant data-provider rows, tests of deployed migrations and one-offs), has an independent refuter check every proposed deletion, removes the approved tests with a companion script, and proves the result against a baseline before it opens a cleanup PR."
 argument-hint: "[optional: target count] [optional: tests/ subdirectory]"
 disable-model-invocation: true
 metadata:
@@ -11,7 +11,7 @@ metadata:
 
 # Prune Low-Value Tests
 
-Remove PHPUnit tests that add no regression protection, from the whole suite or from the `tests/` subdirectory in the arguments. A number in the arguments is a target, not a quota.
+Remove PHPUnit or Pest tests that add no regression protection, from the whole suite or from the `tests/` subdirectory in the arguments. A number in the arguments is a target, not a quota.
 
 **Precision beats recall.** A wrong deletion loses protection and nothing reports it. A missed deletion costs only CI time. When the audit falls short of the target, report the shortfall and ask the user. Never lower the bar to reach a number.
 
@@ -19,15 +19,17 @@ Read the `test-value` skill and the `test-writing` skill before you start. They 
 
 ## When to use this skill
 
-- The user runs `/prune-tests` to clean up a whole PHPUnit suite, or one directory of it.
+- The user runs `/prune-tests` to clean up a whole PHPUnit or Pest suite, or one directory of it.
 
 Not for judging the tests of one change: `test-value` does that.
 
-**PHPUnit only.** The companion script removes class methods, and the baseline step reads `phpunit --list-tests`. Neither works for Pest closures. The project's backend runner is <!--boost:conv path="testing.backend_framework" mode="inline"-->the runner the project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present<!--boost:conv:end-->. When that is Pest, or the suite is mostly `test()` / `it()` closures, stop and tell the user.
+**PHPUnit and Pest.** The project's backend runner is <!--boost:conv path="testing.backend_framework" mode="inline"-->the runner the project uses — detect it from composer.json scripts or whether vendor/bin/pest vs vendor/bin/phpunit is present<!--boost:conv:end-->. Below, `<runner>` is `vendor/bin/pest` for Pest and `vendor/bin/phpunit` for PHPUnit. A Pest suite can also hold PHPUnit test classes, and one run handles both.
 
-## The companion script
+Pest names each test method `__pest_evaluable_` plus a slug of its description: `it('saves a post')` becomes `__pest_evaluable_it_saves_a_post`, and a test inside `describe('guest')` gets `` `guest` → `` before its description. The ledgers and the removal list use these names exactly as `--list-tests` prints them. The script copies this naming from Pest 4. On another major version, remove one test first and check that the name matched. The script removes only a `test()`, `it()`, `todo()` or `arch()` call whose description is a plain string literal. The same holds for every `describe()` around it. Remove anything else by hand, for example a description built from a variable, a test inside `describe(Post::class, …)`, or a test inside a `describe()` that takes an arrow function.
 
-`boost sync` emits `scripts/remove-test-methods.php` beside the rendered `SKILL.md` in each agent's skill directory. Under Claude Code it is at `.claude/skills/prune-tests/scripts/remove-test-methods.php` (swap the skills-dir prefix for another agent). When this skill runs as `prune-tests-user`, from a user-scope sync, the script is at `~/.claude/skills/prune-tests-user/scripts/remove-test-methods.php`. Commands run from the project root, so use that full path. Below, `<script>` is that path. Run it with `php <script>`.
+## The companion scripts
+
+`boost sync` emits a `scripts/` folder beside the rendered `SKILL.md` in each agent's skill directory. It holds `list-cases.php`, which turns `--list-tests` output into file paths, and `remove-test-methods.php`, which removes the approved tests. Under Claude Code the folder is at `.claude/skills/prune-tests/scripts/` (swap the skills-dir prefix for another agent). When this skill runs as `prune-tests-user`, from a user-scope sync, it is at `~/.claude/skills/prune-tests-user/scripts/`. Commands run from the project root, so use that full path. Below, `<scripts>` is that folder. Run each script with `php`.
 
 ## 1. Set up
 
@@ -36,11 +38,11 @@ Not for judging the tests of one change: `test-value` does that.
    ```bash
    AUDIT=/tmp/test-audit-$(basename "$(git rev-parse --show-toplevel)")-$(date +%s); mkdir -p "$AUDIT"; echo "$AUDIT"
    ```
-3. Record the baseline. `--list-tests` prints class names, so convert them to paths. The `sed` below assumes the `Tests\` namespace maps to `tests/`. Check the `autoload-dev` PSR-4 map in `composer.json` and adjust it when the project maps differently. The companion script accepts only paths under `tests/`. When the tests live elsewhere, stop and tell the user. A data-provider row ends in `"row key"` or `#0`. With a subdirectory in the arguments, keep only its lines (`grep '^tests/<dir>/'`) here and in every later step:
+   Run every `sort` and `comm` below with `LC_ALL=C`, because Pest names and row keys can hold bytes such as `→`.
+3. Record the baseline. `--list-tests` prints class names, and `list-cases.php` turns them into paths. A Pest class name (`P\Tests\…`) keeps only the letters and digits of the path, so the script maps it through the files under `tests/`. A PHPUnit class maps from the `Tests\` namespace to `tests/`. The script stops with exit 1 and lists each class it cannot map, for example when two files strip to the same name. Map those by hand. The companion scripts accept only paths under `tests/`. When the tests live elsewhere, stop and tell the user. A data-provider or dataset row ends in `"row key"`, `#0`, `"dataset "key""` or `"(values)"`. A row key can hold `"` and `→`, so the `sed` cuts at the first `"` or `#`, which no method name holds. With a subdirectory in the arguments, keep only its lines (`grep '^tests/<dir>/'`) here and in every later step:
    ```bash
-   vendor/bin/phpunit --list-tests 2>/dev/null | grep '^ - ' \
-     | sed -E 's/^ - Tests\\//; s/\\/\//g; s/::/.php::/; s/^/tests\//' | sort > "$AUDIT/cases-before.txt"
-   sed -E 's/(::[A-Za-z0-9_]+).*/\1/' "$AUDIT/cases-before.txt" | sort -u > "$AUDIT/methods-before.txt"
+   <runner> --list-tests 2>/dev/null | php <scripts>/list-cases.php > "$AUDIT/cases-before.txt"
+   sed -E 's/(::[^"#]+).*/\1/' "$AUDIT/cases-before.txt" | LC_ALL=C sort -u > "$AUDIT/methods-before.txt"
    ```
 4. Run the full suite once with `|| true`, and keep the output. Failures that exist now are not yours. When other agents run tests in parallel, use a database of your own so their runs do not change your result.
 5. Split the test files into chunks of about 15 files. Take the files from the baseline (`cut -d: -f1 "$AUDIT/methods-before.txt" | sort -u`), not from a glob of `tests/`, which can also hold browser tests and helpers.
@@ -58,6 +60,7 @@ Without subagents, audit the chunks yourself, one at a time. Say in the final re
 
 - Do not edit any repository file, change git state, or run tests. Write only the ledger.
 - Read every file in the chunk in full, and the production code each test runs. Do not skip files by name.
+- For a Pest test, copy its name from `$AUDIT/methods-before.txt`. Do not build the slug by hand.
 - A test qualifies only for one of these categories:
   - `framework` — asserts Laravel, PHP or package behaviour: a built-in cast round-trip, a relation type, a built-in rule tested again per field, a route-model-binding 404, a fillable echo, a plain admin-panel column. A custom cast, rule, macro, query builder method, closure or branch is application logic: keep.
   - `trivial` — echoes a getter, a constant, a constructor argument, an enum label, or a job's `$tries` or `$queue`; checks `instanceof` on an object it just built; or asserts something that cannot fail.
@@ -100,21 +103,22 @@ Then do these steps yourself:
 
 ## 4. Remove
 
-1. Write the approved methods to a list with bare `tests/…Test.php::method` lines: no ledger columns, no rows. From the project root, run `php <script> <list>`.
+1. Write the approved methods to a list with bare `tests/…Test.php::method` lines: no ledger columns, no rows. From the project root, run `php <scripts>/remove-test-methods.php <list>`.
    - It stops before any write when a line is malformed or names a missing file.
    - It leaves a file unchanged when the result does not parse.
    - Otherwise it removes what it can, and exits 1 with each line it could not remove, for example an inherited test that lives in a parent.
+   - It prints a note for a Pest file left with no tests.
    - Do not run the same list again: a method it already removed then reports as not in the file. Handle the failed lines by hand.
-2. Remove data-provider rows and inherited tests by hand. When a provider is shared, give the test a local provider instead of changing the shared one. The script keeps a plain `//` or `/* */` comment above a removed method, and a docblock above such a comment. Delete them when they described only that method.
+2. Remove data-provider and dataset rows and inherited tests by hand. When a provider or a named `dataset()` is shared, give the test a local one instead of changing the shared one. The script keeps a plain `//` or `/* */` comment above a removed test, and a docblock above such a comment. Delete them when they described only that test. Delete a `describe()` block left with no tests.
 3. Remove imports, providers, traits and helpers that are now unused, and delete files left with no tests. Then format: when the project enables Rector (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->), run `vendor/bin/rector process` first, then `vendor/bin/pint --dirty --format agent`, or the project's own formatter.
 4. Prove that only the approved items went:
    - Make both lists again as in step 1.3 (`cases-after.txt`, `methods-after.txt`). `comm -23` of the method lists must equal the approved methods; a parent method shows once per concrete subclass. `comm -23` of the case lists must hold only the rows of those methods plus the approved rows.
-   - Removing a test method does not fail the suite, so diff the method names of every changed file against the base:
+   - Removing a test does not fail the suite, so diff the function and dataset names of every changed file against the base. This catches a provider, helper or `dataset()` that went with a test:
      ```bash
-     diff <(git show origin/<base>:<file> | perl -nle 'print $1 if /^\s*public function (\w+)\(/' | sort) \
-          <(perl -nle 'print $1 if /^\s*public function (\w+)\(/' <file> | sort)
+     names() { perl -nle 'print $1.$2 if /^\s*(?:(?:public |protected |private |static )*function (\w+)\(|dataset\(\s*[\x27"]([^\x27"]+))/' | LC_ALL=C sort; }
+     diff <(git show origin/<base>:<file> | names) <(names < <file>)
      ```
-     Each missing name must be an approved method, or a provider or helper you removed on purpose. Use `perl`, not `grep -oP`: macOS ships BSD grep, which has no `-P`.
+     Each missing name must be an approved PHPUnit method, or a provider, helper or dataset you removed on purpose. Pest tests themselves show only in the `comm -23` check above. Use `perl`, not `grep -oP`: macOS ships BSD grep, which has no `-P`.
 
 ## 5. Verify
 
