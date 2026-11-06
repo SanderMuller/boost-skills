@@ -100,7 +100,7 @@ Claude Code subagents this package ships. Each runs in its own context, so it ju
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------|
 | `accessibility-reviewer` | Review interactive markup against WCAG 2.2 AA, citing the exact success criterion for every finding. | `frontend` |
 | `comment-analyzer`     | Check every comment a change added, changed or made false against the code, then judge whether it earns its place. | — |
-| `database-specialist`  | Judge what a MySQL schema change does in production: the algorithm, the lock, the timeout, and where it must run. | `laravel` `database` |
+| `database-specialist`  | Judge what a MySQL or PostgreSQL schema change does in production: the algorithm or lock level, the timeout, and where it must run. | `laravel` `database` |
 | `db-inspector`         | Report the real schema, indexes and data through the Laravel Boost database tools, read-only. | `laravel` `database` |
 | `github-researcher`    | Mine git and GitHub history for the change, pull request and review behind a line of code. | `github` |
 | `performance-reviewer` | Find N+1s, unbounded queries, over-fetching and slow request-path work, with measured cost where it can measure. | `laravel` `database` |

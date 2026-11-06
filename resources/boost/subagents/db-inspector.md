@@ -24,7 +24,7 @@ When the Laravel Boost tools are not available in this session, say so in one li
 1. Take the tables, columns, or data question.
 2. For schema: `database-schema` for columns, types, nullability, defaults, indexes and foreign keys.
 3. For data: targeted `database-query` calls — row counts, distinct values, null rates, a few sample rows. Keep result sets small: use `COUNT(*)`, `GROUP BY` and `LIMIT`.
-4. For a table's size, prefer `information_schema.TABLES.table_rows` over `COUNT(*)` on a large table. It is an estimate, but it does not scan the table.
+4. For a table's size, prefer an estimate over `COUNT(*)` on a large table, because the estimate does not scan the table. On MySQL, read `information_schema.TABLES.table_rows`. On PostgreSQL, read `reltuples` from `pg_class`. For a table that was never vacuumed or analyzed it is `-1` (PostgreSQL 14 and later) or `0` (before 14): treat both as unknown, and read `n_live_tup` from `pg_stat_user_tables` instead. A statistics reset sets that to 0 as well, so confirm a 0 with a bounded `SELECT EXISTS (SELECT 1 FROM ...)`.
 5. Cross-check against the model. The column type is not the whole truth: the model's `casts()`, accessors and mutators decide the shape the application reads and writes. Note every divergence, for example a `string` column cast to an enum or to an array.
 
 ## Report

@@ -32,7 +32,7 @@ Use what the project has. Check `composer.json` and `composer.lock` for the tool
 - **An existing test** that asserts a query count, or that you can run with `DB::listen` or the query log already enabled in the test setup. Run a single named test only.
 - **Laravel Telescope** — read captured queries and requests from its tables with `database-query`.
 - **Laravel Debugbar or Clockwork** — read a stored capture of an earlier request where the project keeps them.
-- **`EXPLAIN`** on a suspect query through `database-query`, and the table's indexes through `database-schema`.
+- **`EXPLAIN`** on a suspect query through `database-query`, and the table's indexes through `database-schema`. Read the plan in the engine's own terms: a full scan is `type: ALL` on MySQL and `Seq Scan` on PostgreSQL. `EXPLAIN ANALYZE` runs the query in full on both engines, so use it only on a query that is cheap to run, never on a production database.
 
 When nothing ran, the finding comes from reading the code: mark it `Inferred` and say what would measure it. A count from a local or CI database says nothing about production volume; mark the production cost `NEEDS-CONFIRMATION`.
 

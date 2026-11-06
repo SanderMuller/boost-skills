@@ -67,7 +67,7 @@ php artisan schema:dump --prune     # writes <connection>-schema.sql, deletes mi
 
 If the squash prunes any **data-migration** (one that seeded or transformed rows, not just schema), those rows are **not** in `schema:dump`'s output — add them to whatever seeds that table on a fresh DB (a seeder, a factory, or your schema-load hook), or the next fresh build / CI loses them (see review check #5).
 
-Another option is cheaper and keeps the rows identical, and it fits a migration that only inserts its own rows: keep the migration file, and delete its row from the dump's `migrations` INSERTs. It does not fit one that transforms rows another migration wrote — on a fresh DB those rows are gone, so the replay changes nothing or fails. The migration then runs again on every fresh DB and writes the same rows. Existing deployments already recorded it, so it never re-runs there. Check #3 reports such a file as `MISSING RECORD` by design — confirm every hit is one of these, not a real gap.
+Another option is cheaper and keeps the rows identical, and it fits a migration that only inserts its own rows: keep the migration file, and delete its record from the dump's `migrations` data. It does not fit one that transforms rows another migration wrote — on a fresh DB those rows are gone, so the replay changes nothing or fails. The migration then runs again on every fresh DB and writes the same rows. Existing deployments already recorded it, so it never re-runs there. Check #3 reports such a file as `MISSING RECORD` by design — confirm every hit is one of these, not a real gap.
 
 Before you prune, find the tests that load a migration file by path — they break when the file goes:
 
@@ -111,9 +111,12 @@ for f in $(git ls-tree -r --name-only origin/<target-branch> database/migrations
   printf '%s' "$DUMP" | grep -q "$n" || echo "MISSING RECORD: $n"
 done
 # record-count sanity: prior baseline records + folded-in file count ≈ new dump records
-# (the INSERT pattern below is MySQL-flavoured — adjust the grep for your driver's dump format)
-echo "new dump:   $(printf '%s' "$DUMP" | grep -c 'INSERT INTO `migrations`')"
-echo "baseline:   $(git show origin/<target-branch>:<schema-path> | grep -c 'INSERT INTO `migrations`')"
+# MySQL dumps one INSERT line per record; PostgreSQL dumps the records as COPY rows
+# (<id> TAB <migration> TAB <batch>), so pick the RECORD pattern for your driver:
+RECORD='INSERT INTO `migrations`'                                        # MySQL
+# RECORD='^[0-9]+[[:space:]]+[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_'       # PostgreSQL
+echo "new dump:   $(printf '%s' "$DUMP" | grep -cE "$RECORD")"
+echo "baseline:   $(git show origin/<target-branch>:<schema-path> | grep -cE "$RECORD")"
 echo "+ files:    $(git ls-tree -r --name-only origin/<target-branch> database/migrations/ | wc -l)"
 # spot-check a few of the newest migrations' columns actually exist in the dump:
 printf '%s' "$DUMP" | grep -c "<a_column_added_by_the_latest_migration>"   # expect > 0
@@ -141,7 +144,7 @@ for f in $(git diff --name-only --diff-filter=D origin/<target-branch> "pr-<PR>"
 done
 # for each, its rows must be present on a fresh DB — in the schema dump's own INSERTs, in
 # the relevant seeder, or by the file being kept while its row is dropped from the dump's
-# `migrations` INSERTs (so it runs again). Grep the right seed for a value it inserts:
+# `migrations` records (so it runs again). Grep the right seed for a value it inserts:
 grep -c "<a value the data-migration inserts>" "<seeder-or-seed-dump-path>"   # expect > 0
 ```
 

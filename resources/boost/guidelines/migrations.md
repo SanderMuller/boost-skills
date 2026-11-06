@@ -34,7 +34,7 @@ $table->string('description');
 
 A migration runner records a migration only after its whole `up()` returns, and it wraps the run in a transaction only for engines it treats as supporting transactional DDL. Laravel does that for PostgreSQL and SQL Server, and not for MySQL, MariaDB or SQLite. Without that transaction, a run that dies halfway leaves the applied statements in place with nothing recorded, and the retry fails on the first statement it already applied, blocking every later migration. Check which side your engine and runner fall on before assuming a failed migration rolled back.
 
-Make each statement in a multi-statement migration skippable when it is already applied, using the runner's own column and index checks.
+Make each statement in a multi-statement migration skippable when it is already applied, using the runner's own column and index checks. On PostgreSQL this also applies to a migration that opts out of the transaction, for example to build an index with `CREATE INDEX CONCURRENTLY`, which PostgreSQL rejects inside a transaction (in Laravel, `public $withinTransaction = false;`). A failed concurrent build leaves an invalid index that `Schema::hasIndex()` still reports, so check `pg_index.indisvalid` too, and drop the invalid index before the retry.
 
 ```php
 // ❌ WRONG — a retry after a half-applied run dies on "Duplicate column name"
@@ -53,4 +53,4 @@ if (! Schema::hasIndex('orders', 'orders_reference_index')) {
 }
 ```
 
-Keep slow work out of the migration on a large table: build an index, backfill a column, or add a foreign key as a separate job or an out-of-band task, not inside the deploy step. On MySQL, where the session has the `database-specialist` subagent, dispatch it before any DDL on a large table: it names the algorithm and lock each statement takes.
+Keep slow work out of the migration on a large table: build an index, backfill a column, or add a foreign key as a separate job or an out-of-band task, not inside the deploy step. Where the session has the `database-specialist` subagent, dispatch it before any DDL on a large table: it names the algorithm or lock level each statement takes, on MySQL and PostgreSQL.
