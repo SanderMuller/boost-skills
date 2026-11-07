@@ -20,7 +20,8 @@ A squash folds every migration file into one schema baseline and **deletes the m
 
 - **Squash at a sync point.** A squash rewrites the baseline that *every* branch builds from, so do it when the target branch and the active development branch are aligned — not mid-flight while feature branches carry migrations the baseline won't include. The target branch is whichever branch the baseline represents (commonly the default/release branch — Base-branch resolution is the same one the `pull-requests` skill uses).
 - **Know which file is tracked, and how it's loaded.** Laravel's `schema:dump` writes `database/schema/<connection>-schema.sql` (e.g. `mysql-schema.sql`) and `MigrateCommand::schemaPath()` loads that file on a fresh `migrate`. That standard `.sql` file is the tracked baseline for most projects — verify which path your project commits before you start.
-  - **Optional project variant:** some projects track a non-default filename (e.g. `mysql-schema.dump`) because `schemaPath()` prefers a `.dump` over a `.sql`. If yours does, the process gains a rename step: dump → **rename the written `.sql` to the tracked name**. Skipping the rename leaves an untracked `.sql` plus a stale tracked file. If your project tracks the standard `.sql`, there is no rename.
+  - **Optional project variant, MySQL only:** some projects track a non-default filename (e.g. `mysql-schema.dump`) because `schemaPath()` prefers a `.dump` over a `.sql`. If yours does, the process gains a rename step: dump → **rename the written `.sql` to the tracked name**. Skipping the rename leaves an untracked `.sql` plus a stale tracked file. If your project tracks the standard `.sql`, there is no rename.
+  - **On PostgreSQL, track the `.sql` file.** Laravel loads any other extension with `pg_restore`, which rejects the plain-text file that `schema:dump` writes.
 - **CI may not load the schema on a squash PR.** Confirm which of your checks actually rebuild a DB from the baseline. If a squash PR targets a branch your test workflows skip (or only external scanners like Snyk report), then *none* of them load the schema — an incomplete or contaminated dump passes green and the checks below are the **only** gate.
 
 ## Creating a squash correctly
@@ -61,7 +62,7 @@ comm -13 \
 
 ```bash
 php artisan schema:dump --prune     # writes <connection>-schema.sql, deletes migration files
-# Optional project variant — only if your project tracks a non-default schema filename:
+# Optional project variant — only on MySQL, and only if your project tracks a non-default schema filename:
 # mv database/schema/mysql-schema.sql database/schema/mysql-schema.dump
 ```
 
@@ -99,7 +100,7 @@ gh pr view "<PR>" --json baseRefName -q .baseRefName   # expect: the baseline's 
 
 On another host, read the PR's target from its UI/API, or skip this check when reviewing a local working tree you already know the base of.
 
-**2. The tracked schema file changed, with no stray untracked dump** — the PR/working tree must modify the tracked baseline file and leave **no** untracked schema file (e.g. a `mysql-schema.sql` left behind when the project tracks a renamed file).
+**2. The tracked schema file changed, with no stray untracked dump** — the PR/working tree must modify the tracked baseline file and leave **no** untracked schema file (e.g. a `mysql-schema.sql` left behind when the project tracks a renamed file). On PostgreSQL, the tracked baseline ends in `.sql` and no `<connection>-schema.dump` sits beside it: a `.dump` file wins in `schemaPath()`, and `pg_restore` then fails to load it.
 
 **3. Completeness — no recent migrations missing (the most common defect).** Every deleted migration must be recorded in the dump, and the newest migrations' columns must be present. A DB behind HEAD yields a dump missing the latest migrations' *schema and records*; merging then deletes those files while their schema is absent from the baseline → fresh installs miss tables/columns and the app breaks against its own schema.
 
@@ -161,6 +162,7 @@ php artisan test --parallel --recreate-databases
 | Symptom | Cause | Catch with |
 |---|---|---|
 | Untracked schema `.sql` left beside a stale tracked dump | forgot the rename (projects tracking a non-default filename) | check #2 |
+| Fresh migrate fails: `pg_restore: error: input file appears to be a text format dump` | a PostgreSQL baseline tracked or renamed as `.dump` | check #2 |
 | Fresh installs miss tables/columns | dumped from a DB **behind** the target HEAD | check #3 |
 | Dump stops at some migration, later ones absent | a CLI rebuild of the throwaway DB aborted on a data-migration that only guards itself in test mode | check #3 |
 | Baseline has extra/unreleased columns | dumped from a **dev-branch-migrated** DB | check #4 |
