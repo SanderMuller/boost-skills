@@ -127,7 +127,7 @@ This skill normally ships alongside `readme` — pre-release declares it in `boo
 
 #### 5b. boost-core skills + guidelines
 
-boost-core (`vendor/bin/boost sync`) syncs the `.ai/skills/` and `.ai/guidelines/` directories to `AGENTS.md`, `GEMINI.md`, and per-agent `<.agent>/skills/` directories. Sources ship with the package (in `resources/boost/skills/` for package-author packages). On the consumer side, the generated skill, command and subagent directories are gitignored; `AGENTS.md` and `GEMINI.md` stay tracked.
+boost-core (`vendor/bin/boost sync`) syncs the `.ai/skills/` and `.ai/guidelines/` directories to `AGENTS.md`, `GEMINI.md`, and per-agent `<.agent>/skills/` directories. Sources ship with the package (in `resources/boost/skills/` for package-author packages). On the consumer side, the generated skill and command directories and the `.claude/agents/boost/` subtree are gitignored; `AGENTS.md` and `GEMINI.md` stay tracked.
 
 Check each edited-or-eligible doc:
 
@@ -140,10 +140,10 @@ If any `.ai/` file changed, force a sync to verify locally:
 
 ```bash
 vendor/bin/boost sync || true
-git status --short
+git status --short || true
 ```
 
-Commit the `.ai/` sources and the regenerated `AGENTS.md` / `GEMINI.md`. The skill, command and subagent directories are gitignored; consumers get the shipped sources on their next sync.
+Commit the `.ai/` sources and the regenerated `AGENTS.md` / `GEMINI.md`. The generated skill and command directories and the `.claude/agents/boost/` subtree are gitignored. Consumers get the shipped sources on their next sync.
 
 #### 5c. Docs build gate (docs-site repos only)
 

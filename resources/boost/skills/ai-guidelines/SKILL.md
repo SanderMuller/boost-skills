@@ -29,7 +29,7 @@ boost-core does not generate `CLAUDE.md`. By default, Claude Code reads `AGENTS.
 └── {skill-name}/SKILL.md         # Skills for Codex and GitHub Copilot
 ```
 
-**Important**: Only edit files in `.ai/`. `vendor/bin/boost sync` generates the `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, etc. directories and overwrites them. boost-core's managed `.gitignore` block (sentinels `# >>> boost (managed) >>>` … `# <<< boost (managed) <<<`) ignores the generated skill, command and subagent directories, so they never get committed.
+**Important**: Only edit files in `.ai/`. `vendor/bin/boost sync` generates the `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, etc. directories and overwrites them. boost-core's managed `.gitignore` block (sentinels `# >>> boost (managed) >>>` … `# <<< boost (managed) <<<`) ignores the generated skill and command directories and the `.claude/agents/boost/` subtree, so they never get committed.
 
 ## How sandermuller/boost-core Works (in Package Context)
 
@@ -131,7 +131,7 @@ This syncs `.ai/` changes to per-agent locations:
 | `.agents/skills/`                 | Skills shared by Codex, GitHub Copilot and Antigravity |
 | `.amp/skills/`, `.gemini/skills/`, `.junie/skills/`, `.kiro/skills/`, `.opencode/skills/` | Per-agent skill dirs |
 
-**The skill, command and subagent directories are gitignored** via boost-core's managed `.gitignore` block, so they never get committed. `AGENTS.md` and `GEMINI.md` stay tracked, so a diff shows what the agents read. Commit them with the `.ai/` sources after each sync.
+**The generated skill and command directories and the `.claude/agents/boost/` subtree are gitignored** via boost-core's managed `.gitignore` block, so they never get committed. `AGENTS.md` and `GEMINI.md` stay tracked, so a diff shows what the agents read. Commit them with the `.ai/` sources after each sync.
 
 ## Checklist for Changes
 
@@ -141,5 +141,5 @@ This syncs `.ai/` changes to per-agent locations:
 - [ ] Every fallback path that is *lesser* than the primary one states what it loses
 - [ ] Include clear activation triggers in skill descriptions
 - [ ] **Run `vendor/bin/boost sync`**
-- [ ] **Verify `git status`** shows changes in the source tree and `AGENTS.md` / `GEMINI.md` only — the skill, command and subagent directories are gitignored
+- [ ] **Verify `git status`** shows changes in the source tree and `AGENTS.md` / `GEMINI.md` only — the generated skill and command directories and the `.claude/agents/boost/` subtree are gitignored
 - [ ] **Commit the source files** — `.ai/…` or a package's `resources/boost/…`, plus the regenerated `AGENTS.md` / `GEMINI.md`; a package's changes reach consumers on their next sync

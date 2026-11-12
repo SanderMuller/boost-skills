@@ -51,13 +51,14 @@ closing paragraph that restates the opening one.
 A summative verdict is the most frequent form: a demonstrative and a label that sums up what the
 reader just read. "That's the real risk.", "That's the trade-off.", "That's the whole point.",
 "That's what makes it work.", "This is the key.", "Which is exactly the problem.", "And that's
-the catch." Even a single one is a tic, and one after every paragraph tires the reader quickly. A6
-covers the same kind of label when it comes before the point instead of after it.
+the catch." Even a single one is a tic. One after every paragraph tires the reader quickly. A6
+covers the same kind of label when it comes before the point.
 
 **Problem:** The line asks the reader to pause on a claim instead of adding to it. Cut a closer
-that repeats. When the verdict is the only place the source ranks or flags the fact ("the real
-risk", "the main problem"), keep that ranking: put it at the front of the fact as a plain
-statement, and cut the trailing label. Keep a short sentence that adds a new fact or consequence.
+that repeats, and cut a verdict label. Do not move the label to the front of the fact, because
+that makes it an A6 label. When the verdict was the only place the source ranked the fact, the
+cut drops that ranking: in chat mode, name it in the change list. Keep a short sentence that adds
+a new fact or consequence.
 
 **Before:**
 > We cut the migration from forty minutes to six. Six. That's the whole story.
@@ -69,7 +70,7 @@ statement, and cut the trailing label. Keep a short sentence that adds a new fac
 > The importer skips rows it cannot parse and logs nothing. That's the real risk.
 
 **After:**
-> The real risk is that the importer skips rows it cannot parse and logs nothing.
+> The importer skips rows it cannot parse and logs nothing.
 
 ### A3. Sayings that sound deep
 
@@ -153,27 +154,30 @@ common shapes:
 
 **Problem:** The pair stages a twist instead of stating how the two claims relate. The reader has
 to guess whether the second sentence narrows the first, contradicts it, or only decorates it, and
-the mirrored shape makes every line sound like a slogan. Current models write this often, and a
-rewrite that shortens sentences creates it too (see H6). Write one
-sentence that states the relation with a connector: "but", "except", "because", "only when",
-"whether or not". If the twist adds nothing, cut it. If it carries a hedge or a claim but the
-source gives no condition ("Fast. Mostly."), keep the hedge in plain words ("fast in most cases")
-and invent no condition; in chat mode, name the gap in the change list. A7 decides the shape only.
-Whether the claim itself stays is the question C5 and C11 answer.
+the mirrored shape makes every line sound like a slogan. A rewrite that shortens sentences creates
+it too (see H6).
 
-The tell is the habit, not a single use. In an essay or a post, one fragment the writer chose on
-purpose stays (H4). In fiction and dialogue, clipped lines can be a character's voice or the
-project's style, and only the author knows which. When most speakers share the same clipped shape,
-report the lines and the speakers instead of rewriting them, and ask whose voice it is. Rewrite
-them only when the user or the project's style guide asks for full sentences, and even then keep
-the clipped style for any character the author names. A rewrite must not invent the relation
-the line leaves open: "We didn't" does not say what failed.
+Write one sentence that states the relation with a connector: "but", "except", "because", "only
+when", "whether or not". If the twist adds nothing, cut it. If it carries a hedge but the source
+gives no condition ("Fast. Mostly."), keep the hedge in plain words ("fast in most cases"). Invent
+no condition, and in chat mode name the gap in the change list. A7 decides the shape only. C5 and
+C11 decide whether the claim itself stays.
+
+**Strength.** A7 is a strong tell when the shape repeats in a text. A single fragment that a writer
+chose on purpose stays (H4).
+
+**Dialogue.** Clipped lines can be a character's voice or the project's style, and only the author
+knows which. When most speakers share the same clipped shape, report the lines and the speakers,
+and ask whose voice it is. In gate mode, leave dialogue as it is. Rewrite it only when the user or
+the project's style guide asks for full sentences, and keep the clipped style for any character
+the author names. A rewrite must not invent the relation a line leaves open: "Nine doors. One key."
+does not say whether the key opens one door or all of them.
 
 **Before:**
 > The cache is fast. Mostly. It slows down after a deploy. Not unlike a cold start.
 
 **After:**
-> The cache is fast, except right after a deploy, when it is slow until it warms up.
+> The cache is fast, except after a deploy, when it slows down like a cold start.
 
 **Before (dialogue, three speakers):**
 > "Wrong map. Right valley." / "The rope held. Our nerve didn't." / "Nine doors. One key."
@@ -182,7 +186,7 @@ the line leaves open: "We didn't" does not say what failed.
 > All three speakers use the clipped pair (A7), so the shape reads as one voice for everyone. Which character, if any, should keep it?
 
 **After (the author keeps the clipped voice for the first speaker only):**
-> "Wrong map. Right valley." / "The rope held, but we lost our nerve." / "There are nine doors and only one key."
+> "Wrong map. Right valley." / "The rope held, but we lost our nerve." / "There are nine doors and one key."
 
 ---
 
@@ -302,7 +306,7 @@ actor clearer. Imperative commit subjects and terse reference lines ("Optional. 
 
 **Watch for:** sentence after sentence of 8 to 20 words; runs of four or more short sentences;
 only periods and commas in the whole text; paragraphs of near-equal length. Two short sentences
-set against each other are A7, which is a strong tell on its own.
+set against each other are A7.
 
 **Problem:** Models trained away from dashes lean on short sentences of even size. Each sentence
 reads fine, and the text still reads as machine-made, because human writing is uneven. Join two
@@ -397,7 +401,7 @@ when it states a real consequence, and then make it a clause.
 renowned, a diverse array of, seamless. Newer models are more subtly positive, so also watch for
 praise that names no property.
 
-Slogans and stock lines are the same tell: "Built for teams that ship", "Unlock your potential",
+Slogans and stock lines are the same tell: "Made for builders", "Take your workflow further",
 "Work smarter, not harder".
 
 **Problem:** The text reads like an advertisement. State what the thing is and what it does. A
@@ -557,17 +561,18 @@ uses straight quotes, for example in Markdown source that other tools parse.
 
 ### D5. Headings written as copy
 
-**Watch for:** rhythmic or contrasting titles ("Hard to describe. Easy to recognize."), metaphors
-and personification ("Where your data comes alive", "The engine under the hood"), slogans ("Built
-for teams that ship"), vague labels ("A closer look", "Why it matters", "The bigger picture",
-"The decision, on one screen"). Headings and field labels phrased as a question or a Wh- clause
-("What you get", "Who can see this") are *weak alone*: "How it works" is an ordinary human
-heading. Rename one only when it does not tell the reader what the section holds.
+**Watch for:** rhythmic or contrasting titles ("Easy to start. Hard to outgrow."), metaphors and
+personification ("Where your data comes alive", "The engine under the hood"), slogans ("Made for
+builders"), and labels that name no topic ("Why it matters", "The bigger picture", "Under the
+hood", "The decision, on one screen").
+
+A heading phrased as a question or a Wh- clause ("How it works", "What you get") is *weak alone*.
+It is often an ordinary human heading. Rename one only when it does not tell the reader what the
+section holds.
 
 **Problem:** A heading helps the reader find a section. A heading written for effect hides what
-the section holds. Write a heading like an email subject line, not a movie trailer: name the
-topic in literal words, as a noun or a short noun phrase that matches what the section holds
-("Rationale" for "Why this matters", "Visibility" for "Who can see this").
+the section holds. Name the topic in literal words, as a noun or a short noun phrase that matches
+the section's content.
 
 **Before:**
 > ## Why it matters
@@ -878,12 +883,10 @@ word in the writer's own text is theirs, and H4 keeps it.
 
 ### H6. Cut too far
 
-**Problem:** Current models often write too little, and a pass that keeps cutting leaves text the
-reader cannot follow: short
-sentences with no stated link between them, a missing reason, a step the reader has to guess, or
-the clipped pairs of A7. Shorter is not the goal. Keep the explanation the reader needs, join
-sentences that carry one idea, and say how two claims relate. On a `voice` surface, stay inside
-its sentence limits.
+**Problem:** A pass that keeps cutting leaves text the reader cannot follow. Look for short
+sentences with no stated link between them, a missing reason, a step the reader has to guess, and
+the clipped pairs of A7. Shorter is not the goal. Keep the explanation the reader needs, and join
+sentences that carry one idea. On a `voice` surface, stay inside its sentence limits.
 
 **Original:**
 > Failed jobs now retry up to three times. The wait between attempts doubles each time, the same backoff the import queue already uses.
@@ -891,8 +894,7 @@ its sentence limits.
 **Bad rewrite:**
 > Retries are on. Three attempts. Backoff doubles. Not unlike the import queue.
 
-**Good rewrite:**
-> Failed jobs now retry up to three times, and the wait doubles after each attempt, as it already does in the import queue.
+**Good rewrite:** no change. The original has no tell.
 
 ---
 
