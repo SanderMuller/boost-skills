@@ -242,7 +242,7 @@ else
 fi
 ```
 
-**Each candidate carries its kind, and the kind picks the command.** A symbol is checked by content (`git grep -qF`), a created path by existence (`git cat-file -e`) — at *both* the base branch and the baseline. Mixing them is a live defect, not a nicety: grepping the tree for `config/publishing.php` finds nothing even when that file has existed for years, because a file rarely contains its own path, so the candidate reads `NEW` and dates a spec that shipped nothing.
+**Each candidate carries its kind, and the kind picks the command.** A symbol is checked by content (`git grep -qF`), a created path by existence (`git ls-tree --name-only`) — at *both* the base branch and the baseline. Mixing them is a live defect, not a nicety: grepping the tree for `config/publishing.php` finds nothing even when that file has existed for years, because a file rarely contains its own path, so the candidate reads `NEW` and dates a spec that shipped nothing.
 
 **Match symbols as fixed strings, never as patterns.** `git grep` reads its argument as a regular expression, so a candidate like `Article.Status` matches `ArticleXStatus` — verified. Pass `-F`. Where one candidate is a substring of another name, check the boundary too, or two different symbols read as one.
 

@@ -51,14 +51,14 @@ Do NOT use for:
 
 2. **Get state, branch, and file list:**
    ```bash
-   gh pr view <number> --json state,headRefName,mergedAt,merged,files,url
+   gh pr view <number> --json state,headRefName,mergedAt,files,url
    ```
    Use `gh pr diff <number>` separately if you need to read the changed code — after narrowing which files matter.
 
 3. **Determine the PR state** — it affects the fix workflow:
-   - **Merged** (`merged: true`): the code is already integrated. The fix needs a new branch off the base branch the PR targeted.
-   - **Open** (`merged: false`, `state: "OPEN"`): the fix can be pushed to the existing branch.
-   - **Closed, unmerged** (`merged: false`, `state: "CLOSED"`): the previous PR was abandoned — treat as not merged and start a fresh fix branch.
+   - **Merged** (`state: "MERGED"`): the code is already integrated. The fix needs a new branch off the base branch the PR targeted.
+   - **Open** (`state: "OPEN"`): the fix can be pushed to the existing branch.
+   - **Closed, unmerged** (`state: "CLOSED"`): the previous PR was abandoned — treat as not merged and start a fresh fix branch.
 
 4. **Read the relevant code** — focus on the files most likely related to the reported issue.
 

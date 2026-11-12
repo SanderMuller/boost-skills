@@ -124,10 +124,10 @@ If adoption is the same as the prior version (just `composer update`), omit the 
 - **Tables** explaining a decision matrix or a benchmark grid. A table in a release body is an essay in disguise. (An exception: a block a tool injects between markers, for example `<!-- benchmark-start -->`. That is tooling output, not drafting.)
 - **`## Requires` / `## Dependencies` saying "unchanged from prior".** If nothing changed, don't write the section.
 - **`## Validation` / quality-gate counts** ("27/27 skills valid", "PHPStan baseline drift: none"). CI green is implied.
-- **`## Acknowledgments` / pattern-tracking sections** ("Ships absorption-pattern data point #2"). Internal observation — belongs in strategy docs.
+- **`## Acknowledgments` / pattern-tracking sections** ("Ships pattern-tracking data point #2"). Internal observation — belongs in strategy docs.
 - **`## Internal` quality-gate detail** and refactor essays. Internal entries are one line each, three at most, or the section goes.
 - **Process choreography** (named release cadences, "Per the load-bearing-only floor-pin rule we codified…").
-- **Peer-handle credits / internal session IDs.** Real-name or @-handle credits OK; internal peer codes (`b020i4st` etc.) never.
+- **Peer-handle credits / internal session IDs.** Real-name or @-handle credits OK; internal peer codes (`a1b2c3d4` etc.) never.
 - **Dependency bumps to other packages** unless they affect users — then callout the implication, not the bump.
 - **Internal test refactors, README typo fixes.**
 - **"Unchanged from prior" segments** in any section.

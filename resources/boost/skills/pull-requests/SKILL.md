@@ -58,7 +58,7 @@ Before creating the PR, verify all of the following:
 Which tool resolves the issue depends on the key style the project's `{issue_key}` patterns use — `gh issue` only ever reads or writes **GitHub** issues, so never run it against a non-GitHub key:
 
 - **Bare GitHub issue number** (e.g. `1234`): verify with `gh issue view <number> --json number,title,state`; create with `gh issue create --title "<title>" --body "<why>"` (add `--label` / `--assignee` / `--project` per project convention), capturing the new number from the URL it prints.
-- **Jira-style key** (e.g. `HPB-1234`): verify and create through the project's Jira tooling — the read-only `mcp__<jira>__jira_get_issue` tool (substitute `<jira>` with your Jira MCP namespace <!--boost:conv path="mcp.jira" mode="inline"-->mcp-atlassian<!--boost:conv:end-->) to confirm an existing one, and the `jira-create` skill to open a new one. Do not use `gh issue` for these, nor `jira-updates` — that is a post-PR mutation flow, not a pre-PR lookup.
+- **Jira-style key** (e.g. `ABC-123`): verify and create through the project's Jira tooling — the read-only `mcp__<jira>__jira_get_issue` tool (substitute `<jira>` with your Jira MCP namespace <!--boost:conv path="mcp.jira" mode="inline"-->mcp-atlassian<!--boost:conv:end-->) to confirm an existing one, and the `jira-create` skill to open a new one. Do not use `gh issue` for these, nor `jira-updates` — that is a post-PR mutation flow, not a pre-PR lookup.
 
 ---
 
@@ -117,7 +117,7 @@ This project's configured pre-PR gates:
 <!--boost:conv path="pr.gates" mode="yaml"-->none — no pre-PR gates<!--boost:conv:end-->
 ```
 
-The gates are a typed-policy array. Each gate has a `type` discriminator dispatching to one of three closed-vocabulary handlers + an `mcp_tool` open extension. Enforce each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`. The gate-type reference below explains each `type`.
+The gates are a typed-policy array. Each gate has a `type` discriminator: two closed-vocabulary handlers (`skill_invoked`, `shell_command`) and the `mcp_tool` open extension. Enforce each gate in declared order. When a gate fails, the `on_missing` policy determines flow: `stop_and_request` halts PR creation; `warn` prints a warning and continues to the next gate; `skip` silently continues. Only `stop_and_request` halts the flow — subsequent gates still run under `warn` / `skip`. The gate-type reference below explains each `type`.
 
 ### Gate types
 
@@ -133,7 +133,7 @@ Vendor verifies the named skill was invoked in the current conversation. Used fo
 ```
 
 - `window: in_session` — skill must have been invoked anywhere in the current conversation.
-- `window: since_last_code_change` — skill must have been invoked AFTER the most recent `Edit`/`Write` tool call to a file NOT inside boost-core's managed agent paths (returned by `vendor/bin/boost paths --managed` — typically `.ai/`, `.claude/`, `.github/skills/`, `.agents/`). Editing skill files or agent-managed paths does not reset the gate.
+- `window: since_last_code_change` — skill must have been invoked AFTER the most recent `Edit`/`Write` tool call to a file NOT inside `.ai/`, `.claude/`, or a boost-core managed agent path (returned by `vendor/bin/boost paths --managed` — for example `.agents/skills/` and `.github/prompts/`). Editing skill files or agent-managed paths does not reset the gate.
 
 When the gated skill is `codex-review` and the PR template carries a codex-review checkbox, satisfying the gate is not enough to tick it — the checkbox is proof-gated on the review's commit SHA. See [Codex-review checklist item](#codex-review-checklist-item).
 
@@ -351,7 +351,7 @@ This skill applies the label; it does not enforce it. Nothing here blocks a PR t
 
 ## PR Title
 
-Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline"-->none configured — ask the user once per session for the desired title format<!--boost:conv:end-->. Recognized placeholders:
+Follow the configured PR title format: <!--boost:conv path="pr.title_format" mode="inline"-->none configured — where the `conventional-commits` guideline is loaded, use `{type}: {short_title}` without asking; otherwise ask the user once per session for the desired title format<!--boost:conv:end-->. Recognized placeholders:
 
 - `{issue_key}` — the tracker issue key. Resolved from the branch name's issue segment when the branch matches an `{issue_key}` pattern — a Jira-style key (`ABC-123`) or a bare GitHub issue number (`1234`), whichever the project's patterns use.
 - `{short_title}` — concise summary of the change, imperative mood ("Add feature" not "Added feature").
@@ -428,9 +428,9 @@ Write like you'd describe it to a teammate over coffee. Audience by PR type: use
 |---|---|
 | "strengthens 13 weak tests via data-provider collapses" | "tightens 13 tests by replacing repeated assertions with a single data provider" |
 | "producing a flurry of unrelated feedback toasts" | "showing several unrelated toast notifications at once" |
-| "defers an unconditional transcription-service computed into the QA-only debug block" | "only loads the transcription service when the QA debug panel is open" |
+| "defers an unconditional search-index build computed into the admin-only debug block" | "only builds the search index when the admin debug panel is open" |
 
-- **No compound-noun stacks** ("transcription-service computed") — break into verb + object.
+- **No compound-noun stacks** ("search-index build computed") — break into verb + object.
 - **No metaphors** ("flurry of", "cascade of", "fan out to") — say what actually happens.
 - **No diff-only jargon** ("computed", "selector", "reducer") unless the audience is exclusively engineers in that subsystem.
 

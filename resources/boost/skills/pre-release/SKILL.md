@@ -1,14 +1,15 @@
 ---
 name: pre-release
-description: "Pre-push / pre-release checklist. Runs Rector, Pint, full test suite, PHPStan, and audits README, the docs site (docs/ pages, index sync, local build), and `.ai/` docs for staleness. Activate before: pushing to remote, tagging a release, writing release notes, or when user mentions: pre-release, pre-push, release checklist, ship, cut release, release notes."
+description: "Pre-push / pre-release checklist. Runs Rector (when enabled), Pint, full test suite, PHPStan, and audits README, the docs site (docs/ pages, index sync, local build), and `.ai/` docs for staleness. Activate before: pushing to remote, tagging a release, writing release notes, or when user mentions: pre-release, pre-push, release checklist, ship, cut release, release notes."
 metadata:
   boost-tags: "php github release-automation"
   boost-requires: "readme release-notes upgrading"
+  schema-required: "^1"
 ---
 
 # Pre-Release Checklist
 
-Run this full gauntlet before pushing commits that may be tagged as a release or before drafting release notes. It catches regressions the two-tier `backend-quality` skill skips — Rector drift and stale docs shipped to downstream projects.
+Run this full gauntlet before pushing commits that may be tagged as a release or before drafting release notes. It adds what the two-tier `backend-quality` skill does not cover: the CI matrix, the release gates, and stale docs shipped to downstream projects.
 
 **In a release-please repository, most of this skill does not apply.** When `release-please-config.json` exists at the repository root, run steps 0–5 as a quality gate only. Land every fix through a PR with a Conventional Commits title, and then stop. Steps 6–8, the release-notes file, the `verified-sha` pin and the `gh release create` handoff do not apply: release-please writes the changelog and creates the tag when the user merges its release PR. The `release-please` skill owns the rest of the release, including the CI gate on the release PR. Where that skill is not synced, follow the `release-please` guideline.
 
@@ -38,7 +39,7 @@ Always append `|| true` to verification commands so output is captured even on f
 
 - **A green feature-branch / open-PR CI is NOT the release gate.** The tag is cut from the release branch, so the SHA that must be green, pinned, and tagged is the release branch's HEAD *after the PR merges*. Step 6's "CI green on the pushed commit" means the **merge commit on the release branch**, re-run after merge — not the branch CI from before.
 - **Do NOT draft release notes (step 7) or hand off a tag (8a) while the PR is still open.** The PR-flow order is: branch CI green → **merge PR → re-run step 6 on the release branch's merge commit** → 7 (notes pinned to that merge SHA) → 8a → tag → 8b.
-- **Tagging before the merge points the tag at the release branch's pre-merge HEAD**, which contains none of the PR's work — a green-but-empty release. This has actually shipped: a `1.2.0` tag cut while its PR was still open pointed at pre-feature `main` and carried zero of the feature; the empty version still resolved on Packagist, so a dependent package pinning `^1.2` would have installed an engine that wasn't there. Recovery was delete-tag + re-tag at the real merge commit. Step 8a check D (content presence) below is the backstop, but the primary rule is: **merge first, then notes, then tag.**
+- **Tagging before the merge points the tag at the release branch's pre-merge HEAD**, which contains none of the PR's work — a green-but-empty release. This has actually shipped: a `1.2.0` tag cut while its PR was still open pointed at pre-feature `main` and carried zero of the feature; the empty version still resolved on Packagist, so a dependent package pinning `^1.2` would have installed an engine that wasn't there. Recovery was delete-tag + re-tag at the real merge commit. Step 8a check D (PR merged) below is the backstop, but the primary rule is: **merge first, then notes, then tag.**
 
 **The concrete commands in steps 6–8 use `main` as the release branch** — the common case. If your release branch is not `main` (a `release/*` line, a maintenance branch, an rc-prep branch), the release branch is wherever the tag will be cut from: substitute it in every `origin/main` / `refs/heads/main` reference below, and pin/verify against *that* branch's post-merge tip. The flow is identical; only the branch name changes.
 
@@ -55,7 +56,9 @@ A branch that is behind fails at `git push`, after every local check has already
 
 If the branch is behind, rebase (or merge) first, then start at step 1. If it has diverged, resolve that before running anything — see the `resolve-conflicts` skill.
 
-### 1. Rector
+### 1. Rector (only when the project opts in)
+
+Rector enabled for this project: <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->. Skip this step unless that value is `true`, as in the `backend-quality` skill. When it applies:
 
 ```bash
 vendor/bin/rector process || true
@@ -69,17 +72,19 @@ Must report **0 files changed**. If Rector modifies files, review the diff, comm
 vendor/bin/pint --dirty --format agent || true
 ```
 
-Must be clean. Re-run after Rector — Rector fixes can introduce style drift.
+Must be clean. When step 1 ran, re-run after Rector — Rector fixes can introduce style drift.
 
 ### 3. Full Test Suite
 
-```bash
-vendor/bin/pest || true
+The project's test runner is <!--boost:conv path="testing.backend_framework" mode="inline"-->auto-detected from the project layout — composer.json scripts, or vendor/bin/pest vs vendor/bin/phpunit presence<!--boost:conv:end-->. Prefer the project's `composer test` script when one is defined; otherwise:
+
+```bash boost:conv
+vendor/bin/<!--boost:conv path="testing.backend_framework" mode="inline"-->pest<!--boost:conv:end--> || true
 ```
 
 Must show 0 failures.
 
-**Local green ≠ CI green for this step.** Pest runs parallel on one OS/PHP combination locally. The CI matrix includes Windows + `prefer-lowest` legs where `pest --parallel` has historically raced non-atomic filesystem ops (e.g. a `rename()`), producing failures invisible on macOS. Do not let a local pass relax step 6 rigor — step 6 is the authoritative test gate across the matrix. A release has shipped broken exactly this way: local green, a Windows `prefer-lowest` CI leg red, tagged anyway because step 6 was skipped.
+**Local green ≠ CI green for this step.** The local run covers one OS/PHP combination. The CI matrix includes Windows + `prefer-lowest` legs where `pest --parallel` has historically raced non-atomic filesystem ops (e.g. a `rename()`), producing failures invisible on macOS. Do not let a local pass relax step 6 rigor — step 6 is the authoritative test gate across the matrix. A release has shipped broken exactly this way: local green, a Windows `prefer-lowest` CI leg red, tagged anyway because step 6 was skipped.
 
 ### 4. PHPStan
 
@@ -122,7 +127,7 @@ This skill normally ships alongside `readme` — pre-release declares it in `boo
 
 #### 5b. boost-core skills + guidelines
 
-The `.ai/skills/` and `.ai/guidelines/` directories are synced by boost-core (Composer plugin, `vendor/bin/boost sync`) to `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, and per-agent `<.agent>/skills/` directories. Sources ship with the package (in `resources/boost/skills/` for package-author packages); generated files are auto-gitignored on consumer sides.
+boost-core (`vendor/bin/boost sync`) syncs the `.ai/skills/` and `.ai/guidelines/` directories to `AGENTS.md`, `GEMINI.md`, and per-agent `<.agent>/skills/` directories. Sources ship with the package (in `resources/boost/skills/` for package-author packages). On the consumer side, the generated skill, command and subagent directories are gitignored; `AGENTS.md` and `GEMINI.md` stay tracked.
 
 Check each edited-or-eligible doc:
 
@@ -224,7 +229,7 @@ On failure:
 3. Fix with a new commit on the same branch.
 4. Push and re-run step 6 against the new HEAD.
 
-**Do NOT write release notes until CI is green.** Release notes claim "tests pass on X/Y/Z"; CI is the evidence. Skipping this step reduces downstream trust. (The user handles tag creation — once release notes are drafted against a green CI, the skill's job is done.)
+**Do NOT write release notes until CI is green.** Release notes claim "tests pass on X/Y/Z"; CI is the evidence. Skipping this step reduces downstream trust. The user creates the tag; the skill continues through step 8b.
 
 **Workflows triggered by `release` (e.g. `update-changelog`)** run AFTER tag creation, not before. They're outside this gate by design — their job is to decorate the release after it ships, not to gate whether it ships.
 
@@ -277,7 +282,7 @@ gh run list --commit "$SHA" --json name,status,conclusion
 
 Only when (1) status is empty, (2) echoes `pushed`, and (3) every run is `completed` + `{success, skipped}` may you `Write` to `internal/release-notes-<version>.md`. When (3) lists no runs at all, apply step 6's "When a commit produces no runs" rule: draft the notes only for an expected absence, pin the verified-sha to HEAD as usual, and name the green code-bearing ancestor in the handoff.
 
-Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below) and stop.
+Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below), then wait for the user to cut the tag and run step 8b.
 
 **Pin the verified SHA in the notes file.** The very first line of the notes file must be an HTML comment recording the green SHA. GitHub strips HTML comments when rendering the release body, so this is invisible to readers but greppable by step 8:
 
@@ -431,9 +436,9 @@ Wait until terminal. If red:
 | Step               | Command                                                                                        | Pass criteria                                 |
 |--------------------|------------------------------------------------------------------------------------------------|-----------------------------------------------|
 | 0. Sync            | `git fetch origin \|\| true` + `git status -sb \|\| true`                                       | branch not behind its remote                  |
-| 1. Rector          | `vendor/bin/rector process \|\| true`                                                          | 0 files changed                               |
+| 1. Rector          | `vendor/bin/rector process \|\| true`, only when `quality.rector` is `true`                    | 0 files changed, or skipped                   |
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
-| 3. Tests           | `vendor/bin/pest \|\| true`                                                                    | 0 failures                                    |
+| 3. Tests           | `composer test`, else the project's runner (`vendor/bin/pest` or `vendor/bin/phpunit`)        | 0 failures                                    |
 | 4. PHPStan         | `vendor/bin/phpstan analyse --memory-limit=2G \|\| true`                                       | 0 errors                                      |
 | 5a. README + docs  | staleness: manual scan vs `git log <last-tag>..HEAD`; verbosity: word count + prose-run scan over **every current** README/docs page (docs-site repos: docs pages, index sync, link audit) | no stale claims; every verbosity-audit item clean on every page (feature-list description on the README, budget, paragraph cap, prose-majority, gratuitous rationale, uncollapsed long tail, detail written above its tier); indexes agree; README site links match generator routes; repo-relative + asset links resolve |
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
@@ -453,6 +458,6 @@ Wait until terminal. If red:
 - Step 7 (release notes) is gated by step 6 — **the release-notes file must not exist on disk until CI is green on the pushed commit.** If you catch yourself about to `Write` a release-notes file after running local checks, stop: you are about to fabricate facts that the CI matrix has not yet established. Run the step-7 preflight commands first; if any of the three conditions is not satisfied, the draft is premature.
 - **A pre-existing or placeholder notes file is "no notes," not "draft ready."** If `internal/release-notes-<version>.md` already exists before CI is green (recycled from a prior version, or pinning a placeholder/`TODO`/`REPIN` SHA), DELETE it and redraft against the real green SHA — never edit it in place. Editing a carried-over file "to fix the content" pre-green is the rationalisation that has shipped a broken release: the file looks ready, the handoff overstates readiness, and the placeholder SHA defeats the 8a gate.
 - **In a PR-based release, merge first, then notes, then tag.** A green feature-branch CI is not the release gate; the tag is cut from the release branch, so re-run step 6 on the post-merge commit. Drafting notes or handing off a tag while the PR is open has pointed a tag at pre-feature `main` — a green-but-empty release that still resolved on Packagist for dependents.
-- **The agent runs the 8a gate before presenting the tag handoff and refuses on failure** — it is not solely a user-run step. The handoff message is a readiness claim; an unverified handoff is how the user ends up tagging an unready state. 8a check D (content-presence) is the backstop: a tag whose tree does not contain this release's own commit (a reachability check that holds for any release shape) is rejected even if every other check is somehow satisfied.
+- **The agent runs the 8a gate before presenting the tag handoff and refuses on failure** — it is not solely a user-run step. The handoff message is a readiness claim; an unverified handoff is how the user ends up tagging an unready state. 8a check D is the backstop: it refuses the tag while the release's PR is not `MERGED` (or, with no PR, when no commit exists since the last tag), even if every other check passes.
 - Step 8 closes the gap that has shipped broken releases before. 8a re-verifies the live remote tip (`git ls-remote`, not the cached `origin/main`) so a concurrent push can't slip a stale commit through. 8b uses `--commit "$TAG_SHA"` + a jq filter on `headBranch == $TAG` (not `--branch "$TAG"`, whose tag-ref semantics are undocumented and unreliable) so the tag-ref `on: push` re-fires and `on: release` decorators are both caught. Run both every time, even for one-commit patch releases.
 - `pest --parallel` on Windows `prefer-lowest` has a known FS race around non-atomic ops like `rename()`. Do not assume local parallel-pest green proves CI-matrix green. Step 6 + 8b are the authoritative test gates.

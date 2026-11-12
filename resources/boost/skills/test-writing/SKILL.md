@@ -93,5 +93,5 @@ For behaviour that can't be reproduced with an automated test:
 
 1. **Document why** - explain why automated testing isn't feasible
 2. **Provide manual steps** - detailed reproduction steps for QA
-3. **Add defensive code** - consider adding validation or error handling
-4. **Log for monitoring** - add logging to catch future occurrences
+3. **Propose defensive code** - where validation or error handling would contain the failure, propose it to the user; do not add it unasked
+4. **Propose logging** - propose logging that catches the next occurrence, for the user to approve

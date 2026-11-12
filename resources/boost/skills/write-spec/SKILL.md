@@ -15,7 +15,7 @@ Writes structured specification files designed for phased implementation with bu
 
 The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="inline"-->specs/{slug}.md<!--boost:conv:end-->. It accepts these placeholders, which you substitute at spec-creation time:
 
-- `{issue_key}` — full Jira key (e.g. `HPB-1234`). Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
+- `{issue_key}` — full Jira key (e.g. `ABC-123`). Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
 
   ```boost:conv
   <!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch-pattern issue-key detection<!--boost:conv:end-->
@@ -67,8 +67,8 @@ Subdirectories for related specs are fine — if the filename pattern doesn't mo
 
 ```
 specs/
-├── HPB-1234-wildcard-performance-optimization.md
-├── HPB-1267-polymorphic-field-support.md
+├── ABC-123-faster-search-results.md
+├── ABC-130-comment-attachments.md
 └── cleanup/
     └── deprecated-method-removal.md
 ```
@@ -312,7 +312,7 @@ Every phase carries one metadata line immediately under its heading:
 
 ### Tasks
 
-- Use `- [ ]` checkboxes. Each task must be concrete and verifiable — not "improve performance" but "add index lookup for wildcard expansion".
+- Use `- [ ]` checkboxes. Each task must be concrete and verifiable — not "improve performance" but "add an index on `orders.customer_id`".
 - Always include brief context after `—` so the implementer understands purpose without re-reading the full spec.
 - Group related tasks, but keep each checkbox independently completable.
 - Always include `- [ ] Tests — {what to test}` per phase.

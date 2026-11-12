@@ -21,7 +21,7 @@
                 "project_key": {
                     "type": "string",
                     "pattern": "^[A-Z][A-Z0-9_]+$",
-                    "description": "Single Jira project key for issue creation, updates, and rework lookups (e.g. 'HPB')."
+                    "description": "Single Jira project key for issue creation, updates, and rework lookups (e.g. 'ABC')."
                 },
                 "refuse_other_projects": {
                     "type": "boolean",
@@ -71,7 +71,7 @@
                         "properties": {
                             "pattern": {
                                 "type": "string",
-                                "description": "Branch-name template (e.g. 'feature/HPB-XXXX', 'hotfix/HPB-XXXX-{slug}'). Recognized placeholders are vendor-defined."
+                                "description": "Branch-name template (e.g. 'feature/ABC-XXXX', 'hotfix/ABC-XXXX-{slug}'). Recognized placeholders are vendor-defined."
                             },
                             "base": {
                                 "type": "string",
@@ -118,7 +118,7 @@
                                     "window": {
                                         "enum": ["in_session", "since_last_code_change"],
                                         "default": "in_session",
-                                        "description": "Time window to check for invocation. 'in_session' = anywhere in current conversation. 'since_last_code_change' = since the most recent Edit/Write tool call to a file NOT in boost-core managed agent paths (.ai/, .claude/, .github/skills/, .agents/, or other paths in the boost-core managed .gitignore block)."
+                                        "description": "Time window to check for invocation. 'in_session' = anywhere in current conversation. 'since_last_code_change' = since the most recent Edit/Write tool call to a file NOT in .ai/, .claude/, or a boost-core managed agent path (.agents/skills/, .github/prompts/, or another path in the boost-core managed .gitignore block)."
                                     },
                                     "on_missing": {
                                         "enum": ["stop_and_request", "warn", "skip"],
@@ -328,7 +328,7 @@
                 "filename_pattern": {
                     "type": "string",
                     "default": "specs/{slug}.md",
-                    "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = full Jira key (e.g. 'HPB-1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
+                    "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = full Jira key (e.g. 'ABC-123'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
                 },
                 "directories": {
                     "type": "array",

@@ -255,13 +255,7 @@ After applying feedback, run the quality checks for the files you changed: the `
 If any code changes were applied (from the bot/self bucket or user-approved colleague items):
 
 1. **Stage changes**: `git add <specific-files>`
-2. **Commit with descriptive message**:
-   ```
-   Apply PR review feedback
-
-   - <change 1>
-   - <change 2>
-   ```
+2. **Commit** with a message in the project's commit format that names the changes, one body line per change.
 3. **Push to the branch**: `git push origin <branch-name>`
 
 If no code changes were applied **but Phase 1b created a sync merge commit**, still push it: `git push origin <branch-name>`. The branch must reach GitHub for the base sync to take effect and for thread positions to recompute. Only skip this phase entirely when there are neither feedback changes nor a pending sync merge.

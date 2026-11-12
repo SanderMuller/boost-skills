@@ -149,11 +149,11 @@ Good vs bad:
 
 ```markdown
 // BAD — implementation detail
-Added a RegenerateJob with a prompt parameter and a new `used_prompt` column.
+Added an ExportOrdersJob with a format parameter and a new `export_format` column.
 
 // GOOD — user-facing
-Users can now regenerate an AI result they are not happy with, and add
-optional feedback to steer the new attempt.
+Users can now download their order history as a CSV file, and choose
+which columns it includes.
 ```
 
 ## QA Testables Format
