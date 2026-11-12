@@ -17,7 +17,7 @@ A self-directed loop: evaluate your own work, fix what you find, re-evaluate unt
 - When the user says "evaluate", "check this", or "review your work"
 - Before creating a PR or marking work as done
 
-**Note:** This skill is a completion-level activity. It runs the completion tier of the quality skill for the files that changed (`backend-quality`, `frontend-quality`), including static analysis and the full test suite. Do not use this skill mid-feature — only when the implementation is done.
+**Note:** This skill is a completion-level activity. It runs the quality skill for the files that changed (`backend-quality` at its completion tier, `frontend-quality`), including static analysis and the full test suite. Do not use this skill mid-feature — only when the implementation is done.
 
 ## Workflow
 

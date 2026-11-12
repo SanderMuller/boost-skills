@@ -238,7 +238,7 @@ If you only have:
 
 ## Required Information — Ask If Missing
 
-Take the commits and the diff from the current branch (steps 1–4). Ask the user only for what the repository cannot answer:
+Take the commits and the diff from the current branch against its base (see [Base-branch resolution](#base-branch-resolution)). Ask the user only for what the repository cannot answer:
 
 - **Target branch** — ask when the branch-pattern resolution yields none and no default base branch is configured.
 - **Security implications and testing steps** — write them from the diff. Ask only when the diff cannot settle one, for example an auth or data-exposure change with no stated intent.
