@@ -526,10 +526,10 @@ reference form, and it stays:
 ### D2. Decorative headings
 
 **Problem:** Title case on every heading, emojis or arrows (→) as decoration, a horizontal rule
-between every section, an H1 that repeats the title, skipped heading levels, a category label
-above a heading (an "eyebrow" such as "FEATURES" over "## Fast imports"), or section numbers where
-the order does not matter. Use sentence case, number sections only when the reader must follow
-them in order, and let a heading name what its section holds. D5 covers the wording of a heading.
+between every section, an H1 that repeats the title, or skipped heading levels. Two more forms: a
+category label above a heading (an "eyebrow" such as "FEATURES" over "## Fast imports"), and
+section numbers where the order does not matter. Use sentence case. Number sections only when the
+reader must follow them in order. D5 covers the wording of a heading.
 
 **Before:**
 > ## 🚀 Getting Started With The CLI

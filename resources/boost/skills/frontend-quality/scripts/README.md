@@ -3,8 +3,8 @@
 Framework-agnostic browser tooling the `frontend-quality` skill ships so a project
 doesn't have to build its own. `boost sync` (boost-core ≥ 1.3) emits these beside the
 rendered `SKILL.md` into each agent's skill dir (e.g.
-`.claude/skills/frontend-quality/scripts/`). Edit the sources in
-`resources/boost/skills/frontend-quality/scripts/`, not the emitted copies.
+`.claude/skills/frontend-quality/scripts/`). Do not edit the emitted copies: the next
+sync overwrites them.
 
 ## Prerequisite
 

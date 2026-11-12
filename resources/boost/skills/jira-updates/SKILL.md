@@ -37,7 +37,7 @@ Project-specific Jira description format doc: <!--boost:conv path="jira.descript
 
 ## Available Tools
 
-The Jira MCP server (the namespace segment defined at the top of this skill) provides these tools — invoke each as `mcp__<segment>__<tool>`:
+The Jira MCP server (the `<jira>` namespace defined at the top of this skill) provides these tools — invoke each as `mcp__<jira>__<tool>`:
 
 | Tool | Use for |
 |---|---|

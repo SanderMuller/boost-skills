@@ -166,9 +166,8 @@ body), the quick checks below are enough, unless a strong tell shows. Then read 
    section, is the same tell at a larger scale.
 2. **Rewrite.** State each point plainly instead of patching flagged words one at a time. If a
    sentence stays awkward, rewrite the paragraph around its main point. Every sentence you keep
-   must add something the reader does not already have, and the text must keep what the reader
-   needs to follow it: the reason, the link between two claims, the step they would otherwise
-   guess.
+   must add something the reader does not already have. Keep what the reader needs to follow the
+   text: the reason, the link between two claims, and any step they would otherwise guess.
 3. **Check the facts.** Compare the rewrite with the source. Did it add a fact, name, number or
    mechanism? Did it drop a claim, a ranking, a scope word or a connector? Treat either one as an
    error and fix it.

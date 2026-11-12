@@ -110,6 +110,14 @@ End with a summary table ranking findings by severity:
 | Medium   | Stale data, missing tests for important paths, UX issues that confuse users |
 | Low      | Minor inconsistencies, polish items, nice-to-have improvements              |
 
+The subagents rate on their own scales. Map each finding onto this table, and keep its `Verified` or `Inferred` mark:
+
+| Subagent rating | Severity here |
+|---|---|
+| Critical or High; test-coverage criticality 9–10 | High |
+| Medium or Warning; criticality 7–8 | Medium |
+| Low or Suggestion; criticality 3–6 | Low |
+
 ## Output Format
 
 ```markdown

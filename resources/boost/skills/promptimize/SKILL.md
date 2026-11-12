@@ -15,7 +15,7 @@ Transform a rough prompt into a single, optimized prompt that lets the target mo
 
 ### 1. Analyze
 
-Read the raw prompt and identify ambiguities, gaps, unstated assumptions, and anything that would make the model guess. Rate its clarity to yourself (do not show the user).
+Read the raw prompt and identify ambiguities, gaps, unstated assumptions, and anything that would make the model guess. Keep that assessment out of the reply.
 
 ### 2. Clarify (only if needed)
 
@@ -68,7 +68,7 @@ Durable and model-agnostic — these hold across model families and releases:
 
 ## Final output format
 
-Steps 1-4 may surface questions and analysis. The last message — the deliverable — is the optimized prompt inside **one** fenced code block, and nothing else: no text before or after the fence. The prompt body goes **directly** inside the fence, not nested in a second code block. Use a fence whose backtick run is longer than any code fence inside the prompt — three backticks normally, four or more when the prompt itself contains a ``` block — so the block can't close early.
+Steps 2-3 may surface questions and analysis. The last message — the deliverable — is the optimized prompt inside **one** fenced code block, and nothing else: no text before or after the fence. The prompt body goes **directly** inside the fence, not nested in a second code block. Use a fence whose backtick run is longer than any code fence inside the prompt — three backticks normally, four or more when the prompt itself contains a ``` block — so the block can't close early.
 
 ---
 

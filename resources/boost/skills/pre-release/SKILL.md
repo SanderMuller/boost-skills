@@ -302,7 +302,7 @@ The SHA in that line is the exact `git rev-parse HEAD` that step 6 proved green.
 
 **If a notes file already exists for this version before CI is green, DELETE it — never edit it in place.** A recycled or carried-over `internal/release-notes-<version>.md` (e.g. copied from the previous version, or a draft with a placeholder SHA) counts as **no notes yet**, not a head start. Editing its body "to fix the content" while CI is not yet green is the exact step-7 violation that has shipped a broken release — the file looks ready, the handoff overstates readiness, and the placeholder SHA silently defeats the 8a gate. Delete first; redraft only once the green-merge-SHA preflight below passes. Treat "a notes file exists" and "the notes step is done" as independent: the step is done only when the file pins the real green SHA produced by step 6 on the actual release commit.
 
-**CI handles `CHANGELOG.md` automatically — do not edit it manually.** `.github/workflows/update-changelog.yml` prepends the release body on release publish. See the `release-automation` guideline for details.
+**CI handles `CHANGELOG.md` automatically — do not edit it manually.** `.github/workflows/update-changelog.yml` prepends the release body on release publish. See the `release-automation` guideline, where the project ships it, for details.
 
 #### Canonical handoff command shape
 
@@ -405,8 +405,9 @@ gh run list --commit "$TAG_SHA" \
 
 # Wait until every tag-scoped run is terminal, then assert all success.
 # `waited` bounds the loop at ~15 min so a hung run doesn't block indefinitely.
-# If `total` stays 0 past the first 90s, the tag was likely created without firing
-# push/release workflows (rare — e.g. re-using an existing tag) — investigate manually.
+# If `total` is still 0 when the loop ends, no tag-ref or release workflow fired.
+# When the repo has no such workflow, there is nothing to watch; otherwise (for
+# example a re-used tag) investigate manually.
 waited=0
 while [ "$waited" -lt 900 ]; do
     running=$(gh run list --commit "$TAG_SHA" --json status,headBranch \

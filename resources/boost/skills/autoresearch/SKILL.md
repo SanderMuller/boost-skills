@@ -569,10 +569,16 @@ The `query_total_time_ms` vs `execution_median_ms` ratio tells you whether the b
 
 ```php
 // autoresearch/{slug}-bench.php
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
+
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
 $app->loadEnvironmentFrom('.env.testing');
+// Boot config, providers and facades before the first DB:: or factory call.
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
 
 $scenario = getenv('AUTORESEARCH_SCENARIO') ?: 'main';

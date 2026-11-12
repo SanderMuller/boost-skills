@@ -128,6 +128,7 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
          headRefName
          baseRefName
          reviewThreads(first: 100) {
+           pageInfo { hasNextPage endCursor }
            nodes {
              id
              isResolved
@@ -151,9 +152,13 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
    }' --jq '{
      headRefName: .data.repository.pullRequest.headRefName,
      baseRefName: .data.repository.pullRequest.baseRefName,
+     hasNextPage: .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage,
+     endCursor: .data.repository.pullRequest.reviewThreads.pageInfo.endCursor,
      threads: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)]
    }'
    ```
+
+   If `hasNextPage` is `true`, more threads exist. Page through with `after: "<endCursor>"` and merge the results before you continue, or an unresolved thread past the first 100 is never handled.
 
 2. **If the `threads` array is empty**, report "No unresolved review comments" and stop.
 

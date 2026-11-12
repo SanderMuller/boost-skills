@@ -28,10 +28,12 @@ The class docblock is organized into labeled sections. Include only sections tha
  * @mixin Eloquent
  *
  * Attributes
- * @property int|null $id
- * @property string|null $name
- * @property int|null $parent_id
  * @property CarbonInterface|null $created_at
+ * @property string|null $display_name
+ * @property int|null $id
+ * @property int|null $parent_id
+ * @property string|null $secret_key
+ * @property string|null $status
  * @property CarbonInterface|null $updated_at
  *
  * Appendable attributes
@@ -76,6 +78,7 @@ final public const
     DISPLAY_NAME = 'display_name',
     ID = 'id',
     PARENT_ID = 'parent_id',
+    SECRET_KEY = 'secret_key',
     STATUS = 'status',
     UPDATED_AT = 'updated_at';
 ```

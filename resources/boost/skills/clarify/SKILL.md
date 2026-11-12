@@ -91,26 +91,26 @@ Group questions only when they are clearly orthogonal and small. (`AskUserQuesti
 
 When the user uses a vague or overloaded term, stop and resolve it to a canonical one:
 
-> "You said 'item'. Do you mean a saved draft or a published record? Those behave differently here."
+> "Does 'item' mean a saved draft or a published record? The two behave differently here."
 
 Check the project reference docs for the canonical name before proposing one.
 
 Quality words are fuzzy terms too. When the user says "fast", "robust", "intuitive", "secure", or "scalable", ask for the number or the concrete behaviour behind the word:
 
-> "You said the export must be fast. Is that under 2 seconds for 1,000 rows, or is it about a progress bar while it runs?"
+> "Does a fast export mean under 2 seconds for 1,000 rows, or a progress bar while it runs?"
 
 ### 6. Stress-test with concrete scenarios
 
 When the user states a rule, invent a specific edge case that probes its boundary and force a precise answer. Don't accept "we'd handle that" — make them say what happens.
 
 > User: "Editors can edit any record in their workspace."
-> You: "An editor opens a record moved into their workspace yesterday, from a workspace whose owner just revoked their access. Can they edit it?"
+> Assistant: "An editor opens a record moved into their workspace yesterday, from a workspace whose owner just revoked their access. Can they edit it?"
 
 ### 7. Cross-reference stated behavior against code
 
 When the user describes how something currently works, **verify it against the actual code** before building on it. Surface any contradiction immediately:
 
-> "You said deleting a parent also deletes its children. The handler actually orphans them to the grandparent. Which behavior do you want here?"
+> "The request says deleting a parent also deletes its children, but the handler orphans them to the grandparent. Which behavior should the change keep?"
 
 ### 8. Assumptions audit — the gap reducer
 

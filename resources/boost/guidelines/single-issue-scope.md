@@ -6,7 +6,7 @@ Every chat session and every pull request must focus on **exactly one issue, fix
 
 - At the start of a session, **confirm which issue or task** you are working on. If unclear, ask the user before writing any code.
 - Each conversation/session should address **one issue or task only**.
-- If the conversation starts to drift toward a different issue, **stop and ask** the user: "It looks like we're moving into a different issue. Should I continue with the current task, or switch to this new one?"
+- If the conversation starts to drift toward a different issue, **stop and ask** the user: "This looks like a different issue. Continue with the current task, or switch to the new one?"
 
 ### One Issue Per Session
 
@@ -34,9 +34,9 @@ Every chat session and every pull request must focus on **exactly one issue, fix
 If you encounter an unrelated problem while working:
 
 1. **Do not fix it** in the current session/PR.
-2. **Mention it** to the user: "I noticed [issue]. This is unrelated to the current task — shall I create a separate issue for it?"
+2. **Mention it** to the user: "[Issue] is unrelated to the current task. Create a separate issue for it?"
 3. **Continue** with the original task.
 
-### Why This Matters
+### Cost of Mixed Changes
 
 Mixing issues in a single PR makes code review harder, increases the risk of regressions, and makes it difficult to revert a specific change if needed. Keeping sessions focused ensures clean git history and predictable deployments.

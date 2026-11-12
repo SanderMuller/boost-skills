@@ -210,7 +210,7 @@ Section order follows the Structure list (Breaking → Added → Changed → Fix
 - Fixed diagnostics being hidden when sync exited on a top-level error (#124).
 - Fixed `SyncCommand` writing to the wrong destination on Windows (#126).
 
-**Full Changelog**: https://github.com/SanderMuller/boost-core/compare/0.9.3...0.9.4
+**Full changelog:** https://github.com/SanderMuller/boost-core/compare/0.9.3...0.9.4
 ```
 
 That is 4 changes in 44 bullet words. The published prose version of that release ran 392 words: a 5-line opening paragraph, a `###` heading per change, the root cause and discovery story of each one, and an `## Internal` section of "no drift, no schema changes" tautologies. Same four changes, 392 words of body against 44.
