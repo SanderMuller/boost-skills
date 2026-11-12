@@ -405,9 +405,9 @@ gh run list --commit "$TAG_SHA" \
 
 # Wait until every tag-scoped run is terminal, then assert all success.
 # `waited` bounds the loop at ~15 min so a hung run doesn't block indefinitely.
-# If `total` is still 0 when the loop ends, no tag-ref or release workflow fired.
-# When the repo has no such workflow, there is nothing to watch; otherwise (for
-# example a re-used tag) investigate manually.
+# Before the loop, read .github/workflows/. When no workflow triggers on a tag
+# push or on `release`, 8b has nothing to watch: skip it and say so in the report.
+# Otherwise a `total` of 0 after the loop (for example a re-used tag) fails the step.
 waited=0
 while [ "$waited" -lt 900 ]; do
     running=$(gh run list --commit "$TAG_SHA" --json status,headBranch \

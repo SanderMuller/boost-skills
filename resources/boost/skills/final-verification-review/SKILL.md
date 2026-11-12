@@ -29,10 +29,7 @@ Do NOT use for:
 
 ## Step 1: Verify the Code — Run `evaluate`
 
-Invoke the `evaluate` skill in full. Under this skill, the `codex-review` pass inside it commits
-nothing: its applied fixes stay uncommitted, and its proof commit becomes a hand-off item in the
-verdict ("commit the codex-review fixes, then make the proof commit, before `/pull-requests`").
-The `evaluate` skill owns the entire code-verification loop — quality checks, self-review, comment audit, fix-until-clean, `code-review`, `codex-review` (per its Phase 7 dedup rules), and any project-configured evaluate checks (e.g. the `fixtures.anonymization` gate). Those run **inside** this evaluate pass — do not re-run them in Step 2, and do not pre-skip any of evaluate's phases here; its own skip criteria decide what can be deduped.
+Invoke the `evaluate` skill in full. The `codex-review` pass inside it follows its own commit rules (its Step 7). Those commits are the one exception to "creates nothing". The `evaluate` skill owns the entire code-verification loop — quality checks, self-review, comment audit, fix-until-clean, `code-review`, `codex-review` (per its Phase 7 dedup rules), and any project-configured evaluate checks (e.g. the `fixtures.anonymization` gate). Those run **inside** this evaluate pass — do not re-run them in Step 2, and do not pre-skip any of evaluate's phases here; its own skip criteria decide what can be deduped.
 
 Carry two things forward into the verdict:
 

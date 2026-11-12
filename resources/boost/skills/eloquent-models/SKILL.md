@@ -33,7 +33,7 @@ The class docblock is organized into labeled sections. Include only sections tha
  * @property int|null $id
  * @property int|null $parent_id
  * @property string|null $secret_key
- * @property string|null $status
+ * @property Status|null $status
  * @property CarbonInterface|null $updated_at
  *
  * Appendable attributes

@@ -122,12 +122,12 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
    gh api graphql \
      -F owner='{owner}' -F repo='{repo}' -F number=<NUMBER> \
      -f query='
-   query ($owner: String!, $repo: String!, $number: Int!) {
+   query ($owner: String!, $repo: String!, $number: Int!, $after: String) {
      repository(owner: $owner, name: $repo) {
        pullRequest(number: $number) {
          headRefName
          baseRefName
-         reviewThreads(first: 100) {
+         reviewThreads(first: 100, after: $after) {
            pageInfo { hasNextPage endCursor }
            nodes {
              id
@@ -158,9 +158,9 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
    }'
    ```
 
-   If `hasNextPage` is `true`, more threads exist. Page through with `after: "<endCursor>"` and merge the results before you continue, or an unresolved thread past the first 100 is never handled.
+   If `hasNextPage` is `true`, more threads exist. Run the query again with `-f after=<endCursor>` added, until `hasNextPage` is `false`. Merge the `threads` of every page before you continue, or an unresolved thread past the first 100 is never handled.
 
-2. **If the `threads` array is empty**, report "No unresolved review comments" and stop.
+2. **If the merged `threads` array is empty**, report "No unresolved review comments" and stop.
 
 3. **Switch to the PR branch**
    - Extract branch name from `headRefName`
@@ -315,10 +315,10 @@ List every still-unresolved thread with its `id`, authors, and `viewerCanResolve
 gh api graphql \
   -F owner='{owner}' -F repo='{repo}' -F number=<NUMBER> \
   -f query='
-query ($owner: String!, $repo: String!, $number: Int!) {
+query ($owner: String!, $repo: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
         pageInfo { hasNextPage endCursor }
         nodes { id isResolved viewerCanResolve comments(first: 100) { totalCount nodes { author { login } } } }
       }
@@ -334,7 +334,7 @@ query ($owner: String!, $repo: String!, $number: Int!) {
 }'
 ```
 
-**If `hasNextPage` is `true`, the gate has not seen every thread** — page through with `after: "<endCursor>"` using the emitted `endCursor`, and merge before judging; a truncated list can hide unresolved bot/self threads and let the gate pass falsely. **Truncation cuts the other way too**: an entry whose `total` exceeds `fetched` has comments you never saw, so its author set cannot prove it is all bot/self — page that thread's comments, or fail safe to colleague, per Author Classification, before judging it. Read the merged `unresolved` list:
+**If `hasNextPage` is `true`, the gate has not seen every thread** — run the query again with `-f after=<endCursor>` added, until `hasNextPage` is `false`, and merge before judging; a truncated list can hide unresolved bot/self threads and let the gate pass falsely. **Truncation cuts the other way too**: an entry whose `total` exceeds `fetched` has comments you never saw, so its author set cannot prove it is all bot/self — page that thread's comments, or fail safe to colleague, per Author Classification, before judging it. Read the merged `unresolved` list:
 
 - **Empty list** → gate passes; the loop is closed. Every bot/self thread is resolved.
 - **Non-empty** → each remaining entry must be either a **colleague** thread (contains a human who is not you), legitimately left open under the default gate, or a **deferred** bot thread on a draft PR. Any other all-bot or all-you (self) entry is unresolved bot/self work — reply and resolve it with its `id` (Phase 6 mutations) and re-run this query until only colleague and deferred threads remain. Under `colleague_gate: false`, colleague threads are auto-handled too, so only deferred threads may remain.

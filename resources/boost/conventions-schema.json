@@ -58,7 +58,7 @@
         },
         "branches": {
             "type": "object",
-            "description": "Branch naming patterns + per-pattern base branch resolution. Primary use: vendor pull-requests (and codex-review) skills scan patterns in declared order; first match wins; the matched pattern's base is the PR/review base; no match falls back to github.default_base_branch. Secondary use: the pattern field doubles as a branch-name template for detection — e.g. write-spec matches the current branch against a Jira-keyed pattern to extract {issue_key}.",
+            "description": "Branch naming patterns + per-pattern base branch resolution. Primary use: vendor pull-requests (and codex-review) skills scan patterns in declared order; first match wins; the matched pattern's base is the PR/review base; no match falls back to github.default_base_branch. Secondary use: the pattern field doubles as a branch-name template for detection — e.g. write-spec matches the current branch against an issue-keyed pattern (a Jira-style key or a GitHub issue number) to extract {issue_key}.",
             "additionalProperties": false,
             "properties": {
                 "patterns": {

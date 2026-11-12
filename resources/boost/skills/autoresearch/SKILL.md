@@ -568,6 +568,7 @@ The `query_total_time_ms` vs `execution_median_ms` ratio tells you whether the b
 ### Benchmark template (Laravel)
 
 ```php
+<?php
 // autoresearch/{slug}-bench.php
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
