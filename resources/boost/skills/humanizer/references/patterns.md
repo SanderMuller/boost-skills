@@ -14,7 +14,7 @@ has no fact to keep, the "After" says so instead of inventing one.
 ## A. Staging instead of stating
 
 The sentence signals importance instead of adding a fact. These are the strongest tells in current
-model prose. Act on one sighting.
+model prose. In expository text, act on one sighting. A7 states when a single fragment stays.
 
 ### A1. Contrast with a claim nobody made
 
@@ -40,21 +40,36 @@ really holds, or when both halves carry information.
 **After:**
 > The command reads the token from the config file, so the user does not have to guess it.
 
-### A2. One-line closers and staged fragments
+### A2. One-line closers, summative verdicts and staged fragments
 
 **Watch for:** a one-sentence paragraph that restates the paragraph before it; "That's the whole
 story."; "That distinction matters."; "Let that sink in."; "Read that again."; "full stop"; a line
 after an example that names what the example showed ("This shows the importance of..."); a row of
-fragments ("Faster. Smaller. Simpler."); one word in capitals or with periods between words.
+fragments ("Faster. Smaller. Simpler."); one word in capitals or with periods between words; a
+closing paragraph that restates the opening one.
+
+A summative verdict is the most frequent form: a demonstrative and a label that sums up what the
+reader just read. "That's the real risk.", "That's the trade-off.", "That's the whole point.",
+"That's what makes it work.", "This is the key.", "Which is exactly the problem.", "And that's
+the catch." Even a single one is a tic, and one after every paragraph tires the reader quickly. A6
+covers the same kind of label when it comes before the point instead of after it.
 
 **Problem:** The line asks the reader to pause on a claim instead of adding to it. Cut a closer
-that repeats. Keep a short sentence that adds a new fact or consequence.
+that repeats. When the verdict is the only place the source ranks or flags the fact ("the real
+risk", "the main problem"), keep that ranking: put it at the front of the fact as a plain
+statement, and cut the trailing label. Keep a short sentence that adds a new fact or consequence.
 
 **Before:**
 > We cut the migration from forty minutes to six. Six. That's the whole story.
 
 **After:**
 > We cut the migration from forty minutes to six.
+
+**Before (summative verdict):**
+> The importer skips rows it cannot parse and logs nothing. That's the real risk.
+
+**After:**
+> The real risk is that the importer skips rows it cannot parse and logs nothing.
 
 ### A3. Sayings that sound deep
 
@@ -76,7 +91,10 @@ claim, or cut it.
 **Watch for:** Let's dive in, let's break this down, here's what you need to know, without further
 ado, In this section, we'll; Here's the thing, The uncomfortable truth is, It turns out, Make no
 mistake; Honestly?, Look,, Real talk, Think about it:, Here's what I mean:; bridges between
-paragraphs such as Looking ahead, adds another layer, what comes next, This is where X comes in.
+paragraphs such as Looking ahead, adds another layer, what comes next, This is where X comes in;
+throat-clearing labels such as The catch is, The first thing to know is, The question worth
+answering is, One thing to keep in mind; callbacks such as Which brings us back to, Back to the
+earlier question.
 
 **Problem:** The writer announces the point instead of making it. Remove the run-up. "Honestly" or
 "look" inside a casual sentence is ordinary. The tell is the standalone opener.
@@ -117,6 +135,54 @@ source gives.
 
 **After:**
 > The cache now expires after an hour. Stale prices were the main source of support tickets.
+
+### A7. Clipped pairs and twist fragments
+
+**Watch for:** two short sentences, often two to five words each, set against each other. The
+common shapes:
+
+- a mirrored pair: "Wrong door. Right house.", "Small boat. Bigger storm.", "Same road. Wetter
+  shoes.", "A desk upstairs. An answer downstairs."
+- a correction tail: "It shows the date. Not who signed it.", "Ask the clerk. Not the ledger."
+- an indifference tail: "Bread by six. Rain or no rain.", "The guards walk the wall. Paid or not."
+- an order pair: "Measure first. Argue later."
+- a count contrast: "Nine doors. One key."
+- a reversal: "The bridge held. The cart didn't."
+- a twist word: "Mostly.", "Sort of.", "In theory.", "Until it isn't.", "Not unlike X.", "Which is
+  the point."
+
+**Problem:** The pair stages a twist instead of stating how the two claims relate. The reader has
+to guess whether the second sentence narrows the first, contradicts it, or only decorates it, and
+the mirrored shape makes every line sound like a slogan. Current models write this often, and a
+rewrite that shortens sentences creates it too (see H6). Write one
+sentence that states the relation with a connector: "but", "except", "because", "only when",
+"whether or not". If the twist adds nothing, cut it. If it carries a hedge or a claim but the
+source gives no condition ("Fast. Mostly."), keep the hedge in plain words ("fast in most cases")
+and invent no condition; in chat mode, name the gap in the change list. A7 decides the shape only.
+Whether the claim itself stays is the question C5 and C11 answer.
+
+The tell is the habit, not a single use. In an essay or a post, one fragment the writer chose on
+purpose stays (H4). In fiction and dialogue, clipped lines can be a character's voice or the
+project's style, and only the author knows which. When most speakers share the same clipped shape,
+report the lines and the speakers instead of rewriting them, and ask whose voice it is. Rewrite
+them only when the user or the project's style guide asks for full sentences, and even then keep
+the clipped style for any character the author names. A rewrite must not invent the relation
+the line leaves open: "We didn't" does not say what failed.
+
+**Before:**
+> The cache is fast. Mostly. It slows down after a deploy. Not unlike a cold start.
+
+**After:**
+> The cache is fast, except right after a deploy, when it is slow until it warms up.
+
+**Before (dialogue, three speakers):**
+> "Wrong map. Right valley." / "The rope held. Our nerve didn't." / "Nine doors. One key."
+
+**Report (chat mode, no style guide):**
+> All three speakers use the clipped pair (A7), so the shape reads as one voice for everyone. Which character, if any, should keep it?
+
+**After (the author keeps the clipped voice for the first speaker only):**
+> "Wrong map. Right valley." / "The rope held, but we lost our nerve." / "There are nine doors and only one key."
 
 ---
 
@@ -170,7 +236,7 @@ tell of its own (B8). Do not chase zero.
 > The flag — added in 2.4 — skips the write step — which makes it safe for CI.
 
 **After:**
-> The flag, added in 2.4, skips the write step. That makes it safe for CI.
+> The flag, added in 2.4, skips the write step, so it is safe to use in CI.
 
 ### B4. Colons as mid-sentence hinges
 
@@ -235,7 +301,8 @@ actor clearer. Imperative commit subjects and terse reference lines ("Optional. 
 *Weak alone.*
 
 **Watch for:** sentence after sentence of 8 to 20 words; runs of four or more short sentences;
-only periods and commas in the whole text; paragraphs of near-equal length.
+only periods and commas in the whole text; paragraphs of near-equal length. Two short sentences
+set against each other are A7, which is a strong tell on its own.
 
 **Problem:** Models trained away from dashes lean on short sentences of even size. Each sentence
 reads fine, and the text still reads as machine-made, because human writing is uneven. Join two
@@ -330,7 +397,12 @@ when it states a real consequence, and then make it a clause.
 renowned, a diverse array of, seamless. Newer models are more subtly positive, so also watch for
 praise that names no property.
 
-**Problem:** The text reads like an advertisement. State what the thing is and what it does.
+Slogans and stock lines are the same tell: "Built for teams that ship", "Unlock your potential",
+"Work smarter, not harder".
+
+**Problem:** The text reads like an advertisement. State what the thing is and what it does. A
+test: if the sentence could describe any product, it says nothing about this one. Replace it with
+a fact only this product has, or cut it.
 
 **Before:**
 > This stunning CLI boasts a rich set of 12 commands for managing releases.
@@ -450,9 +522,10 @@ reference form, and it stays:
 ### D2. Decorative headings
 
 **Problem:** Title case on every heading, emojis or arrows (→) as decoration, a horizontal rule
-between every section, an H1 that repeats the title, skipped heading levels, or a heading written
-for effect ("The decision, on one screen"). Use sentence case, and let a heading name what its
-section holds.
+between every section, an H1 that repeats the title, skipped heading levels, a category label
+above a heading (an "eyebrow" such as "FEATURES" over "## Fast imports"), or section numbers where
+the order does not matter. Use sentence case, number sections only when the reader must follow
+them in order, and let a heading name what its section holds. D5 covers the wording of a heading.
 
 **Before:**
 > ## 🚀 Getting Started With The CLI
@@ -475,12 +548,36 @@ same tell. A code block that quotes real output or a real diff is content, and i
 > | CLI | No |
 
 **After:**
-> Only the HTTP client. The CLI is not affected.
+> The change affects only the HTTP client, not the CLI.
 
 ### D4. Curly quotation marks
 
 *Weak alone.* Most editors curl quotes by themselves. Change them only where the target format
 uses straight quotes, for example in Markdown source that other tools parse.
+
+### D5. Headings written as copy
+
+**Watch for:** rhythmic or contrasting titles ("Hard to describe. Easy to recognize."), metaphors
+and personification ("Where your data comes alive", "The engine under the hood"), slogans ("Built
+for teams that ship"), vague labels ("A closer look", "Why it matters", "The bigger picture",
+"The decision, on one screen"). Headings and field labels phrased as a question or a Wh- clause
+("What you get", "Who can see this") are *weak alone*: "How it works" is an ordinary human
+heading. Rename one only when it does not tell the reader what the section holds.
+
+**Problem:** A heading helps the reader find a section. A heading written for effect hides what
+the section holds. Write a heading like an email subject line, not a movie trailer: name the
+topic in literal words, as a noun or a short noun phrase that matches what the section holds
+("Rationale" for "Why this matters", "Visibility" for "Who can see this").
+
+**Before:**
+> ## Why it matters
+>
+> Imports that fail now retry three times before they report an error.
+
+**After:**
+> ## Retries for failed imports
+>
+> Imports that fail now retry three times before they report an error.
 
 ---
 
@@ -737,7 +834,7 @@ instead of read. Simplified is not clipped.
 > The flag is optional, the default is off.
 
 **Good rewrite:**
-> The flag is optional. The default is off.
+> The flag is optional and off by default.
 
 ### H3. Lost connectors and scope words
 
@@ -778,6 +875,24 @@ word in the writer's own text is theirs, and H4 keeps it.
 
 **Good rewrite:**
 > Moving 40 services to the new cluster took four months.
+
+### H6. Cut too far
+
+**Problem:** Current models often write too little, and a pass that keeps cutting leaves text the
+reader cannot follow: short
+sentences with no stated link between them, a missing reason, a step the reader has to guess, or
+the clipped pairs of A7. Shorter is not the goal. Keep the explanation the reader needs, join
+sentences that carry one idea, and say how two claims relate. On a `voice` surface, stay inside
+its sentence limits.
+
+**Original:**
+> Failed jobs now retry up to three times. The wait between attempts doubles each time, the same backoff the import queue already uses.
+
+**Bad rewrite:**
+> Retries are on. Three attempts. Backoff doubles. Not unlike the import queue.
+
+**Good rewrite:**
+> Failed jobs now retry up to three times, and the wait doubles after each attempt, as it already does in the import queue.
 
 ---
 
