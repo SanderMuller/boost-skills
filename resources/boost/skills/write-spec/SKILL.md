@@ -104,7 +104,7 @@ Before writing from a fresh template, check whether a spec for this work already
 
 ## Research Before Writing — Required Checklist
 
-Specs are only as good as the research behind them. Before writing the spec body, do all of the following and reference findings in the spec. **Delegate the bulky steps** — locating code (2) and verifying stated behaviour (4) — **to a read-only research subagent** (e.g. Claude Code's `Explore`), which returns a slim brief instead of loading every file into context; the targeted reads stay inline:
+Specs are only as good as the research behind them. Before writing the spec body, do all of the following and reference findings in the spec. When locating code (2) or verifying stated behaviour (4) spans many files, **delegate it to a read-only research subagent** (e.g. Claude Code's `Explore`), which returns a slim brief instead of loading every file into context. Do the steps inline when a few reads answer them:
 
 1. **Read the issue** (if any) — description, acceptance criteria, all comments.
 2. **Locate relevant code** — grep for the primary domain term(s); list the files you'll touch.
@@ -308,7 +308,7 @@ Every phase carries one metadata line immediately under its heading:
 - **Independence means write-disjoint, not merely logically unrelated.** Two phases may run concurrently only if they also touch **disjoint files**. If two otherwise-independent phases would edit the same file, add a dependency edge to serialise them (or merge them) — concurrent edits to one file collide. Marking a phase `Depends: none` asserts it shares no written file with any other phase that could be ready at the same time.
 - **Never depend on a lower-priority phase.** A `HIGH` phase must not `Depends:` on a `MEDIUM`/`LOW` phase, nor `MEDIUM` on `LOW`. Lower-priority phases are skipped by default at implementation time, which would leave the dependent phase permanently unready. If phase B genuinely needs phase A's output, A is at least as important as B — raise A's priority to match.
 - Keep the graph **linearizable**: forward edges, IDs not positions, no cross-spec dependencies. If the graph is complex enough to need a diagram to follow, the spec is too big — split it. Don't add a derived "waves"/DAG-diagram block: the per-phase edges are the single source of truth, and a hand-maintained summary just drifts.
-- `implement-spec` reads these edges to compute each **wave** — the set of phases whose dependencies are all met — and may implement a wave's independent phases in parallel. A spec where every phase is `Depends: none` is one fully parallel wave; a straight `a → b → c` chain runs exactly like the old sequential model.
+- `implement-spec` reads these edges to compute each **wave** — the set of phases whose dependencies are all met — and may implement a wave's independent phases in parallel. A spec where every phase is `Depends: none` is one fully parallel wave; a straight `a → b → c` chain runs one phase per wave.
 
 ### Tasks
 

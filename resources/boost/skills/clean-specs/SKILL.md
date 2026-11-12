@@ -124,7 +124,7 @@ Specs are optionally issue-backed (the `spec.filename_pattern` may carry an `{is
 
 ### Step 4 — Prove the work is on the base branch
 
-**Deletion still has exactly one positive shape** — the work provably on the base branch, un-reverted, with nothing still open. What changed is that two different proofs can establish it. Take the rungs in order; **any one positive rung is enough**, and every rung must return a falsifiable result. Anything indeterminate is **KEEP**.
+**Deletion has exactly one positive shape** — the work provably on the base branch, un-reverted, with nothing still open. Two different proofs can establish it. Take the rungs in order; **any one positive rung is enough**, and every rung must return a falsifiable result. Anything indeterminate is **KEEP**.
 
 #### The open-PR veto — evaluated first, outranks every rung
 
@@ -194,7 +194,7 @@ The set comes from the spec's **`## Implementation` task lines**. That is where 
 
    **Why per task.** A spec-wide "at least one new candidate" is satisfied by a single finished task while an unfinished one rides along on its edit target: a task that says *modify* `PublishState` names a class that already exists, condition 2 confirms it still exists, and nothing ever tests whether the modification happened. One shipped task then carries a partly-shipped spec.
 
-   **Why an unprovable task caps rather than kills.** Field data from a consuming project: making every task show a new candidate rejected **6 of 6** real specs. The failing tasks were not sloppy — they were the ordinary modification half of feature work: a docblock correction, a column removed from an existing constant, an edit to an existing runbook, and nearly every `Tests — …` line, since tests exercise symbols that already exist. A rung that only clears a purely additive spec with no test tasks is decorative, and a decorative rung is the PR-keyed dead end this ladder replaced.
+   **Why an unprovable task caps rather than kills.** Most real specs mix additive tasks with modification tasks: a docblock correction, a column removed from an existing constant, an edit to an existing runbook, and nearly every `Tests — …` line, since tests exercise symbols that already exist. A rule that every task must show a new candidate rejects all of those specs, so the rung would clear only a purely additive spec with no test tasks and would prove almost nothing.
 
    So an unprovable task does not delete the spec's evidence — it **names itself in the report and lowers the ceiling**. A spec with any unprovable task is `PROPOSED`, never `DELETE-ELIGIBLE`: the user sees a short list of exactly which tasks Rung A could not check, and decides on that. Nothing is ever deleted in a batch on a modification task's word, which is the property that matters, and the automatic verdict is still reserved for a spec whose every task proved itself.
 

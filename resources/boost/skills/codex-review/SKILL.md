@@ -19,13 +19,13 @@ git diff --stat HEAD
 git diff --stat --staged
 ```
 
-If there are uncommitted changes, review those. If the working tree is clean, review the latest commit. Which target flag that maps to is in [Step 2b](#2b-resolve-the-target).
+If there are uncommitted changes, review those. If the working tree is clean, review the branch against its base on a feature branch, or the latest commit on the base branch. Which target flag that maps to is in [Step 2b](#2b-resolve-the-target).
 
 ## Step 2: Run the bounded Codex wrapper
 
 Codex runs through one bounded, broker-free wrapper script this skill ships: `scripts/run-codex-review.mjs`. It calls the native `codex exec` CLI **directly** — no Claude Code plugin, no broker session — under a hard timeout that kills the whole process tree, writing *this* run's result / events / stderr into a fresh temp dir and printing a JSON report. (An unfocused run uses the `codex exec review` subcommand; a focused run uses `codex exec` with the target described in the prompt, since the CLI rejects a custom prompt alongside `review`'s target flags.)
 
-That design removes both failure modes the old plugin path suffered: it **cannot hang** (the timeout fires and reaps the process, exit code 124), and it **cannot read a stale prior job's output** (results only ever come from this run's own files). So there is no broker session to clear, no poll loop, and no "is this result from my run?" ambiguity — a failure is a real failure, handled once and fallen back on, never a wedged broker to retry. (The plugin-broker hangs this replaces are tracked upstream: [anthropics/claude-code#48520](https://github.com/anthropics/claude-code/issues/48520), [openai/codex-plugin-cc#277](https://github.com/openai/codex-plugin-cc/issues/277) / [#258](https://github.com/openai/codex-plugin-cc/issues/258) / [#250](https://github.com/openai/codex-plugin-cc/issues/250), [openai/codex#25061](https://github.com/openai/codex/issues/25061).)
+The wrapper has two properties: it **cannot hang** (the timeout fires and reaps the process, exit code 124), and it **cannot read a stale prior job's output** (results only ever come from this run's own files). So there is no broker session to clear, no poll loop, and no "is this result from my run?" ambiguity — a failure is a real failure, handled once and fallen back on, never a wedged broker to retry.
 
 The wrapper is a **companion file emitted beside this skill**: `boost sync` writes it into each agent's skill directory next to the rendered `SKILL.md`, so it is already on disk — nothing to materialize. Under Claude Code it lands at `.claude/skills/codex-review/scripts/run-codex-review.mjs`. When this skill runs as `codex-review-user`, from a user-scope sync, it lands at `~/.claude/skills/codex-review-user/scripts/run-codex-review.mjs` instead. Swap the skills-dir prefix for another agent. In the commands below, `<wrapper>` is that path. Emitted assets carry no executable bit, so always invoke via `node <wrapper>`, never `<wrapper>` directly.
 
@@ -140,6 +140,10 @@ Summarize to the user:
 ## Step 7: Commit — leave a dedicated codex-review commit as proof
 
 A codex review that gates a PR must leave **one dedicated, single-purpose commit** on the branch: an auditable record that the review ran. That commit's SHA is the proof the PR-template codex-review checkbox references (see the `pull-requests` skill's [Codex-review checklist item](../pull-requests/SKILL.md#codex-review-checklist-item)) — the checkbox is never checked without it. A clean review is not exempt: "no findings" is itself a result worth recording, so it still gets a commit.
+
+When the review does not gate a PR, commit applied fixes as usual and make no empty proof commit.
+
+In a project whose commits follow Conventional Commits, use the subjects `chore: apply codex-review feedback` and `chore: record clean codex review` instead of the ones below.
 
 **Committed-work scope** (a commit or branch vs base):
 

@@ -191,7 +191,7 @@ When making changes to an existing PR you authored:
 2. **Switch to the branch**: `git checkout <branch-name>`.
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
-5. **Commit changes**: create meaningful commits following the project's commit conventions, once the changes pass the project's checks — see *A Commit Is a Claim Too* in the `verification-before-completion` guideline.
+5. **Commit changes**: create meaningful commits following the project's commit conventions, once the changes pass the project's checks, not while the approach is still being tried (see also *A Commit Is a Claim Too* in the `verification-before-completion` guideline, where the project ships it).
 6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
 7. **Push to remote**: `git push origin <branch-name>`.
 
@@ -238,18 +238,10 @@ If you only have:
 
 ## Required Information — Ask If Missing
 
-**Always ask the user for missing information rather than guessing.**
+Take the commits and the diff from the current branch (steps 1–4). Ask the user only for what the repository cannot answer:
 
-Before creating a PR, ensure you have:
-
-| Required                   | Ask if missing                                          |
-|----------------------------|---------------------------------------------------------|
-| Commits/changes to include | "Which commits or branch should I analyze for this PR?" |
-| Target branch              | If the branch-pattern resolution doesn't yield one and no default base branch is configured, ask the user |
-
-If the user hasn't provided:
-- **Security implications** → Ask: "Are there any security or privacy considerations I should mention?"
-- **Testing steps** → Ask: "What are the steps to test this change?"
+- **Target branch** — ask when the branch-pattern resolution yields none and no default base branch is configured.
+- **Security implications and testing steps** — write them from the diff. Ask only when the diff cannot settle one, for example an auth or data-exposure change with no stated intent.
 
 ## Ask the User for a Direction
 
@@ -369,7 +361,7 @@ The project's PR template path is <!--boost:conv path="pr.template_path" mode="i
 
 ### Codex-review checklist item
 
-If the template contains a codex-review checklist item — a checkbox asserting an independent Codex review ran — it is **proof-gated**: a tick is a verifiable claim, not a courtesy. Only mark it `[x]` when a dedicated codex-review commit exists on the branch (the `codex-review` skill's [Step 7](../codex-review/SKILL.md#step-7-commit--leave-a-dedicated-codex-review-commit-as-proof) leaves one — the fixes commit, or an empty `Codex review: clean, no changes` commit for a clean round), and **append that commit's short SHA** to the item as the proof. Never check it without a SHA — an unreferenced tick is an unauditable claim.
+If the template contains a codex-review checklist item — a checkbox asserting an independent Codex review ran — it is **proof-gated**: a tick is a verifiable claim, not a courtesy. Only mark it `[x]` when a dedicated codex-review commit exists on the branch (the `codex-review` skill's [Step 7](../codex-review/SKILL.md#step-7-commit--leave-a-dedicated-codex-review-commit-as-proof) leaves one — the fixes commit, or the empty proof commit for a clean round), and **append that commit's short SHA** to the item as the proof. Never check it without a SHA — an unreferenced tick is an unauditable claim.
 
 ```
 - [x] Codex reviewed — <short-sha>
@@ -391,7 +383,7 @@ If there is no template, write a clear description that covers:
 
 ## Writing the Description: Why, Not What
 
-A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. The anchor is the commit-craft canon **why, not what**: the diff already says *what* changed; the description must say *why*, and what it enables. Lead with the problem solved and the user-visible behaviour change. AI tends to over-address: list everything, in fancy language, with the most words on the most obvious parts. Don't.
+A PR description is read by reviewers, future maintainers, and release-notes writers — not by people grepping for class names. The anchor is the commit-craft canon **why, not what**: the diff already says *what* changed; the description must say *why*, and what it enables. Lead with the problem solved and the user-visible behaviour change. Give the obvious parts the fewest words, use plain language, and leave out what the diff already shows.
 
 ### How much to say about each change
 

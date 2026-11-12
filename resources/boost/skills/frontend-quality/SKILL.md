@@ -99,7 +99,7 @@ See the `javascript` guideline ("Eye-verify frontend changes" and "Verify agains
 
 | Check | Command | Pass criteria |
 |-------|---------|---------------|
-| Type checking | `npm run type-check` (TypeScript projects) | 0 errors |
+| Type checking | the project's type-check script, for example `npm run type-check` or `npm run typecheck` (TypeScript projects) | 0 errors |
 | Linting | `npm run lint` (the project's lint script) | 0 errors |
 | Tests | `npm test` (the project's JS test script) | 0 failures |
 | Eye-verify (UI changes) | Drive it in a real browser per the coverage contract (`references/eye-verify.md`) | every testable checked or listed NOT-VERIFIED; no console/page errors or untranslated keys |

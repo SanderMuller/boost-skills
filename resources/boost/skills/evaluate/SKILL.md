@@ -17,7 +17,7 @@ A self-directed loop: evaluate your own work, fix what you find, re-evaluate unt
 - When the user says "evaluate", "check this", or "review your work"
 - Before creating a PR or marking work as done
 
-**Note:** This skill is a completion-level activity. It runs the full `backend-quality` skill (including static analysis and full test suite). Do not use this skill mid-feature — only when the implementation is done.
+**Note:** This skill is a completion-level activity. It runs the completion tier of the quality skill for the files that changed (`backend-quality`, `frontend-quality`), including static analysis and the full test suite. Do not use this skill mid-feature — only when the implementation is done.
 
 ## Workflow
 
@@ -40,7 +40,7 @@ Before running checks, review the current conversation for recent quality check 
 **If checks can be skipped**, state which specific checks you're skipping and why. Skipping is decided **per individual check**, not all-or-nothing for an entire skill:
 > "Skipping code style and static analysis — both passed clean earlier with no backend changes since; re-running tests to verify behavior."
 
-**If any doubt**, run the checks. It's better to re-run than to miss a failure.
+Skip a check only when you can name its last clean run and no file it covers changed since. Otherwise, run it.
 
 **When the project runs `sandermuller/boost-pipeline`**, a recorded run counts as evidence, and
 beats your own recollection. This applies only then — a project without the package runs its
@@ -135,7 +135,7 @@ Read through all files in the resolved scope and check for:
 
 In a package or any code with downstream consumers, answer every row against those consumers too. An interface, event, config key or hook with no second implementation, listener or caller *in this repository* may still be the published extension point.
 
-The `simplification-auditor` subagent carries this table in fuller form, plus the ledger it reports. This copy is the fix-loop version: keep them consistent when either changes.
+The `simplification-auditor` subagent carries this table in fuller form, plus the ledger it reports. This copy is the fix-loop version.
 
 | Unit the change added | Ask |
 |---|---|
@@ -225,7 +225,7 @@ Run the `codex-review` skill for a multi-model second opinion. Critically evalua
 1. `codex-review` already ran in this conversation and ended clean — no warranted findings remaining (every finding applied or dismissed with reasoning)
 2. No task files were added, removed, or changed since that clean run — any file counts (code, docs, skills, config), not only code; only edits inside agent-managed paths are exempt, mirroring the gate's `since_last_code_change` semantics
 
-If in doubt, run it. If `codex-review` cannot run (Codex CLI missing or unauthenticated), note that in the Phase 8 report instead of silently skipping.
+Otherwise, run it. If `codex-review` cannot run (Codex CLI missing or unauthenticated), note that in the Phase 8 report instead of silently skipping.
 
 ### Phase 8: Report
 
@@ -266,6 +266,6 @@ Hard rules, regardless of harness:
 
 - **Fix, don't report** — the point of this skill is to catch and fix issues, not to generate a list for the user
 - **Loop until clean** — do not stop after the first fix pass; re-evaluate until nothing remains
-- **Be thorough but fast** — check all dimensions but don't over-analyze obvious code
-- **Run tests after every fix** — don't batch fixes and hope they all work
+- **Proportion the effort** — check every dimension; spend little time on code whose correctness is obvious
+- **Run the tests a fix touches after every fix**, and the full suite once at the end — don't batch fixes and hope they all work
 - **Trust existing patterns** — if the codebase does something a certain way consistently, follow it

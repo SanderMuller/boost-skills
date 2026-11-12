@@ -1,6 +1,6 @@
 ---
 name: upgrading
-description: "Canonical structure for UPGRADING.md in a Composer package. When to maintain one, what to put in it."
+description: "Canonical structure for UPGRADING.md in a Composer package: when to maintain one and what to put in it. Activates when: writing or updating UPGRADING.md, preparing a major or breaking release, or when user mentions: upgrade guide, migration guide, UPGRADING.md."
 metadata:
   boost-tags: "release-automation"
 ---
@@ -62,7 +62,7 @@ You DON'T need one if:
 
 - Imperative ("Replace X with Y") not narrative ("We've changed X to Y")
 - Code blocks for every migration with concrete before/after
-- Section per major version range. Append, never rewrite history.
+- Section per major version range. Add new sections; change an old one only to compact it (see Anti-patterns).
 
 ## Anti-patterns
 

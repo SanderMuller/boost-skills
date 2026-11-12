@@ -23,7 +23,7 @@ Always ask rather than guess.
 
 | Required | Ask if missing |
 |----------|----------------|
-| Issue number | "Which GitHub issue number should I update?" |
+| Issue number | "Which GitHub issue gets the update?" |
 | PR or commit range | "Which PR or commit range contains the changes to document?" (a bare branch name is mutable — pin to a PR or explicit commits) |
 
 If unclear from the code:

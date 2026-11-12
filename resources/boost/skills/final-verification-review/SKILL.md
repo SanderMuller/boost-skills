@@ -105,13 +105,13 @@ This project's PR-label policy:
 
 If none is configured, skip that item. If one is, walk the `pull-requests` [PR Labels](../pull-requests/SKILL.md#pr-labels) evidence ladder check-only and report either the option it settles on, or that `pull-requests` will ask the author at creation time — the latter is a note, not a blocker, since the question resolves it. Report it **blocking** only when that section's unusable-config cases leave no label that can apply at all. Never apply a label here — this skill creates nothing.
 
-**No-PR flow** — there is no PR title or template. If the endpoint is a **release**, the next step is the `pre-release` skill (its gauntlet, CI gate, and tag handoff own the release preconditions) — this skill does not duplicate those; just confirm the change is the intended release scope. If the endpoint is a **plain commit to the target branch**, there are no extra preconditions beyond 2a–2c.
+**No-PR flow** — there is no PR title or template. If the endpoint is a **release**, the next step is the project's release skill (`pre-release`, where the project ships it; its gauntlet, CI gate, and tag handoff own the release preconditions) — this skill does not duplicate those; just confirm the change is the intended release scope. If the endpoint is a **plain commit to the target branch**, there are no extra preconditions beyond 2a–2c.
 
 ## Parallel Closeout
 
 The step order above is the canonical flow. When the harness can run independent tasks concurrently (subagents, parallel tasks, a background shell), overlap the independent parts — as an optimization, never a requirement:
 
-- **Within Step 2** — 2a through 2d are independent checks; run them concurrently.
+- **Within Step 2** — 2a through 2d are independent checks of a few commands each; run them as parallel tool calls, not as subagents.
 - **Step 2 alongside Step 1's tail** — Step 2 is read-only, so it may start once Step 1's fix loop has stopped changing files (evaluate's remaining passes are verification). Two caveats: a `skill_invoked` gate (2c) can only be settled after the review it checks has run, and any later file change from Step 1 stales Step 2 — re-run the affected checks.
 - **Dedup across lanes** — a `shell_command` gate that duplicates a check evaluate already ran clean (e.g. the test suite) does not need a fresh run unless files changed since.
 

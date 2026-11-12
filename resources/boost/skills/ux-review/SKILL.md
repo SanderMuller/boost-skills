@@ -92,6 +92,8 @@ Think like a UX expert. Consider:
 
 Generate 2-4 UX/UI approaches:
 
+The bulk-tagging case below runs through Phases 3–6 to show the shape of each artifact. It is illustrative: derive the options and the choice from the feature under review, not from this example.
+
 ```markdown
 ## Option A: Modal Dialog
 - User clicks button → modal opens → fills form → submits

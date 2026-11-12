@@ -53,7 +53,7 @@ Always fetch the issue first with `mcp__<jira>__jira_get_issue` before any mutat
 
 | Required | Ask if missing |
 |---|---|
-| Jira issue key | "Which Jira issue should I update?" |
+| Jira issue key | "Which Jira issue gets the update?" |
 | PR or commit range | "Which PR or commit range contains the changes to document?" A branch name alone is not enough — branches are mutable; lock to a PR number or a `git log` range. |
 
 For the Blocked-by-Question sub-workflow, also confirm the one-line blocker question and the decision type (technical / UX / PO) so the right person can be mentioned.
