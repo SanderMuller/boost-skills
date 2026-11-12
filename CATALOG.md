@@ -73,7 +73,7 @@ Most content is universal. The rest carries **capability tags** — a project de
 
 ## Guidelines
 
-Short project-wide conventions, folded into `CLAUDE.md` / `AGENTS.md` and always active. Their tags come from a sidecar `.boost-tags.yaml`, because a guideline file stays frontmatter-free for `laravel/boost`.
+Short project-wide conventions, folded into `AGENTS.md` / `GEMINI.md` and always active. Their tags come from a sidecar `.boost-tags.yaml`, because a guideline file stays frontmatter-free for `laravel/boost`.
 
 A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in any repository. `boost sync --scope=user --all` publishes them outside a project (needs `boost-core` >= 1.10.0). A user-scope guideline must render token-free, because user scope has no `boost.php`.
 

@@ -79,7 +79,7 @@ When you move to `boost-core 0.20+`, update your project's `->withTags(...)` cal
 
 ### Gotcha — host `.blade.php` guidelines silently vanish
 
-Not a conventions change, but it bites on the same sync: **`boost-core 0.16`'s guideline loader only renders `.md` host guidelines natively (PassthroughRenderer). A host `.ai/guidelines/*.blade.php` file is silently dropped from the rendered `CLAUDE.md` / `AGENTS.md` on the v2/0.16 sync** — and `boost validate` passes anyway (it checks the conventions schema, not guideline-render completeness), so the drop is silent. Reported by two real consumers (mijntp, hihaho) that ship a `.blade.php` style guide.
+Not a conventions change, but it bites on the same sync: **`boost-core 0.16`'s guideline loader only renders `.md` host guidelines natively (PassthroughRenderer). A host `.ai/guidelines/*.blade.php` file is silently dropped from the rendered `CLAUDE.md` / `AGENTS.md` on the v2/0.16 sync** — and `boost validate` passes anyway (it checks the conventions schema, not guideline-render completeness), so the drop is silent. Reported by two consumers that ship a `.blade.php` style guide.
 
 Fix: register a Blade renderer in `boost.php`:
 
@@ -91,7 +91,7 @@ This works when you sync via `php artisan project-boost:sync` (the Laravel path 
 
 ### Gotcha — a host shadow of a slot-aware skill keeps the block
 
-If you keep a **host shadow** (`.ai/skills/<name>/SKILL.md`) of a slot-aware vendor skill (`write-spec`, `pull-requests`, `codex-review`, the `jira-*` skills, `bug-fixing`, `backend-quality`, `test-writing`, `interview`) carried over from the 1.9 line, that shadow still contains `$.slot` references. On 2.0 the **vendor** skill is token-migrated, but **your host shadow is not** — and the gate's legacy-ref check (a `$.<slot-root>` ref such as `$.spec…` / `$.jira…` → "skill requires runtime") sets `fullyMigrated = false`, so the `## Project Conventions` block is (correctly) kept in `CLAUDE.md`. A real consumer (hihaho) hit exactly this: a `$.spec.filename_pattern` ref in their `write-spec` shadow held the block.
+If you keep a **host shadow** (`.ai/skills/<name>/SKILL.md`) of a slot-aware vendor skill (`write-spec`, `pull-requests`, `codex-review`, the `jira-*` skills, `bug-fixing`, `backend-quality`, `test-writing`, `interview`) carried over from the 1.9 line, that shadow still contains `$.slot` references. On 2.0 the **vendor** skill is token-migrated, but **your host shadow is not** — and the gate's legacy-ref check (a `$.<slot-root>` ref such as `$.spec…` / `$.jira…` → "skill requires runtime") sets `fullyMigrated = false`, so the `## Project Conventions` block is (correctly) kept in `CLAUDE.md`. A consumer hit exactly this: a `$.spec.filename_pattern` ref in their `write-spec` shadow held the block.
 
 This is invisible to `boost validate` / `boost doctor` — the leak scan catches raw `<!--boost:conv-->` tokens, not legacy `$.` refs. Grep your host sources directly:
 
