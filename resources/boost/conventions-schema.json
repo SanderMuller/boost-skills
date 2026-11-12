@@ -89,7 +89,7 @@
             "properties": {
                 "title_format": {
                     "type": "string",
-                    "description": "Template for PR titles. Recognized placeholders: {issue_key} (full Jira key like 'ABC-123'), {short_title}, {type} (the bare Conventional Commits type, e.g. 'feat'; a breaking change adds '!' directly before the ':')."
+                    "description": "Template for PR titles. Recognized placeholders: {issue_key} (the tracker issue key: a Jira-style key like 'ABC-123' or a bare GitHub issue number like '1234'), {short_title}, {type} (the bare Conventional Commits type, e.g. 'feat'; a breaking change adds '!' directly before the ':')."
                 },
                 "template_path": {
                     "type": "string",
@@ -328,7 +328,7 @@
                 "filename_pattern": {
                     "type": "string",
                     "default": "specs/{slug}.md",
-                    "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = full Jira key (e.g. 'ABC-123'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no Jira issue), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
+                    "description": "Template for spec filenames. Default when unset: 'specs/{slug}.md'. Recognized placeholders: {issue_key} = the tracker issue key, a Jira-style key (e.g. 'ABC-123') or a bare GitHub issue number (e.g. '1234'); {slug} = URL-safe kebab-case from issue title or feature name (lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary); {date} = ISO date (YYYY-MM-DD). Empty-placeholder rule: if a placeholder resolves empty (e.g. {issue_key} when no issue is involved), the placeholder AND any single adjacent dash are omitted. Example: 'specs/{issue_key}-{slug}.md' with no issue + 'Set up dark mode' → 'specs/set-up-dark-mode.md' (not 'specs/-set-up-dark-mode.md')."
                 },
                 "directories": {
                     "type": "array",

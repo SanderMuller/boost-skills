@@ -15,13 +15,13 @@ Writes structured specification files designed for phased implementation with bu
 
 The spec filename pattern is <!--boost:conv path="spec.filename_pattern" mode="inline"-->specs/{slug}.md<!--boost:conv:end-->. It accepts these placeholders, which you substitute at spec-creation time:
 
-- `{issue_key}` — full Jira key (e.g. `ABC-123`). Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
+- `{issue_key}` — the tracker issue key: a Jira-style key (`ABC-123`) or a bare GitHub issue number (`1234`, without `#`), whichever the project uses. Resolved from the user's input, or from the current branch name if it matches one of the configured branch patterns:
 
   ```boost:conv
   <!--boost:conv path="branches.patterns" mode="yaml"-->none — no branch-pattern issue-key detection<!--boost:conv:end-->
   ```
 
-  The configured Jira project key is <!--boost:conv path="jira.project_key" mode="inline"-->(none — the spec is treated as not-issue-backed)<!--boost:conv:end-->. If no issue is involved (or no project key is configured), the placeholder resolves empty.
+  The configured Jira project key is <!--boost:conv path="jira.project_key" mode="inline"-->(none)<!--boost:conv:end-->. A Jira-style key needs it; a GitHub issue number does not. The placeholder resolves empty when no issue is involved, or when a Jira-style key has no configured project key.
 - `{slug}` — URL-safe kebab-case from the feature name. Lowercase, alphanumerics + dashes, no consecutive or leading/trailing dashes, recommended cap ~60 chars truncated on word boundary.
 - `{date}` — ISO date (`YYYY-MM-DD`).
 
