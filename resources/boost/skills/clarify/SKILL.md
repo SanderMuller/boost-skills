@@ -114,7 +114,7 @@ When the user describes how something currently works, **verify it against the a
 
 ### 8. Assumptions audit — the gap reducer
 
-Before wrapping up, walk everything gathered and flag every place *you* silently inferred something the user did not say. Ask about each one whose wrong guess would change the work; record the rest in the running tally. Flag a statement when it meets **any** of these:
+Before wrapping up, walk everything gathered and flag every place *you* silently inferred something the user did not say. Ask about each one whose wrong guess would change the work; record the rest in the assumptions ledger. Flag a statement when it meets **any** of these:
 
 - **Magic numbers invented from nothing** — char caps, retry counts, backoff sequences, cache TTLs, delays, pagination sizes.
 - **Naming or string content invented** — message templates, cache-key prefixes, error wording, queue names. The user likely has opinions on user-visible strings.

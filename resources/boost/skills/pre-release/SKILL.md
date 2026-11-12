@@ -140,10 +140,10 @@ If any `.ai/` file changed, force a sync to verify locally:
 
 ```bash
 vendor/bin/boost sync || true
-git status --short .ai/
+git status --short
 ```
 
-Only the `.ai/` sources need committing. Generated files (`CLAUDE.md`, `.claude/skills/`, etc.) propagate to consumers on their next `composer install/update` via boost-core's plugin.
+Commit the `.ai/` sources and the regenerated `AGENTS.md` / `GEMINI.md`. The skill, command and subagent directories are gitignored; consumers get the shipped sources on their next sync.
 
 #### 5c. Docs build gate (docs-site repos only)
 
@@ -209,7 +209,7 @@ failed=$(gh run list --commit "$SHA" --json conclusion,name -q '[.[] | select(.c
 [ "$failed" -eq 0 ] || { echo "CI red on $SHA"; gh run list --commit "$SHA"; exit 1; }
 ```
 
-**When a commit produces no runs (exit 2).** The release commit is often docs-only — a synced guideline, a README fix, a regenerated `CLAUDE.md` — and every workflow filters on `**.php` or similar. That commit legitimately produces nothing to enumerate. Two readings, and you must say which one applies:
+**When a commit produces no runs (exit 2).** The release commit is often docs-only — a synced guideline, a README fix, a regenerated `AGENTS.md` — and every workflow filters on `**.php` or similar. That commit legitimately produces nothing to enumerate. Two readings, and you must say which one applies:
 
 - **Expected absence.** Every path the commit touches falls outside every workflow's `paths` filter. This passes, on one condition: the nearest code-bearing ancestor is green under the same query, and you name both SHAs in the report — "`<ancestor>` green on run-tests + phpstan; HEAD `<sha>` is docs-only and produced no runs by path filter". An unexplained absence is not a pass.
 - **Unexpected absence.** A path the commit touches *is* covered by a filter, or the workflow is disabled, or a push never reached the remote. That is a failure to investigate, not a pass.
@@ -282,7 +282,7 @@ gh run list --commit "$SHA" --json name,status,conclusion
 
 Only when (1) status is empty, (2) echoes `pushed`, and (3) every run is `completed` + `{success, skipped}` may you `Write` to `internal/release-notes-<version>.md`. When (3) lists no runs at all, apply step 6's "When a commit produces no runs" rule: draft the notes only for an expected absence, pin the verified-sha to HEAD as usual, and name the green code-bearing ancestor in the handoff.
 
-Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below), then wait for the user to cut the tag and run step 8b.
+Draft into `internal/release-notes-<version>.md`. The user reads the draft, creates the tag, and publishes the release themselves — do not cut the tag, do not run `gh release create`, do not push tags. Once the release-notes file exists and CI is green, run the 8a gate, then report "ready to tag" with the **canonical handoff command shape** (see "Canonical handoff command shape" below). After the user cuts the tag, run step 8b.
 
 **Pin the verified SHA in the notes file.** The very first line of the notes file must be an HTML comment recording the green SHA. GitHub strips HTML comments when rendering the release body, so this is invisible to readers but greppable by step 8:
 
@@ -332,7 +332,7 @@ The same discipline generalizes to any agent→user handoff involving CLI comman
 
 Step 7 proves CI green at draft time. Step 8 proves CI is *still* green at tag time, and catches failures that only show up on the tag-ref push.
 
-**8a. Pre-tag gate — runs TWICE: the agent runs it before presenting the handoff, and the user re-runs it seconds before cutting the tag.** It re-verifies four things: HEAD hasn't drifted since notes draft, the notes file pins this exact SHA, CI is still all green, and the target SHA actually contains this release's work.
+**8a. Pre-tag gate — runs TWICE: the agent runs it before presenting the handoff, and the user re-runs it seconds before cutting the tag.** It re-verifies four things: HEAD hasn't drifted since notes draft, the notes file pins this exact SHA, CI is still all green, and the release's PR is merged (or, with no PR, commits exist since the last tag).
 
 **The agent MUST run this gate itself before presenting the `gh release create` handoff, and MUST refuse to present that command if any check fails.** The handoff message is a readiness claim; do not make it on an unverified state. The user still owns cutting the tag, but the agent does not get to hand over a tag command until its own checks pass — that removes the "user skipped the gate" failure mode (a release has shipped exactly because the gate was a user-run step that was skipped: the tag was cut while the PR was still open, against pre-feature `main`, and nothing caught it). The user then re-runs the same one-liner immediately before tagging to catch any drift in the interval.
 
@@ -438,7 +438,7 @@ Wait until terminal. If red:
 | 0. Sync            | `git fetch origin \|\| true` + `git status -sb \|\| true`                                       | branch not behind its remote                  |
 | 1. Rector          | `vendor/bin/rector process \|\| true`, only when `quality.rector` is `true`                    | 0 files changed, or skipped                   |
 | 2. Pint            | `vendor/bin/pint --dirty --format agent \|\| true`                                             | clean                                         |
-| 3. Tests           | `composer test`, else the project's runner (`vendor/bin/pest` or `vendor/bin/phpunit`)        | 0 failures                                    |
+| 3. Tests           | `composer test`, else the project's runner (`vendor/bin/pest` or `vendor/bin/phpunit`), with `\|\| true` | 0 failures                                    |
 | 4. PHPStan         | `vendor/bin/phpstan analyse --memory-limit=2G \|\| true`                                       | 0 errors                                      |
 | 5a. README + docs  | staleness: manual scan vs `git log <last-tag>..HEAD`; verbosity: word count + prose-run scan over **every current** README/docs page (docs-site repos: docs pages, index sync, link audit) | no stale claims; every verbosity-audit item clean on every page (feature-list description on the README, budget, paragraph cap, prose-majority, gratuitous rationale, uncollapsed long tail, detail written above its tier); indexes agree; README site links match generator routes; repo-relative + asset links resolve |
 | 5b. Boost docs     | `vendor/bin/boost sync \|\| true`                                                              | `.ai/` ↔ generated files in sync              |
@@ -446,7 +446,7 @@ Wait until terminal. If red:
 | **commit + push**  | user confirms changes + `git push`                                                             | HEAD pushed to `origin/main`                  |
 | 6. CI green-light  | `gh run list --commit "$(git rev-parse HEAD)"` all complete + no failure, bounded wait         | every run for the SHA in `{success, skipped}`; zero runs decided explicitly, with the green code-bearing ancestor named |
 | 7. Release notes   | delete any pre-green/placeholder notes → preflight (clean tree + **merged** + CI green on release commit) → `Write internal/release-notes-<version>.md` | first line is `<!-- verified-sha: $real-green-SHA -->` (never a placeholder) |
-| 8a. Pre-tag gate   | agent runs A–D (SHA-drift, push/merge state, CI-still-green, **content-presence**) before presenting handoff + REFUSES on failure; user re-runs before `gh release create` | prints `OK to tag`                            |
+| 8a. Pre-tag gate   | agent runs A–D (SHA-drift, push/merge state, CI-still-green, **PR merged or commits since last tag**) before presenting handoff + REFUSES on failure; user re-runs before `gh release create` | prints `OK to tag`                            |
 | 8b. Post-tag watch | `gh run list --commit "$TAG_SHA"` filtered by `headBranch == $TAG`                             | tag-ref + release-event workflows all green   |
 
 ## Important

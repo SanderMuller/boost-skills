@@ -141,7 +141,7 @@ Summarize to the user:
 
 A codex review that gates a PR must leave **one dedicated, single-purpose commit** on the branch: an auditable record that the review ran. That commit's SHA is the proof the PR-template codex-review checkbox references (see the `pull-requests` skill's [Codex-review checklist item](../pull-requests/SKILL.md#codex-review-checklist-item)) — the checkbox is never checked without it. A clean review is not exempt: "no findings" is itself a result worth recording, so it still gets a commit.
 
-When the review does not gate a PR, make no empty proof commit; the scope rules below still decide whether applied fixes get committed.
+A review gates a PR when the project has a `pr.gates` `skill_invoked: codex-review` entry or a PR template with a codex-review checkbox, whichever skill started the review. When the review does not gate a PR, make no empty proof commit; the scope rules below still decide whether applied fixes get committed.
 
 In a project whose commits follow Conventional Commits, use the subjects `chore: apply codex-review feedback` and `chore: record clean codex review` instead of the ones below.
 

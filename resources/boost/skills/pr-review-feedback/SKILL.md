@@ -212,7 +212,7 @@ For each **bot** or **self** thread you deemed valid:
 1. **Read the relevant file** to understand context
 2. **If the feedback is a bug or edge case, write the test first.** When a comment flags a runtime fault — a wrong type, a bad boundary condition, a feature/permission edge, a regression — add a failing test that reproduces it *before* touching the fix, then make the change so the test passes. The fix isn't done until the case is covered — don't just patch and move on. (Pure style/refactor feedback needs no test — see Phase 4 for the split.)
 3. **Make the change** following the project's patterns
-4. **Run the project's code-style fixer** on the changed files (Phase 4 runs the full checks)
+4. **Run the project's code-style fixer** on the changed files (Phase 4 runs the quality checks)
 
 **Do not edit any file in response to a colleague thread in this phase.** Other-colleague feedback goes through Phase 3b first.
 

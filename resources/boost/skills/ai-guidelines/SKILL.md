@@ -9,7 +9,7 @@ description: "MUST USE when creating, updating, or managing AI skills and guidel
 
 sandermuller/boost-core generates these files. The next sync overwrites any direct edit. Put project guidance in `.ai/guidelines/` instead.
 
-boost-core does not generate `CLAUDE.md`. By default, Claude Code reads `AGENTS.md` only when the project has no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. If one of those files exists, it must import `@AGENTS.md`, or the boost guidance does not reach Claude. Do not add guidance to `CLAUDE.md`.
+boost-core does not generate `CLAUDE.md`. By default, Claude Code reads `AGENTS.md` only when the project has no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. If one of those files exists, it must import `@AGENTS.md` (`@../AGENTS.md` from `.claude/CLAUDE.md`), or Claude Code's "Project instructions" setting must be `claude-md-and-agents-md`. Otherwise the boost guidance does not reach Claude. Do not add guidance to `CLAUDE.md`.
 
 > **Laravel projects with `sandermuller/project-boost-laravel` installed:** substitute `php artisan project-boost:sync` for `vendor/bin/boost sync` everywhere in this skill. The Laravel wrapper boots the application before it runs boost-core's sync. The bare `vendor/bin/boost sync` does not boot the application, so it fails in a Laravel project.
 
@@ -47,7 +47,7 @@ Guideline files in `.ai/guidelines/` are standard Markdown (`.md`). Keep them co
 
 ### Where content lives
 
-Guidelines are folded into `CLAUDE.md` / `AGENTS.md` and load in **every** session, so each line is a context cost paid on every task. Skills load on demand. Four homes, ordered by what each one costs a reader:
+Guidelines are folded into `AGENTS.md` / `GEMINI.md` and load in **every** session, so each line is a context cost paid on every task. Skills load on demand. Four homes, ordered by what each one costs a reader:
 
 - **`.ai/guidelines/<name>.md`** — the enforceable rule, and only the crucial non-obvious *why*, stated tersely. No command sequences, no step-by-step procedure, no long rationale. When a rule has a procedure, name the skill that owns it.
 - **`.ai/skills/<name>/SKILL.md`** — the *how*: procedures, commands, checklists, examples.

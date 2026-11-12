@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://sandermuller.github.io/boost-skills/conventions-schema/v1.json",
     "title": "boost-skills conventions (v1)",
-    "description": "Slot vocabulary referenced by sandermuller/boost-skills vendor skills. Consumers fill this in their CLAUDE.md Project Conventions block. See https://github.com/sandermuller/boost-skills#project-conventions-schema for the published vocabulary.",
+    "description": "Slot vocabulary referenced by sandermuller/boost-skills vendor skills. Consumers set these values with ->withConventions([...]) in their boost config. See https://github.com/sandermuller/boost-skills#project-conventions-schema for the published vocabulary.",
     "metadata": {
         "schema-required": "^1"
     },
