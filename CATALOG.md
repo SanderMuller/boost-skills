@@ -29,6 +29,7 @@ Everything `sandermuller/boost-skills` ships: skills, tags, guidelines and subag
 | `jira-rework`          | Research a Jira issue sent back for rework, then propose fix options.                                | `jira` `github` |
 | `jira-updates`         | Update a Jira issue after its PR is created; post Blocked-by-Question comments.                      | `jira`          |
 | `migration-squash`     | Create or review a Laravel migration squash safely — pre-flight the dump, then a checklist catching incomplete, contaminated, or data-losing baselines. | `laravel`       |
+| `modern-web-guidance`  | Look up native HTML, CSS and browser-API patterns with Google's pinned CLI, telemetry off, checked against the project's browser target. | `frontend`      |
 | `php-generics`         | Docblock generics and shapes: name a repeated `array{...}`, bind a generic base, type a class name.  | `php`           |
 | `pr-review-feedback`   | Apply PR review comments, evaluating each critically before acting.                                  | `github`        |
 | `pre-release`          | Pre-push gauntlet: Rector, Pint, full test suite, PHPStan, and a doc-staleness audit (README, docs site, `.ai/`). | `php` `github` `release-automation` |
