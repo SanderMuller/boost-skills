@@ -5,6 +5,34 @@ All notable changes to `sandermuller/boost-skills` will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.60.0 - 2026-11-16
+
+### Added
+
+- `laravel-helpers` guideline (`laravel` tag): attach diagnostic context with Laravel's `Context` instead of Sentry's scope, and watch `Str::slug()` and `Str::squish()` with non-Latin text.
+- `pull-requests`: a section on changing a PR's base, so CI runs against the new base.
+- `eloquent-models`: sections on custom collections and on factory relation helpers (`for{Relation}()`, `has{Relation}()`).
+- `frontend-quality`: a manual check for hand-written vendor contract types.
+- `migrations` guideline and `database-specialist` subagent: when to bound the MySQL metadata-lock wait around DDL, and when not to.
+- `verification-before-completion` guideline and `bug-fixing`: local data proves nothing about a deployed environment.
+
+### Changed
+
+- `pull-requests`: the body temp file is named after the branch, and the post-create check confirms the body belongs to this PR and has no relative image paths.
+- `jira-rework`: accepts a Jira URL, treats a `focusedCommentId` comment as the primary feedback, and installs the base's dependencies when its lock files differ.
+- `eye-verification`: adds a missing screenshot section, reads the PR body again after the write, and reports where each screenshot was published.
+- `interview`: a request to be questioned with no spec at the end goes to `clarify`.
+- `backend-quality`: PHPStan always analyses the whole project.
+- `resolve-conflicts`: only a `success` or `failure` job counts as a CI baseline.
+- `migration-squash`: the test run adds `--drop-databases`.
+- `test-value`: deleting a test outside the change's scope needs the user's approval.
+- `autoresearch`: uses a `perf:` subject in a Conventional Commits project.
+- `code-review`: a spec persona's feared failure counts as a criterion.
+- `task-scope` guideline: an impact report lists what to verify, not what to change.
+- `ai-guidelines`: run `vendor/bin/boost sync` after a `git pull` that skips `composer install`.
+
+**Full changelog:** https://github.com/SanderMuller/boost-skills/compare/2.59.0...2.60.0
+
 ## 2.59.0 - 2026-11-16
 
 ### Added
@@ -748,6 +776,7 @@ A conventions slot for projects that mandate a label on every PR. Optional and a
   
   
   
+  
   ```
   The slot carries the mechanism only. Label names, the deciding question, and the policy prose are yours — no vocabulary and no semantics are fixed by the package, and `options` has no mandated length beyond needing at least one entry.
   
@@ -1437,6 +1466,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, same schema v1. The `## Project Conventions` block in `CLAUDE.md` disappears once your full synced skill set is token-sourced (the engine keeps it until everything converges, so partial states are safe). See [UPGRADING.md](UPGRADING.md) for the full 1.9.x → 2.0 path.
 
@@ -1456,6 +1486,7 @@ No `boost.php` or slot-vocabulary changes — same `->withConventions([...])`, s
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.9"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1641,6 +1672,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you hand-edited content into a generated `CLAUDE.md` / `AGENTS.md`, move it to `.ai/guidelines/` before adopting `boost-core 0.12+` (markerless makes those files wholesale boost-owned); see `boost-core`'s 0.12.0 notes.
 
@@ -1666,6 +1698,7 @@ No schema, slot, or skill-body changes — floor-tracking + dev-env only. If you
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.7"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -1860,6 +1893,7 @@ vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
 
 
 
+
 ```
 No `boost.php` or convention changes. The slot-vocabulary is unchanged — these are prose/schema-default refinements, not new slots.
 
@@ -1886,6 +1920,7 @@ If you want `pre-release` back, add `release-automation` to your `withTags(...)`
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.4"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel
+
 
 
 
@@ -2003,6 +2038,7 @@ Floor-bumps the engine to `boost-core ^0.10` for the cross-agent capability-symm
 ```bash
 composer require --dev "sandermuller/boost-skills:^1.9.2" "sandermuller/boost-core:^0.10"
 vendor/bin/boost sync   # or `php artisan project-boost:sync` in Laravel projects
+
 
 
 
@@ -2206,6 +2242,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 Or in Laravel projects with `project-boost-laravel`:
 
@@ -2214,6 +2251,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9.1"
 php artisan project-boost:sync
 vendor/bin/boost validate
+
 
 
 
@@ -2407,6 +2445,7 @@ No migration step from `1.9.0`. Drop-in replacement.
   
   
   
+  
   ```
   The `--target <BRANCH>` flag is always explicit, even when `main`. The branch named there MUST match the branch containing the verified-sha commit in the notes file.
   
@@ -2424,6 +2463,7 @@ composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.9"
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -2560,6 +2600,7 @@ vendor/bin/boost convert-conventions
 
 vendor/bin/boost sync
 vendor/bin/boost validate
+
 
 
 
@@ -2795,6 +2836,7 @@ vendor/bin/boost validate
 
 
 
+
 ```
 See [`UPGRADING.md`](UPGRADING.md) for the full `1.7.x` → `1.8.0` migration recipe (or the `boost-skills 1.8.0-rc1 → 1.8.0` adoption note, which is the one-line constraint flip from `^1.8@RC` → `^1.8` plus stability flip).
 
@@ -2813,6 +2855,7 @@ Atomic-commit shape, ~30 seconds of work:
 ```bash
 composer require --dev --with-all-dependencies \
   "sandermuller/boost-skills:^1.8"
+
 
 
 
@@ -3050,6 +3093,7 @@ Content unchanged; only the publishing vendor changed. Tag-gated so consumers op
     'sandermuller/package-boost-php:release-notes',
     'sandermuller/package-boost-php:upgrading',
 ])
+
 
 
 
