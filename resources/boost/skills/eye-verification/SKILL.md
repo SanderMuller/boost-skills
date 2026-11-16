@@ -142,6 +142,12 @@ temp file one `git clean` from gone. Every screenshot that proves a testable mus
   mechanism — the `pull-requests` skill's *PR Description* section covers it (a committed
   file referenced by its branch blob URL, since base64 `data:` URIs get stripped and raw
   hosts don't render for private repos).
+  - When the body has no screenshot section (an older PR, or a deleted template block),
+    **add the section** in its template position and fill it. A missing section is the case
+    this step exists for, not an exemption.
+  - Write the body over REST, as `pull-requests` does. Then **read the body again** and
+    confirm that the image URLs are in it, not only the heading. A failed `gh pr edit` leaves
+    the old body in place, and an unchecked write reads as done.
 - **Tracker issue exists** → mirror the same files onto the issue so QA sees them. A private
   repo's blob URL will not render in an external tracker — there the image has to be
   uploaded to the issue itself.
@@ -163,6 +169,11 @@ DOM/console excerpt or the stored screenshot). Then:
   a fix or a defect ticket.
 - State the testables source (PR / issue / spec / gathered) and the environment the pass ran
   against (checkout, host, data), so the green is auditable.
+- **Name where each screenshot was published**: the PR body, the issue, or, when neither
+  exists yet, the committed paths. Confirm each destination by reading it again after the
+  write. "Screenshots captured" is not a publication claim.
+- **List the dev data the pass touched**: what it changed and restored, and what it left
+  behind (fixture users, seeded rows), so the next run does not inherit unexplained state.
 
 ## Guardrails
 

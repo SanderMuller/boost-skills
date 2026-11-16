@@ -74,6 +74,8 @@ vendor/bin/pint --dirty --format agent
 vendor/bin/phpstan analyse --memory-limit=2G
 ```
 
+Always analyse the whole project; do not pass file paths. A file list cannot see a break in a file you did not list, such as a caller of a method you renamed, and it bypasses the result cache. A warm whole-project run analyses only the changed files and their dependents again.
+
 Must show 0 errors. Fix any issues found and re-run Pint after fixes.
 
 **4. Full Test Suite**

@@ -51,6 +51,7 @@ Before writing any code:
 1. **Gather information**
    - Read any linked issues or error reports. Read the full error: message, stack trace, file, and line.
    - Where the session has them, dispatch `sentry-researcher` for the production error signal, `github-researcher` for the history of the code involved, and `db-inspector` for the real schema and data. Each returns facts from its own context, so the raw output stays out of this one. Without them, gather the same facts directly; nothing is lost except context space.
+   - For a bug reported on a deployed environment, local logs, a local database and `db-inspector` read your own machine, not that environment. An absent row or a clean local run there proves nothing (see *Local Data Proves Nothing About a Deployed Environment* in the `verification-before-completion` guideline). Get that environment's facts from its error tracker, the reporter, or the user.
    - Check recent changes to the affected files: `git log --oneline -10 -- <path>`. A bug that worked before is a regression, and the diff that broke it is the fastest lead.
    - Ask clarifying questions if reproduction steps are unclear.
 

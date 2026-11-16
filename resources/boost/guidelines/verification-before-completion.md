@@ -6,6 +6,10 @@ Before claiming any work is complete or successful, run the verification command
 
 A claim about **how the code currently behaves** — a root cause, an existing mechanism, or present behavior — in a spec, PR, commit message, code-review finding, issue, comment, or answer must be traced to the actual code (or observed at runtime) **before** you write it, never asserted from plausibility. (This governs statements of *fact about the present code*; the *intended* future behavior a spec or PR proposes is fine when it's clearly framed as a requirement, proposal, or decision — not disguised as a fact about what already exists.) Every illustrative example must be one you actually observed, never invented to fit a guess. A wrong "why" is worse than none: reproduction steps, tests, QA testables, and the fix itself all get built on the stated cause, so one unverified guess corrupts everything derived from it. When you have not traced it, say so — mark it `NEEDS-CONFIRMATION` or ask — rather than asserting. (A ticket once claimed a list was "sorted by display name" and backed it with an example that could not occur; the sort actually keyed on an internal identifier — one grep away. The trace is cheap; the false premise is not.)
 
+### Local Data Proves Nothing About a Deployed Environment
+
+For a defect reported on a deployed environment (staging, production), the database, logs and browser you can reach locally describe your own machine, not that environment. A local query that finds no such row, a silent local log, or a clean local reproduction is no evidence about the reported environment. Do not write "could not reproduce" or "the data looks fine" as if it described that environment. Mark the claim `NEEDS-CONFIRMATION`, and get the facts from that environment's own signals: its error tracker, the reporter, or code at the deployed revision.
+
 ### Required Before Any Completion Claim
 
 1. **Run** the relevant command (in the current message, not from memory)

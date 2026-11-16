@@ -84,6 +84,7 @@ A second sidecar, `.boost-user-scope.yaml`, lists the guidelines that hold in an
 | `conventional-commits`            | Commit headers and PR titles are Conventional Commits; the PR title is the squash commit. | `conventional-commits` (opt-in) |
 | `database-safety`                 | Never run destructive database commands; treat the test database as test-runner-owned.   | `database` |
 | `javascript`                      | JS/TS control-structure style — always use curly braces, no single-line conditionals.    | `frontend` |
+| `laravel-helpers`                 | Laravel `Context` for diagnostic context; `Str::slug()` and `Str::squish()` pitfalls with non-Latin text. | `laravel`  |
 | `migrations`                      | Self-contained migration files; append columns instead of positioning them mid-table.    | `database` |
 | `phpstan-fixing`                  | Fixing a PHPStan error — write a failing test first when it maps to a runtime bug.       | `php`      |
 | `release-please`                  | release-please owns version, changelog and tag; the user merges the release PR; commit bodies are release input. | `conventional-commits` `github` `release-please` (opt-in) |

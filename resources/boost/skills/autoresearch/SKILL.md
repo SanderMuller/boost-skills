@@ -335,6 +335,8 @@ git add <changed-files>
 git commit -m "autoresearch: <one-sentence description>"
 ```
 
+In a project whose commits follow Conventional Commits, use the subject `perf: <one-sentence description>` instead.
+
 Commit BEFORE verification so rollback is clean — if the change is discarded, `git reset --hard HEAD~1` reverts exactly the one commit just made, losing no other work. This is the stated exception to *A Commit Is a Claim Too* in the `verification-before-completion` guideline: here the commit is the rollback mechanism, not a claim that the experiment worked.
 
 ### Phase 5: Verify

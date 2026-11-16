@@ -1,6 +1,6 @@
 ---
 name: eloquent-models
-description: "Creates and maintains Eloquent models with strict conventions: column/relation constants, comprehensive class docblock with @property and @property-read sections, foreign keys referenced via constants, and casts/fillable/hidden referencing constants. Use when creating a new model, adding columns or properties to an existing model, adding or modifying relations, or updating model docblocks. Triggers on model, eloquent, relation, belongs to, has many, has one, belongs to many, model constants, model properties, eloquent casts."
+description: "Creates and maintains Eloquent models with strict conventions: column/relation constants, comprehensive class docblock with @property and @property-read sections, foreign keys referenced via constants, and casts/fillable/hidden referencing constants. Use when creating a new model, adding columns or properties to an existing model, adding or modifying relations, updating model docblocks, adding a custom collection, or setting a relation from a factory in a test or seeder. Triggers on model, eloquent, relation, belongs to, has many, has one, belongs to many, model constants, model properties, eloquent casts, custom collection, CollectedBy, model factory, factory relation, for{Relation}, has{Relation}."
 metadata:
   boost-tags: "laravel"
   boost-requires: "php-generics"
@@ -14,6 +14,7 @@ Use this skill when:
 - Adding new columns/properties to an existing model
 - Adding or modifying relationships on a model
 - Updating model constants or docblocks after schema changes
+- Adding a custom collection, or setting a relation from a model factory in a test or seeder
 
 ## Model Structure
 
@@ -227,6 +228,38 @@ A factory extending an abstract base that is already bound to a concrete model i
 
 These helpers have version floors: `HasBuilder` and the `$builder` property arrived in Laravel 11.15, `HasCollection` in 11.17, and `#[CollectedBy]` in 11.28. Below a floor, override `newEloquentBuilder()` or `newCollection()` on the model instead and keep the generic docblock on the override.
 
+## Custom Collections
+
+A custom collection is an option, not the default. Most lists stay a plain `Collection`. Add a collection class when its helper methods make the calling code cleaner: the same `filter()`, `first()` or sum written at several call sites. If the class would have no methods, or only methods one caller uses, do not add it.
+
+- **A model with subclasses selects its collection through `protected static string $collectionClass`.** Before Laravel 13.4, `#[CollectedBy]` on a parent class does not reliably reach a subclass, which then gets a plain collection. Every subclass inherits the static property. Do not override `newCollection()` for this: an override skips the relation auto-loading setup that the framework method runs.
+- **`map()` keeps the class on a support collection.** `Illuminate\Support\Collection::map()` returns `new static`, so a custom collection mapped to strings is still the custom collection, and its methods that expect the original items break. Call `toBase()` before a map to other values. The Eloquent collection already falls back to a base collection when an item is not a model.
+
+## Factory Relation Helpers
+
+A test or seeder sets a relation through a helper on the model factory. It never calls `->for($model, Model::RELATION)` or a bare `->for($model)` itself. When the helper is missing, add it to the factory.
+
+| Relation | Helper | Body |
+|---|---|---|
+| Belongs-to | `for{Relation}(Model\|ModelFactory $model)` | `$this->for($model, Model::RELATION)` |
+| Has-many, belongs-to-many | `has{Relation}(...)` | `$this->has(...)` or `$this->hasAttached(...)` |
+
+- **Name the helper after the relation, not after the related model.** A relation `Comment::PARENT_POST` gets `forParentPost()`, not `forPost()`, so the name tells the reader which relation it sets.
+- **Pass the relation constant**, never a string such as `'post'`.
+- **Accept the model and its factory.** Accept only the model when the related model has no factory, or when the helper must read a value from the related model: a related factory has no values until Laravel creates it.
+- **One helper sets one relation.** When a helper would also set a second relation, add a second helper and chain the two.
+- **Do not name a non-relation helper `for…()`.** A setter for a plain column follows its siblings in the same factory, for example `withTitle()` next to `withBody()`.
+- **A to-many helper may use `afterCreating()` instead of `has()`** when the model has its own sync method that must run.
+
+```php
+// ✅ The factory helper names the relation
+$comment = Comment::factory()->forPost($post)->createOne();
+
+// ❌ The caller names the relation, or leaves Laravel to guess it
+$comment = Comment::factory()->for($post, Comment::POST)->createOne();
+$comment = Comment::factory()->for($post)->createOne();
+```
+
 ## Checklist
 
 When creating or modifying a model:
@@ -241,3 +274,4 @@ When creating or modifying a model:
 - [ ] Constants are sorted alphabetically within their group
 - [ ] Each generic trait the model uses carries its own `@use ...<>` docblock, one per `use` statement
 - [ ] Where the model has a factory, a custom query builder, or a custom collection, each binds its type parameter
+- [ ] Tests and seeders set relations through `for{Relation}()` / `has{Relation}()` factory helpers, never a bare `->for()`

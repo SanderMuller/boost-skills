@@ -39,7 +39,7 @@ This package uses sandermuller/boost-core (a framework-agnostic Composer library
 2. **Skills** in `.ai/skills/` provide domain-specific instructions activated on demand
 3. boost-core combines these with installed vendor packages' boost skills/guidelines to generate `AGENTS.md`, `GEMINI.md`, and per-agent `<.agent>/skills/` directories
 4. The config lives in `boost.php` at the project root or in `.config/boost.php`, never both. Sync fails when neither exists; `vendor/bin/boost install` creates one.
-5. Sync runs when you run `vendor/bin/boost sync`. It also runs on `composer install/update` when the project's root `composer.json` wires `SanderMuller\BoostCore\Scripts\BoostAutoSync::run` into `post-install-cmd` and `post-update-cmd`.
+5. Sync runs when you run `vendor/bin/boost sync`. It also runs on `composer install/update` when the project's root `composer.json` wires `SanderMuller\BoostCore\Scripts\BoostAutoSync::run` into `post-install-cmd` and `post-update-cmd`. Those hooks are the only automatic sync, so a `git pull` that changes the sources without a `composer install` leaves the generated files stale. Run `vendor/bin/boost sync` after such a pull.
 
 ## Updating Guidelines
 

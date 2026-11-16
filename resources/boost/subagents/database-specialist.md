@@ -86,6 +86,21 @@ Do not accept `$table->index(...)->lock('none')` alone. Without the algorithm cl
 
 **`lock_wait_timeout` bounds the wait. It does not remove the stall.** Set it for the session around a slow `ALTER`, and restore it in a `finally`, so a statement that cannot get its metadata lock aborts instead of queuing writes without limit. State three limits: a pending lock request still queues later writes for up to that timeout; MySQL applies the timeout per lock acquisition, so one statement can wait longer in total; and an abort discards a build that may have run for minutes. Check for long-running transactions that hold the lock before the build starts.
 
+**When to bound the wait (MySQL).** Every DDL statement needs an exclusive metadata lock at some point, and the server default `lock_wait_timeout` is one year. So an unbounded wait queues every request that reads or writes the table. Wrap the statement when the table it locks is read or written on a request path:
+
+| Wrap | Why |
+|---|---|
+| Any DDL on a table that a request reads or writes | A pending exclusive lock queues those reads and writes |
+| `CREATE TABLE` with a foreign key to such a table | MySQL 8 takes a metadata lock on the parent table too, not only the new table |
+| `ALTER` that adds or drops a foreign key to such a table | The same parent lock |
+
+| Do not wrap | Why |
+|---|---|
+| `CREATE TABLE` without foreign keys, or a table no request touches | Nothing queues behind the lock; a timeout only adds a failed deploy |
+| A backfill `UPDATE` or `DELETE` | `lock_wait_timeout` governs metadata locks only. Row locks wait on `innodb_lock_wait_timeout`. Chunk the statement instead |
+
+Wrap only the DDL statement, because later migrations in the same run share the session. Read the previous value on the connection that runs the DDL: with a read/write split, a plain select can read the replica's session. DDL that runs out of the deploy step, for example in a job, needs the same wrap: a job changes the time budget, not the lock queue.
+
 ## What to challenge hardest
 
 - **`ADD FOREIGN KEY` on a large table.** On MySQL it is COPY unless `foreign_key_checks=0`. That path does not validate existing rows, so the constraint can go in over orphans and never mean what it claims. Demand an orphan check first (`LEFT JOIN` the parent, count child rows with no match), a decision about rows written during the build, and checks disabled for the session only and restored on failure. Then ask what the constraint protects. If nothing ever deletes the parent row, `ON DELETE SET NULL` never fires and the constraint is only cost. When the table has no foreign keys today, adding the first one is a decision to justify, not a default.

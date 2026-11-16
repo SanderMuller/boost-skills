@@ -1,6 +1,6 @@
 ---
 name: interview
-description: "Adversarial grilling flow that gathers requirements for a complex feature by challenging assumptions, sharpening fuzzy terms, and cross-referencing the codebase before handing off to write-spec. Pairs with write-spec: interview gathers the requirements, then write-spec turns them into the spec file. Activates when: gathering requirements, planning a feature, clarifying ambiguous work, or when user mentions: interview, grill, requirements gathering, feature planning, gather requirements, ask me about."
+description: "Adversarial grilling flow that gathers requirements for a complex feature by challenging assumptions, sharpening fuzzy terms, and cross-referencing the codebase before handing off to write-spec. Pairs with write-spec: interview gathers the requirements, then write-spec turns them into the spec file. Activates when: gathering requirements, planning a feature, clarifying ambiguous work, or when user mentions: interview, grill, requirements gathering, feature planning, gather requirements, ask me about. NOT for being questioned with no spec at the end ('ask me questions one by one', 'no spec needed') — use clarify."
 argument-hint: "[feature or task description]"
 metadata:
   boost-requires: "clarify write-spec"
@@ -29,6 +29,7 @@ Do NOT use for:
 - Simple bug fixes with clear reproduction steps
 - Minor tweaks or text changes
 - Tasks with explicit, detailed instructions already provided
+- Being questioned on a decision with no spec at the end ("ask me questions one by one", "help me think this through", "no spec needed"). Use `clarify` on its own: it runs the same questioning one question at a time and hands back a summary of the decisions in chat. If decisions pile up there, or the user asks for a document, switch to this skill.
 
 ## Grilling Techniques (Apply Throughout)
 

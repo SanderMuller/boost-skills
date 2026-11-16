@@ -8,6 +8,7 @@ For session, branch, and PR scope, see the `single-issue-scope` guideline when t
 - A sibling rule that requires an update on a line you already change still applies. The rule removes extras, not obligations.
 - Report the rest as a follow-up in your summary. Propose an issue when the project tracks work that way, and let the user decide whether to file it. Report it; do not fix it.
 - Implement every behaviour the task does ask for, completely. This rule cuts extras, never the requested scope.
+- An impact or blast-radius report lists what to verify, not what to change. A caller it names is a place to confirm nothing broke. A file earns a place in the diff by tracing to a requirement, never to a dependency edge.
 
 ### One Reading of an Ambiguous Ask
 

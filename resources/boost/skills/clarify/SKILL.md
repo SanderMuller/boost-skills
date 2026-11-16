@@ -1,6 +1,6 @@
 ---
 name: clarify
-description: "Turns a fuzzy ask into sharp, fact-checked intent before any work starts — reduces ambiguity, closes gaps, sharpens overloaded terms, and surfaces hidden assumptions, fact-checking against the codebase instead of asking what the code can answer. The shared questioning core that interview and promptimize build on; also usable standalone. Activates when: clarifying a vague request, disambiguating intent, reducing ambiguity, sharpening fuzzy terms, running a gap analysis, surfacing assumptions, or when user mentions: clarify, disambiguate, sharpen, vague, ambiguous, gaps, gap analysis, unclear ask."
+description: "Turns a fuzzy ask into sharp, fact-checked intent before any work starts — reduces ambiguity, closes gaps, sharpens overloaded terms, and surfaces hidden assumptions, fact-checking against the codebase instead of asking what the code can answer. The shared questioning core that interview and promptimize build on; also usable standalone. Activates when: clarifying a vague request, disambiguating intent, reducing ambiguity, sharpening fuzzy terms, running a gap analysis, surfacing assumptions, being questioned one question at a time with no spec at the end, or when user mentions: clarify, disambiguate, sharpen, vague, ambiguous, gaps, gap analysis, unclear ask, ask me questions one by one, question me, help me think this through."
 argument-hint: "[the fuzzy ask or prompt to sharpen]"
 ---
 

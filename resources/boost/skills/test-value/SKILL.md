@@ -24,7 +24,7 @@ Judge the tests the change **added or changed**, plus the behaviour it changed t
 
 **Dispatch the `test-coverage-auditor` subagent where the session has it.** It judges the suite in a fresh context, rates each missing-coverage gap, and flags tests that execute without proving anything — the half you cannot do for tests you just wrote. It gives no delete / rewrite / keep verdicts; those stay yours. Its findings are leads: follow every one before acting on it, and merge them with your own. Without it, walk both directions yourself and say in the report that the audit was not independent.
 
-**Never delete a test outside that scope**, and never delete one without stating why. A pre-existing test that looks worthless may be the only record of a bug someone hit; that judgement belongs to the user, not to a pass over an unrelated change.
+**Never delete a test outside that scope without the user's approval**, and never delete one without stating why. A pre-existing test that looks worthless may be the only record of a bug someone hit; that judgement belongs to the user, not to a pass over an unrelated change.
 
 ## Direction 1 — Tests That Prove Nothing
 

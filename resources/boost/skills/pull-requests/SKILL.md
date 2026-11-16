@@ -1,6 +1,6 @@
 ---
 name: pull-requests
-description: "Creates and manages your own GitHub PRs via the gh CLI — analyze commits, write the PR description, create, verify, request review, route by risk. Activates when: creating or opening a PR, submitting work for review, writing or updating a PR description, or when user mentions: create PR, open PR, submit for review, write PR description, update PR, pull request. NOT for applying reviewer comments — use pr-review-feedback."
+description: "Creates and manages your own GitHub PRs via the gh CLI — analyze commits, write the PR description, create, verify, request review, change the base, route by risk. Activates when: creating or opening a PR, submitting work for review, writing or updating a PR description, changing a PR's base, or when user mentions: create PR, open PR, submit for review, write PR description, update PR, change PR base, retarget PR, pull request. NOT for applying reviewer comments — use pr-review-feedback."
 argument-hint: "[PR number or target branch]"
 metadata:
   boost-tags: "github"
@@ -72,11 +72,11 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
    Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
 6. **Resolve risk + any mandated label + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation), [PR Labels](#pr-labels) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. A label question is rendered only when a `pr.labels` policy is configured *and* its evidence ladder left the choice uncertain. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the label question (only when unresolved) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask, skip the call entirely.
-7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file. Then run:
+7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file named for this branch: `/tmp/<pr-key>-pr-body.md`, where `<pr-key>` is the branch name with `/` replaced by `-`. Parallel sessions share `/tmp`, so a generic name such as `/tmp/pr-body.md` can open this PR with another session's body. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
      --title "<title>" \
-     --body-file /tmp/pr-body.md
+     --body-file /tmp/<pr-key>-pr-body.md
    ```
    When the project configures a PR-label policy (see [PR Labels](#pr-labels)), add `--label "<resolved-name>"` to that command, passing the option's `name` verbatim. Omit the flag entirely when no policy is configured. The vocabulary is expected to already exist in the tracker; if the create call rejects the label as unknown, report that rather than retrying without the flag (which produces an unlabelled PR under a mandate) or creating a label to match (which makes a typo permanent).
 
@@ -87,9 +87,10 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
    ```
    Then assert against the JSON:
    1. `title` matches the intended title — if wrong, patch with `gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -f title="<correct title>"`.
-   2. `body` is non-empty and, when a template was used, contains the section headings present in the template when it was read — if wrong, patch with `gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -F "body=@/tmp/pr-body.md"`.
+   2. `body` is non-empty, contains the section headings of the template when one was used, and is **this PR's body**: its summary describes this change, and an issue key in the body matches the one in the title. Headings alone also pass for another PR's body. If wrong, patch with `gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -F "body=@/tmp/<pr-key>-pr-body.md"`.
    3. `headRefName` matches the intended feature branch.
-   If any assertion fails, fix it inline before continuing. Use the REST API for body/title patches rather than `gh pr edit` — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation path in some `gh` versions.
+   4. `body` embeds no image by a relative repository path (for example `](docs/screenshots/`). Every committed image uses its absolute branch blob URL (see [PR Description](#pr-description)), because a relative path does not render in the PR body.
+   If any assertion fails, fix it inline before continuing. After each patch, read the field again with `gh pr view` and assert it once more. Use the REST API for body/title patches rather than `gh pr edit` — `gh pr edit --body-file` hits a Projects (classic) GraphQL deprecation path in some `gh` versions.
 9. **Request review** — request a reviewer on the PR (an automated reviewer if the project uses one, and/or human reviewers). Use `gh pr edit <pr-number> --add-reviewer <login>` or the project's configured review mechanism.
 10. **Handle review based on risk level**:
     - **If `pr.risk` tiers are configured** (see [Risk Assessment](#risk-assessment-before-pr-creation)): route per the matched tier — a tier with `human_reviewers: 0` and no `require_codeowners` → mark ready via [Marking a PR Draft / Ready](#marking-a-pr-draft--ready) (its zero-unresolved-bot-threads precondition applies here too); a tier needing one or more human reviewers (or `require_codeowners`) → leave it a draft, request the tier's reviewers, and tell the user which approvals it needs.
@@ -194,6 +195,19 @@ When making changes to an existing PR you authored:
 5. **Commit changes**: create meaningful commits following the project's commit conventions, once the changes pass the project's checks, not while the approach is still being tried (see also *A Commit Is a Claim Too* in the `verification-before-completion` guideline, where the project ships it).
 6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
 7. **Push to remote**: `git push origin <branch-name>`.
+
+### Changing a PR's Base
+
+**Change the base first, then push.** A base change alone starts no CI: GitHub sends only `pull_request: edited`, and test workflows rarely listen for it. A push made while the PR still targets the old base starts no run either when the branch conflicts with that base, for example a branch rebuilt on a different target. Push after the base change, and the `synchronize` run tests against the new base.
+
+```bash
+gh api -X PATCH "repos/<owner>/<repo>/pulls/<pr-number>" -f base=<new-base> --jq '.base.ref'
+git push origin <branch-name>
+```
+
+Use the REST call, for the same reason as the body patch above. Use `--force-with-lease` only when you rewrote the branch on purpose, for example rebuilt it on the new base, and ask first on a shared branch. The push starts no run when it has nothing to send (`Everything up-to-date`), or when you pushed before the base change. Then push an empty commit (`git commit --allow-empty`) to start the checks. Either way, confirm that runs exist for the new head SHA.
+
+Do not add `edited` to the CI workflow triggers to fix this. Title and body edits fire `edited` too, and a run whose jobs skip can replace a failed required check with a passing one.
 
 ### Marking a PR Draft / Ready
 

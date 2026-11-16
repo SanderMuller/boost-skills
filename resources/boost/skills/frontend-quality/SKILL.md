@@ -1,6 +1,6 @@
 ---
 name: frontend-quality
-description: "Frontend quality checks: TypeScript type check, linting, and the JS test suite (Vitest/Jest). Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, vitest, jest, test:js, frontend tests, frontend checks."
+description: "Frontend quality checks: TypeScript type check, linting, and the JS test suite (Vitest/Jest). Activate after editing JS/TS files. Triggers: eslint, typescript, tsc, type check, lint, vitest, jest, test:js, frontend tests, frontend checks, .d.ts, type declaration, vendor API type, vendor window global."
 metadata:
   boost-tags: "frontend"
 ---
@@ -18,6 +18,7 @@ Activate this skill when:
 - Before creating a PR with JS/TS changes
 - Applying review feedback or rework with JS/TS changes
 - A change renders UI that should be *seen running*, not just type-checked
+- A hand-written type for a third-party API or a vendor-owned `window` global changed, or the code reads a member off one
 
 ## Checks (Run in Order)
 
@@ -94,6 +95,17 @@ seeded), name the deferral in a NOT-VERIFIED list rather than reporting an unqua
 
 See the `javascript` guideline ("Eye-verify frontend changes" and "Verify against the design, per element") for the why.
 
+### 5. Vendor contract types
+
+Applies when the change touches a hand-written type for a third-party runtime contract (a vendor API, an SDK, a `window` global that a vendor script owns), or reads a member off such an object. It does not apply to a global the application sets itself: there is no vendor spec to compare it with.
+
+The type check cannot catch this class of bug. It proves that the code agrees with the declaration, never that the declaration agrees with the vendor. Check two rules by hand:
+
+1. **Declare only members the vendor spec guarantees.** A member no vendor provides makes every read of it type-check and return `undefined` at runtime. Keep your own lifecycle state in your own code instead of reading it back off the vendor object.
+2. **Keep test doubles and stubs spec-shaped and strict.** A fake exposes only the members the real vendor exposes, and rejects what the real vendor rejects.
+
+For each member the change reads off a vendor object, confirm it in the vendor spec, then search for every other reader of it in source, tests and test harnesses.
+
 
 ## Quick Reference
 
@@ -103,6 +115,7 @@ See the `javascript` guideline ("Eye-verify frontend changes" and "Verify agains
 | Linting | `npm run lint` (the project's lint script) | 0 errors |
 | Tests | `npm test` (the project's JS test script) | 0 failures |
 | Eye-verify (UI changes) | Drive it in a real browser per the coverage contract (`references/eye-verify.md`) | every testable checked or listed NOT-VERIFIED; no console/page errors or untranslated keys |
+| Vendor contract types (hand-written vendor `.d.ts` or `window` global changed) | Manual: compare declared members with the vendor spec; search every reader | every declared member is spec-guaranteed; no fake carries a member the real vendor lacks |
 
 ## Important
 

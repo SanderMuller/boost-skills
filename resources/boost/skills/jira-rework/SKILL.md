@@ -1,7 +1,7 @@
 ---
 name: jira-rework
 description: "Researches a Jira issue sent back for rework: reads the issue, comments, and codebase to understand QA/UX feedback, then proposes fix options. Triggers: rework, rework issue, QA feedback, QA issue, investigate issue, research issue, UX feedback from Jira."
-argument-hint: "<issue-key> e.g. PROJ-1234 [optional context]"
+argument-hint: "<issue-key> e.g. PROJ-1234, or a Jira issue URL [optional context]"
 metadata:
   boost-tags: "jira github"
   boost-requires: "jira-updates resolve-conflicts"
@@ -32,13 +32,15 @@ Do NOT use for:
 
 ### Phase 1: Gather Context from Jira
 
-1. **Fetch the Jira issue:**
+1. **Fetch the Jira issue.** The argument may be a bare key or a browse URL; take the key from the URL path.
    ```
    mcp__<jira>__jira_get_issue(issue_key: "<ISSUE-KEY>")
    ```
    Extract the summary and description (the original requirement), the current status and assignee, and any linked issues or parent epic.
 
 2. **Read all comments** to find QA/UX feedback, requested changes, screenshots or reproduction steps, and clarifying discussion. **Focus on the most recent comments** — later ones often override earlier feedback.
+
+   **A `focusedCommentId=<id>` in the invoking URL overrides that.** It names the comment that triggered this rework, so that comment is the primary feedback: the symptom, the reproduction steps and the expected behaviour come from it. Match it against the comment ids the fetch returns. Recency is only a proxy, and it misreads a thread whose newest entries are the developer's own progress notes. The focused comment governs unless a *later* comment explicitly corrects or replaces it; a later comment that only adds detail, or reports something else, does not displace it. Read the whole thread for context, but do not fix an older complaint instead. If the id is not among the returned comments, fetch more comments or say that you could not find it.
 
 3. **Summarize the feedback** into: the original requirement, what was implemented, what's wrong, and who raised it (QA, UX, PO — this affects the kind of fix needed).
 
@@ -111,6 +113,8 @@ For a straightforward fix with one obvious solution, a single recommendation is 
 1. **Create a fix branch** from the correct base:
    - If the original PR is **merged**, branch from the same base branch it targeted (rework is typically found on a staging / integration environment).
    - If the original PR is **open**, switch to its branch and push the fix there.
+
+   When that base pins different dependency versions than the checkout you came from (its lock files differ), install its dependencies before any check, for example `composer install` and the JS package install. Otherwise static analysis and tests run against the other branch's packages and report errors this branch does not have. Install again when you go back.
 2. **Implement the fix** following the chosen approach.
 3. **Update or add tests** covering the rework scenario.
 4. **Run the project's code-style and quality checks** (see the `backend-quality` / `frontend-quality` skills for the relevant stack).
@@ -121,7 +125,7 @@ For a straightforward fix with one obvious solution, a single recommendation is 
 
 ## Guidelines
 
-- **Don't start fixing immediately** — research first, propose options, let the developer decide.
+- **Don't start fixing immediately** — research first, propose options, let the developer decide. One exception: the invoking prompt already asked you to carry through to the fix, *and* the diagnosis leaves one sane approach. Then state the root cause and the approach, and continue. A real fork (competing approaches, a scope or requirement question, a fix that changes a sibling feature) still stops for the developer.
 - **Read the full comment thread** — later comments often clarify or override earlier feedback.
 - **Consider the feedback source** — QA issues usually need exact behaviour fixes; UX issues may need design discussion first.
 - **Check if it's a bug or a requirement change** — rework feedback sometimes adds new requirements that weren't in the original spec. Flag this clearly.

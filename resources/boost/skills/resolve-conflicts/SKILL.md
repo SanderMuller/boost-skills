@@ -218,7 +218,7 @@ gh run list --workflow <ci-workflow> --commit "$(git rev-parse ORIG_HEAD)" --jso
 gh run view <databaseId> --json jobs --jq '.jobs[] | "\(.name) \(.conclusion)"'
 ```
 
-Read the job, not the run: a run's conclusion does not say which job was red. A `cancelled` job is no baseline. Compare like with like: a test that is red locally but green in CI on the same commit shows an environment difference, not a cell in the table below. Confirm that it also fails locally on the incoming side, and report it as local-only.
+Read the job, not the run: a run's conclusion does not say which job was red. Only a `success` or `failure` job is a baseline: a `cancelled` job, a `skipped` job and a job that is still running are not. Compare like with like: a test that is red locally but green in CI on the same commit shows an environment difference, not a cell in the table below. Confirm that it also fails locally on the incoming side, and report it as local-only.
 
 **Start with theirs — it is the decisive baseline.** Only the fail/pass row changes what you do, and a failure that is red on the incoming side is not the merge's doing either way. Add ours only when theirs passes. Before you create a worktree, run `git worktree list`: a checkout that is already clean at that exact commit is a ready baseline.
 

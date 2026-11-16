@@ -152,8 +152,10 @@ grep -c "<a value the data-migration inserts>" "<seeder-or-seed-dump-path>"   # 
 **6. Prove it loads a complete schema (definitive).** A fresh test DB loads the baseline (plus any schema-load seeders) with an empty migrations dir. Run the **full suite** — a single trivial test does not touch the seeded data, so it cannot catch a dropped data-migration (#5); those regressions only surface in tests that assert on seeded rows (e.g. `Failed asserting that actual size 0 matches expected size 2`). The test runner owns its databases, so recreating them here is safe (per the `database-safety` guideline):
 
 ```bash
-php artisan test --parallel --recreate-databases
+php artisan test --parallel --recreate-databases --drop-databases
 ```
+
+`--drop-databases` removes the per-process test databases when the run ends; without it, each parallel run leaves one database per process behind.
 
 **7. Obsolete migration tests removed** — no test `require`s a deleted migration file (it would fatal with "file not found").
 

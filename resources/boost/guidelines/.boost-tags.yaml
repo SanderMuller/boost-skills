@@ -10,6 +10,7 @@
 conventional-commits.md: "conventional-commits"
 database-safety.md: "database"
 javascript.md: "frontend"
+laravel-helpers.md: "laravel"
 migrations.md: "database"
 phpstan-fixing.md: "php"
 release-please.md: "conventional-commits github release-please"
