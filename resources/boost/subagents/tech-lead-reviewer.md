@@ -43,15 +43,15 @@ Most needless complexity is a value in the wrong type. Walk this ladder over the
 |---|---|
 | A fixed set of string or int values compared with `===` or membership tests, or a cluster of related constants | An **enum**, with the behaviour that switches on it moved onto the enum |
 | Input validated and cast by hand at an entry point | The project's **validation seam** where it has one — a framework request object, a schema, or a parsed input type. Nothing to suggest in a project that validates by hand everywhere; say so rather than inventing a layer |
-| An array shape passed across two or more boundaries, or a docblock array shape | A **readonly DTO** |
+| An array shape passed across two or more boundaries, `?? null` or `data_get()` key reads because some producers leave a key out, or a positional tuple read away from where it was built | A **readonly DTO** — unless the array is the contract: a response, view data, a vendor payload, a JSON column, config, or the payload of an existing queued job |
 | Three or more arguments that always travel together | A **DTO** or value object |
 | A primitive with invariants — a duration, a colour, a locale code validated in several places | A **value object**, or a persistence-layer cast |
 | The same query constraint repeated in two or more places | A **named query method** on the project's query object |
 
 **A new type is a decision, not a cleanup.** Split the axis by how far the type reaches:
 
-- A shape that replaces something *this change wrote* and stays inside the change — an enum for constants it added, a validation object for validation it inlined, a query method for a chain it duplicated — is a **Suggestion**, with the concrete replacement.
-- A type new to the domain, or one that pulls callers outside the change with it, goes under **Decisions to confirm**: the signal, the proposed type, the callers it touches, and the cost. Never propose migrating existing data or changing a column's stored values.
+- A shape that replaces something *this change wrote* and stays inside the change — an enum for constants it added, a validation object for validation it inlined, a query method for a chain it duplicated, a readonly DTO for an array shape it introduced that no code outside the change reads — is a **Suggestion**, with the concrete replacement.
+- A type that names a concept new to the domain, or one that pulls callers outside the change with it, goes under **Decisions to confirm**: the signal, the proposed type, the callers it touches, and the cost. Never propose migrating existing data or changing a column's stored values.
 
 Line-level type smells inside the change belong to the reviewer that reads lines. Take a row up here only when the type **reaches** — new to the domain, or dragging outside callers with it.
 

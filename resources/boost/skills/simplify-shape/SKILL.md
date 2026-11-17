@@ -32,7 +32,7 @@ When a caller has already resolved an evaluation scope, reuse it. Standalone, re
 |---|---|
 | A fixed set of string or int values, compared with `===` or an in-array check, or a set of related constants | Backed **enum**, with the behaviour that switches on it moved onto the enum |
 | A controller that validates inline, or plucks and casts request input by hand | **Form request**, built the way the project builds them |
-| An array shape passed across two or more boundaries, or a docblock array shape | **Readonly DTO** |
+| An array shape passed across two or more boundaries, key reads with `?? null` or `data_get()` because some producers leave a key out, or a positional tuple (`[$order, $total]`, `$pair[0]`) read away from the line that built it | **Readonly DTO** — see [Array or Object](#array-or-object) |
 | Three or more arguments that always travel together | **DTO** or a value object |
 | A primitive with invariants — a duration, a colour, a locale code validated in more than one place | **Value object**, or a model cast |
 | The same query chain repeated in two or more places | **Custom query-builder method**, named per the project's convention |
@@ -40,12 +40,34 @@ When a caller has already resolved an evaluation scope, reuse it. Standalone, re
 
 A signal is a question, not a verdict. Read the call sites before you answer it: two comparisons against the same two strings in one method are not a type, they are two comparisons.
 
+## Array or Object
+
+A docblock array shape is a claim that nothing checks at runtime. A wrong key, a key that one code path leaves out, or an `int` that arrives as a string all pass, and static analysis builds on the claim as if it were true. A `final readonly` class states the shape once, and PHP checks its types each time the object is built.
+
+**Keep the array when the array is the contract**, and convert at that boundary:
+
+- A JSON or API response, view data, a vendor request or response, a JSON column, or config.
+- The payload of a queued job that already exists (see below).
+
+**Also keep the array** for a list of one type (`list<string>`, `list<Order>`), or for a shape that one method builds and reads. When a shape stays an array and repeats in docblocks, name it with `@phpstan-type`, as the `php-generics` skill describes.
+
+**Build the DTO this way:**
+
+- **Parse at the boundary.** Turn the vendor payload, the request input or the config value into the object once, where it enters the code. Everything after that gets the object.
+- **One named constructor per source**, such as `fromRequest()` or `fromApi()`. Move the validation that already exists into it. New validation, and a typed property that rejects or casts a value the code accepted before, change the behaviour: report them, or raise them to the user.
+- **`toArray()` where the array is the contract.** It must give the exact keys that the consumer reads. Compare the old and the new array for each producer. A key that was absent and is now `null`, or the reverse, changes the output for a consumer that tells the two apart.
+- **Behaviour on the object.** A check that several callers repeat on the shape becomes a method of the object.
+
+**Do not change the type of an existing job's property while old payloads can be on the queue.** A job that is on the queue at deploy time holds the old serialized payload. When its property changes from `array` to an object type, the worker fails on that job with a `TypeError` as it unserializes it. A rollback fails the same way in reverse. Keep the property an array, dispatch with `$object->toArray()`, and build the object again in the job's handler. The named constructor must accept the keys that old payloads carry.
+
+Cached and session values carry the same risk. An old entry comes back as an array, and the new code fails when it uses it. A cache with `serializable_classes` set, or a session with JSON serialization, does not give an object back at all.
+
 ## Restraint — a New Type Is a Decision
 
 Do not add abstraction until something varies. That splits this skill's authority in two:
 
-- **Apply it yourself** when the type replaces something this change wrote and stays inside the change: an enum for constants this change added, a form request for validation this change wrote inline, a query-builder method for a chain this change duplicated.
-- **Raise it to the user** when the type is new to the domain, or when it pulls callers outside the change with it: a new DTO, a new value object, an enum replacing a column's stored values. State the signal, the proposed type, the callers it touches, and the cost. The user decides.
+- **Apply it yourself** when the type replaces something this change wrote and stays inside the change: an enum for constants this change added, a form request for validation this change wrote inline, a query-builder method for a chain this change duplicated, a readonly DTO for an array shape this change introduced that no code outside the change reads.
+- **Raise it to the user** when the type names a concept new to the domain, or when it pulls callers outside the change with it: a DTO that code outside the change must use, a new value object, an enum replacing a column's stored values. State the signal, the proposed type, the callers it touches, and the cost. The user decides.
 
 Never migrate existing data or change a column's stored values under this skill.
 
