@@ -31,4 +31,6 @@ jobs:
 
       - run: node .github/test-dangling-symbols.mjs
 
+      - run: node .github/test-run-codex-review.mjs
+
       - run: composer validate-gitattributes

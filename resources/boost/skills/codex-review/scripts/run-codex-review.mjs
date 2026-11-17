@@ -21,9 +21,10 @@ import { finished } from 'node:stream/promises';
 // It tells a consumer reading the JSON report whether their emitted copy is current.
 // A literal, not a lookup: the emitted copy sits in a consumer's skills directory,
 // where this package's composer.json is not reachable.
-const WRAPPER_VERSION = '2.46.0';
+const WRAPPER_VERSION = '2.62.0';
 
 const DEFAULT_TIMEOUT_MS = 900_000;
+const FETCH_TIMEOUT_MS = 30_000;
 // The wrapper passes `--ignore-user-config`, so an unset model or effort falls to
 // the Codex CLI defaults, which move between CLI releases and can cost far more
 // plan usage per review than a bounded run needs. Pin both here instead.
@@ -87,6 +88,10 @@ function parseArgs(argv) {
             }
 
             if (arg === '--base') {
+                // The base reaches `git fetch`, where a leading dash reads as an option.
+                if (value.startsWith('-')) {
+                    throw new Error('--base takes a branch name.');
+                }
                 options.base = value;
             } else if (arg === '--commit') {
                 options.commit = value;
@@ -129,11 +134,15 @@ function parseArgs(argv) {
         throw new Error('Choose either --prompt or --prompt-file.');
     }
 
-    if (targetCount === 0) {
-        resolveDefaultTarget(options);
-    }
-
     return options;
+}
+
+function resolveTarget(options) {
+    if (!options.base && !options.commit && !options.uncommitted) {
+        resolveDefaultTarget(options);
+    } else if (options.base) {
+        options.base = remoteBase(options.base);
+    }
 }
 
 function run(command, args, options = {}) {
@@ -208,18 +217,66 @@ function hasBranchDiff(base) {
     return git(['diff', '--quiet', `${base}...HEAD`]).status === 1;
 }
 
+function refExists(ref) {
+    return git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]).status === 0;
+}
+
+function mergeBaseWithHead(ref) {
+    const result = git(['merge-base', ref, 'HEAD']);
+
+    return result.status === 0 ? result.stdout.trim() : null;
+}
+
+// Compare against origin's copy of the base. A local base branch is often far
+// behind origin, and once the branch has merged newer base commits, a diff
+// against the stale local ref reviews those commits too.
+// Of the two refs, the one that shares the newer merge-base with HEAD wins, so
+// a stacked parent with unpushed work that HEAD contains stays local.
+function remoteBase(base) {
+    // A revision such as `HEAD~3` is not a branch, and `origin/HEAD~3` would
+    // resolve through origin's HEAD to a different commit.
+    if (base.startsWith('origin/') || git(['check-ref-format', '--branch', base]).status !== 0) {
+        return base;
+    }
+
+    const remote = `origin/${base}`;
+    // A SHA or a tag is neither a local branch nor tracked from origin: skip the fetch.
+    if (!refExists(`refs/heads/${base}`) && !refExists(`refs/remotes/${remote}`)) {
+        return base;
+    }
+
+    run('git', ['fetch', '--quiet', 'origin', `+refs/heads/${base}:refs/remotes/${remote}`], {
+        timeout: FETCH_TIMEOUT_MS,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' },
+    });
+    const remoteMergeBase = refExists(remote) ? mergeBaseWithHead(remote) : null;
+    if (remoteMergeBase === null) {
+        return base;
+    }
+
+    const localMergeBase = refExists(`refs/heads/${base}`) ? mergeBaseWithHead(base) : null;
+    if (localMergeBase === null) {
+        return remote;
+    }
+
+    return git(['merge-base', '--is-ancestor', localMergeBase, remoteMergeBase]).status === 0 ? remote : base;
+}
+
 // No target flag given: infer one instead of erroring. On a feature branch that
 // differs from the repo's default branch, review that branch diff; otherwise
 // (on the default branch, detached, or default-branch undetectable) review the
 // uncommitted working tree. The documented flow still passes a target
 // explicitly — this only makes a flagless invocation graceful.
 function resolveDefaultTarget(options) {
-    const base = detectDefaultBase();
+    const defaultBase = detectDefaultBase();
     const current = currentBranch();
-    if (base !== null && current !== '' && current !== base && hasBranchDiff(base)) {
-        options.base = base;
+    if (defaultBase !== null && current !== '' && current !== defaultBase) {
+        const base = remoteBase(defaultBase);
+        if (hasBranchDiff(base)) {
+            options.base = base;
 
-        return;
+            return;
+        }
     }
 
     options.uncommitted = true;
@@ -394,6 +451,35 @@ function terminalErrors(eventsFile) {
     return errors;
 }
 
+// The cause of a failed run, or null when it succeeded. A Codex
+// failure event is the most specific cause, so it wins over the exit status.
+function failureCause({ timedOut, timeoutMs, exit, result, stderr, streamErrors, terminalEventErrors }) {
+    if (terminalEventErrors.length > 0) {
+        return terminalEventErrors[0];
+    }
+
+    if (timedOut) {
+        return `codex timed out after ${timeoutMs}ms`;
+    }
+
+    if (exit.error) {
+        return String(exit.error.message ?? exit.error);
+    }
+
+    if (streamErrors.length > 0) {
+        return streamErrors[0];
+    }
+
+    if (exit.code !== 0) {
+        const lastStderrLine = stderr.split(/\r?\n/).filter((line) => line.trim() !== '').at(-1);
+        const how = exit.signal ? `was killed by ${exit.signal}` : `exited with code ${exit.code}`;
+
+        return lastStderrLine ? `codex ${how}: ${lastStderrLine}` : `codex ${how}`;
+    }
+
+    return result === '' ? 'codex wrote no review' : null;
+}
+
 function preview(text, limit) {
     if (text.length <= limit) {
         return text;
@@ -431,6 +517,7 @@ function signalChildTree(child, signal) {
 async function runCodexReview(options) {
     ensureCommand('codex', ['exec', 'review', '--help'], 'Codex CLI with `exec review` is required. Install or update with `npm install -g @openai/codex`.');
     ensureCommand('git', ['rev-parse', '--show-toplevel'], 'Run from inside a Git repository.');
+    resolveTarget(options);
 
     const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-review-'));
     const resultFile = path.join(runDir, 'result.md');
@@ -494,9 +581,13 @@ async function runCodexReview(options) {
     const result = fs.existsSync(resultFile) ? fs.readFileSync(resultFile, 'utf8').trim() : '';
     const terminalEventErrors = terminalErrors(eventsFile);
 
+    const failure = failureCause({ timedOut, timeoutMs: options.timeoutMs, exit, result, stderr, streamErrors, terminalEventErrors });
+
+    // `failure` comes first, so the cause is the first line a reader sees.
     const report = {
+        failure,
         wrapperVersion: WRAPPER_VERSION,
-        ok: !timedOut && exit.code === 0 && result !== '' && streamErrors.length === 0 && terminalEventErrors.length === 0,
+        ok: failure === null,
         timedOut,
         exitCode: exit.code,
         signal: exit.signal,
@@ -524,6 +615,7 @@ async function runCodexReview(options) {
 function outputFailure(error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stdout.write(`${JSON.stringify({
+        failure: message.split('\n')[0],
         wrapperVersion: WRAPPER_VERSION,
         ok: false,
         timedOut: false,
