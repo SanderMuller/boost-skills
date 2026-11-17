@@ -1,6 +1,6 @@
 ---
 name: prune-tests
-description: "Command-only — invoke with `/prune-tests`; never activates on its own. Audits a PHPUnit or Pest suite for low-value tests (framework restatements, echoes, exact duplicates, redundant data-provider rows, tests of deployed migrations and one-offs), has an independent refuter check every proposed deletion, removes the approved tests with a companion script, and proves the result against a baseline before it opens a cleanup PR."
+description: "Command-only — invoke with `/prune-tests`; never activates on its own. Audits a PHPUnit or Pest suite for low-value tests (framework restatements, echoes, exact duplicates, redundant data-provider rows, tests of removed code, tests of deployed migrations and one-offs), has an independent refuter check every proposed deletion, removes the approved tests with a companion script, and proves the result against a baseline before it opens a cleanup PR."
 argument-hint: "[optional: target count] [optional: tests/ subdirectory]"
 disable-model-invocation: true
 metadata:
@@ -63,10 +63,16 @@ Without subagents, audit the chunks yourself, one at a time. Say in the final re
 - For a Pest test, copy its name from `$AUDIT/methods-before.txt`. Do not build the slug by hand.
 - A test qualifies only for one of these categories:
   - `framework` — asserts Laravel, PHP or package behaviour: a built-in cast round-trip, a relation type, a built-in rule tested again per field, a route-model-binding 404, a fillable echo, a plain admin-panel column. A custom cast, rule, macro, query builder method, closure or branch is application logic: keep.
-  - `trivial` — echoes a getter, a constant, a constructor argument, an enum label, or a job's `$tries` or `$queue`; checks `instanceof` on an object it just built; or asserts something that cannot fail.
+  - `trivial` — one of these:
+    - It echoes a getter, a constant, a constructor argument, an enum label, or a job's `$tries` or `$queue`.
+    - It checks `instanceof` on an object it just built.
+    - It asserts what a native type already guarantees, such as `assertIsString()` on a method with a `string` return type. This holds only for one exact native type: not a union, `mixed`, a nullable type or a docblock type, and not a value from an array or an untyped call. When no other test runs the method, list the test under `## rewrite`.
+    - It mocks or partially mocks the method under test itself, so the real code never runs, and then asserts the value the mock returns. A test that mocks a collaborator is not this signal.
+    - It asserts something else that cannot fail.
   - `redundant` — another test runs the same branch (same fixture state, flag and role) and asserts the same or a stronger outcome. Cite it as `file:line` and name its assertion.
   - `dispatch-only` — asserts only that a job or event was dispatched, when another test runs the job and asserts its effect and a sibling still proves the dispatch.
   - `redundant-row` — a data-provider row over a value the code does not branch on. Keep one row per branch plus the real boundaries (empty, null, zero, maximum). Keep exhaustiveness guards (every enum case, every class).
+  - `tombstone` — asserts that removed code stays removed: a class that no longer exists, a file absent from its old path, a method that is gone. Putting the code back is a deliberate change that a reviewer sees. The protected list below still applies, for example to a debug route, a file under the web root, a dropped personal-data column, or a field that must stay out of a payload. An `arch()` rule or another must-not-exist invariant is a live rule, not a tombstone. In the ledger's `covering:` column, write `removed in <sha>`.
   - `migration` — tests a migration that production already ran. The base branch or a release tag does not prove that, because a deploy can lag behind both. Keep the test unless the user or a deploy record the project keeps confirms that production ran it.
   - `dev-only` — tests code that never runs in production. Keep the one environment-guard test of a tool that writes or deletes data.
   - `one-off` — tests a one-off admin action, backfill or repair command. List these under a separate `## one-off` heading.
@@ -91,7 +97,7 @@ Run a second and a third pass over the chunks that returned the most, with the i
 
 Join the ledgers of this run, split them into batches of about 80 lines, and dispatch a fresh read-only agent per batch. Tell it that each reason and each covering test in the ledger is a claim to check, not a fact.
 
-**Refuter brief:** You guard the suite. For each item, read the test, its whole file and the production code, and decide on your own. Give `DELETE-OK` only when the test or row adds no regression protection. For a `redundant` claim, you must also find and read the covering test, and its setup must take the same branch. Otherwise give `KEEP`, and name the branch the test alone protects. Always keep the protected assertions the auditor brief lists. Output `path::method | DELETE-OK or KEEP | reason | covering file:line`.
+**Refuter brief:** You guard the suite. For each item, read the test, its whole file and the production code, and decide on your own. Give `DELETE-OK` only when the test or row adds no regression protection. For a `redundant` claim, you must also find and read the covering test, and its setup must take the same branch. For a `tombstone` claim, find the commit that removed the code (`git log -S '<symbol>'`). Give `KEEP` when no removal exists, or when the assertion is a live rule. Otherwise give `KEEP`, and name the branch the test alone protects. Always keep the protected assertions the auditor brief lists. Output `path::method | DELETE-OK or KEEP | reason | covering file:line`.
 
 Then do these steps yourself:
 
@@ -125,6 +131,7 @@ Then do these steps yourself:
 1. Run static analysis (`vendor/bin/phpstan analyse` or the project's own command) with `|| true`, then the full suite with `|| true`. Compare both against the baseline run. A new failure can mean a remaining test depended on state a deleted test set up. Restore the deleted test rather than patch the remaining one.
 2. Dispatch the `test-coverage-auditor` and `security-reviewer` subagents over the deletion diff where the session has them. Give them the diff, not your conclusions. Trace each test they say protects a branch no remaining test reaches, and restore it when the trace confirms that. Without these subagents, walk the deletion diff yourself for both questions, and say in the report that this check was not independent.
 3. Note the follow-ups you found: the `## rewrite` items, a test that cannot fail on its own branch, a gap in production code. Do not fix them here.
+   - Also list production code that only the removed tests called, such as a `resetForTesting()` method or a test-only flag. Search for the name as a plain string across the repository, `vendor/` excluded, the remaining tests included. A search misses a dynamic call, a container binding, and a Laravel scope, accessor or relation, which callers reach by a derived name, so report each item as a lead, not as dead code. Do not delete it in this PR: in a package it can be public API, and the PR holds only tests.
 
 ## 6. Ship
 
