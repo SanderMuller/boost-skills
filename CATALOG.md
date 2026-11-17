@@ -12,7 +12,7 @@ Everything `sandermuller/boost-skills` ships: skills, tags, guidelines and subag
 | `bug-fixing`           | Test-driven bug workflow: reproduce with a failing test, then fix it.                                | —               |
 | `clarify`              | Turn a fuzzy ask into sharp, fact-checked intent — reduce ambiguity, sharpen terms, surface assumptions. Shared core of `interview` and `promptimize`. | —               |
 | `clean-specs`          | Command-only (`/clean-specs`): remove spec files whose work is fully implemented and proven on the base branch, keeping only live work.               | —               |
-| `code-review`          | Review recent changes across functionality, code quality, security, and tests.                      | —               |
+| `code-review`          | Review recent changes across functionality, code quality, security, and tests; post a review on someone else's PR. | —               |
 | `codex-review`         | Request an independent review from the OpenAI Codex CLI, apply the warranted fixes, re-review until clean. | —               |
 | `conventional-commits` | Choose the Conventional Commits type and breaking marker for a commit or PR title; set up the PR-title check. | `conventional-commits` |
 | `deploying-laravel-cloud` | Deploy and manage Laravel apps on Laravel Cloud via the `cloud` CLI — environments, databases, domains, billing. | `laravel-cloud` `hosting` |

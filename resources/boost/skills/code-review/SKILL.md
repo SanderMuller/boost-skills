@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Structured review of recent code changes across functionality, UX/UI, design, code quality, security, testing — produces a prioritized findings list. Activates when: the user asks to review implementation, review changes, review code, audit code, check for improvements, or when user mentions: review, audit, improvements, code quality, code review."
+description: "Structured review of recent code changes across functionality, UX/UI, design, code quality, security, testing — produces a prioritized findings list, and for someone else's PR can verify, filter and post them as one GitHub review. Activates when: the user asks to review implementation, review changes, review code, audit code, check for improvements, review a PR and post the findings, or when user mentions: review, audit, improvements, code quality, code review, post review comments, request changes."
 argument-hint: [file path, feature name, or description of changes]
 ---
 
@@ -15,6 +15,7 @@ Use this skill when:
 - Auditing code before committing or creating a PR
 - The user asks "can you review this" or "are there improvements"
 - Checking implementation quality after a subagent completes work
+- Reviewing someone else's PR and posting the findings (see [Reviewing Someone Else's PR](#reviewing-someone-elses-pr))
 
 Do NOT use for:
 - General codebase audits with no specific scope
@@ -120,6 +121,53 @@ The subagents rate on their own scales. Map each finding onto this table, and pu
 | `simplification-auditor` `Cut` row | Low |
 
 A `simplification-auditor` `User decision` row is a decision for the user, not a finding. An item a subagent reports with no severity stays an unrated note.
+
+## Reviewing Someone Else's PR
+
+Use this mode when the user asks to review a PR that someone else wrote and to post the result, or to request changes on it. It runs the review above over the PR's diff, then two more gates, verify and filter, and posts one GitHub review. It never edits the PR, its branch, or its description. To apply review comments that other people left on your own PR, use the `pr-review-feedback` skill instead, where the project has it.
+
+1. **Read the PR without a checkout.** A checkout changes the working tree under other work. It can also bring a different lock file, so the installed dependencies no longer match and local tests fail for that reason.
+   ```bash
+   gh pr view <n> --json title,author,body,baseRefName,headRefOid,files,closingIssuesReferences
+   git fetch origin "+pull/<n>/head:pr-<n>" "+refs/heads/<base>:refs/remotes/origin/<base>"
+   git diff "origin/<base>...pr-<n>"
+   git show "pr-<n>:<path>"
+   ```
+   - `<base>` is the `baseRefName` that `gh pr view` returns. `origin` is the remote of the repository that holds the PR. In a fork clone, that is usually `upstream`.
+   - The `+` lets the fetch replace a `pr-<n>` branch that an earlier run left behind, also after the author force-pushed.
+   - When a shell variable holds the number, write it as `${n}`. In zsh, `"pr-$n:hooks/a.php"` reads `:h` as a modifier, also inside quotes.
+   - Tell every subagent to read the PR only through `git diff` and `git show`. For a subagent without a shell, write the changed files with `git show "pr-<n>:<path>"` into a temp directory, add the requirement text, and give the subagent that directory.
+2. **Take the test result from CI.** Run `gh pr checks <n>`. When checks are still pending, report them as pending, or wait with `--watch`. Run the tests locally only when the PR's lock files match the installed dependencies. Otherwise report the CI result and say why you did not run the tests.
+3. **Run the review.** Phases 2 to 4 above, over the PR's diff. Take the requirement source from the Conformance check in Phase 2, with the issues in `closingIssuesReferences` as the linked issues. The PR description is not a requirement source.
+4. **Verify every finding you intend to post, at every severity.** Trace each claim to the PR's code (`git show "pr-<n>:<path>"`) and cite `file:line`. Correct a wrong detail, such as a line number. Drop a claim the code disproves: a subagent can report a defect that code outside the diff already handles.
+5. **Filter: post only what the author can act on in this PR.** Post a finding only when all of these hold:
+   - It is valid in the code (step 4).
+   - This PR caused it, or it sits in this PR's own content. A pre-existing or shared pattern is a follow-up, not a PR comment.
+   - It carries a concrete fix that the author can apply in this PR.
+   - It is not a product, scope or risk decision. Those go to the user.
+   - No earlier comment on the PR already raises it. Read the inline comments, the review bodies and the conversation:
+     ```bash
+     gh api --paginate "repos/{owner}/{repo}/pulls/<n>/comments" --jq '.[] | "\(.path):\(.line // .original_line) \(.body[0:80])"'
+     gh api --paginate "repos/{owner}/{repo}/pulls/<n>/reviews" --jq '.[] | select(.body != "") | .body[0:200]'
+     gh api --paginate "repos/{owner}/{repo}/issues/<n>/comments" --jq '.[] | .body[0:200]'
+     ```
+6. **Show the user both lists**: the findings to post, and the findings not posted with the reason for each. Post only after the user confirms, unless the request already said to post.
+7. **Post one review.** First run `git rev-parse pr-<n>`. When the result is not `headRefOid`, the author pushed during the review: run step 1 again and check the findings against the new code. Then write the payload to a temp file:
+   ```json
+   {
+     "commit_id": "<headRefOid>",
+     "event": "COMMENT",
+     "body": "<a short verdict, then a numbered list of the inline comments>",
+     "comments": [{ "path": "<file>", "line": 44, "side": "RIGHT", "body": "<cause, evidence with file:line, suggested fix>" }]
+   }
+   ```
+   ```bash
+   gh api -X POST "repos/{owner}/{repo}/pulls/<n>/reviews" --input <payload-file> --jq '"\(.state) \(.html_url)"'
+   ```
+   - Use `REQUEST_CHANGES` only when at least one posted comment asks for a change that must land before the merge: a defect, or behaviour that breaks what the PR promises. When every comment is a suggestion, a question or an optional test gap, use `COMMENT`. Never `APPROVE`: approval stays with a person.
+   - `line` must fall inside a diff hunk. It is a line of the PR's version of the file on the `RIGHT` side, or a line of the base version on the `LEFT` side for a deleted line. GitHub rejects the whole review when one inline comment points outside the diff. Put such a finding in the review body.
+   - Write the body and every comment in Simplified Technical English, and run the `humanizer` skill over them where the project has it. Write no bare `@name`.
+8. **Report** the review URL and state, the posted findings, and the findings not posted with their reasons. Delete the local `pr-<n>` branch.
 
 ## Output Format
 
