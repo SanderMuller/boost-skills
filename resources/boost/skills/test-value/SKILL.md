@@ -34,15 +34,20 @@ A test is a candidate for deletion or rewrite when it:
 - **Mirrors the implementation** — the assertion recomputes what the code computes, echoes a constant the code reads, or rebuilds the value under test from the same parts. It passes for as long as the code stays identical, which is not the same as being correct.
 - **Proves only that work was scheduled** — a faked queue or bus with an assertion that something was dispatched, and nothing anywhere that runs the work and checks its effect.
 - **Promises a behaviour it never checks** — the name states one thing and the assertions check another, or check almost nothing.
+- **Cannot fail or never runs** — an expectation armed before the arrange block, an assertion that only nothing threw, a JSON check that cannot fail on the key, a skip on a file the repository owns, a PHPUnit method without `#[Test]` or a `test` prefix (`test-writing`'s *An Assertion That Cannot Fail Is Not Coverage*).
+- **Repeats a path another test covers** — a dataset row over a value the code never branches on (not an exhaustiveness guard or a bug fix's range row), one test per field of one shared save, a presence check copied into sibling files. Cite the covering test before you call it redundant.
+- **Tests code that does not need a lasting test** — dev-only tooling, or a migration or a one-off that production already ran (`test-writing`'s *Tests That Do Not Last*). The verdict is delete, never rewrite. Keep only the one test that proves a data-writing tool refuses to run outside the local environment.
 - **Is brittle without being stronger** — it asserts on incidental ordering, exact whitespace, or a whole payload where one field carries the meaning. It fails on changes that break nothing.
 
 The verdict per test is **delete**, **rewrite so it asserts the real behaviour**, or **keep, with the reason**. Prefer a rewrite when the scenario is worth covering and only the assertion is weak — deleting takes the scenario with it.
+
+**Prove that a deletion removed only what you meant.** Removing a test does not fail the suite. List the test names before and after the edit (`--list-tests` for PHPUnit and Pest, `vitest list` for Vitest), sort both lists, and diff them. Every line in the diff must be a deletion or rename you intended. When you cut a PHPUnit method out by hand, end the cut before the attributes and docblock of the next method, or before the class's closing brace for the last method. Do not stop at the first closing brace at method indent: it can end a nested closure.
 
 **A shallow check is not automatically worthless.** An assertion that work was scheduled is a fine test of "the request validated and enqueued" *when* another test runs that work and asserts its effect. Look for that other test before calling the first one empty.
 
 ## Direction 2 — Behaviour With No Test
 
-Every behavioural change needs a test that **fails without it** — or, where no automated test can reach the behaviour, a documented manual check in its place. Name what nothing covers:
+Every behavioural change needs a test that **fails without it**. Dev-only tooling is the exception (Direction 1). Where no automated test can reach the behaviour, write a documented manual check in its place. Name what nothing covers:
 
 - The happy path, the failure paths, and the edge cases the change introduced — null, empty, zero, boundary
 - The branch this change actually added, rather than a test that merely executes the file it lives in

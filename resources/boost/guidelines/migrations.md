@@ -56,3 +56,7 @@ if (! Schema::hasIndex('orders', 'orders_reference_index')) {
 Keep slow work out of the migration on a large table: build an index, backfill a column, or add a foreign key as a separate job or an out-of-band task, not inside the deploy step. Where the session has the `database-specialist` subagent, dispatch it before any DDL on a large table: it names the algorithm or lock level each statement takes, on MySQL and PostgreSQL.
 
 On MySQL, bound the metadata-lock wait (`SET SESSION lock_wait_timeout`, restored in a `finally`) around DDL on any table that a request reads or writes, and around `CREATE TABLE` with a foreign key to one. The default wait is one year, and every query on that table queues behind it. Do not wrap a backfill: row locks ignore this setting.
+
+### A Migration's Test Is Temporary
+
+In an application with one production database, propose to delete a migration's test once production has run the migration. Do it in a change scoped to that cleanup, or leave it to the next migration squash. Keep the test of a migration that a package ships, or that runs again for each new install or tenant. The `test-writing` skill's *Tests That Do Not Last* has the details.
