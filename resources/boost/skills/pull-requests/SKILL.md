@@ -50,7 +50,7 @@ Before creating the PR, verify all of the following:
 4. **The project's PR template will be read fresh** at creation time from the configured template path (see [PR template](#pr-template) below) if the file exists — never hardcode a template.
 5. **If the changes touch PHP and the project enables Rector** (`quality.rector` = <!--boost:conv path="quality.rector" mode="inline"-->false<!--boost:conv:end-->): run `vendor/bin/rector process` until it reports no changes, then run `vendor/bin/pint --dirty --format agent` (Rector's output is not style-clean — always Pint after Rector) before creating the PR. This is the same completion-time policy the `backend-quality` skill applies.
 6. **Frontend changes have been eye-verified** — if the diff changes UI that renders to users (JS/TS that drives the DOM, or a server-rendered template/component), the change should have been driven and *seen* in a real browser before the PR goes up: the `frontend-quality` skill's eye-verify step, or a dedicated eye-verification flow if the project has one. Author-side gate — **advisory, not blocking**; if it was skipped, recommend eye-verifying. For visual changes, add a screenshot to the PR description (redact any sensitive or personal data first; see [PR Description](#pr-description) for how to embed it). If the eye-verify or screenshot harness can't run this session, don't silently drop it — note the deferral in the PR (why it was skipped) and recommend the author capture it before the PR reaches a human reviewer.
-7. **The branch is current with its base** — sync the base in before opening the PR. Resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), then **use the `resolve-conflicts` skill** to run that merge — it owns the merge end to end (clean-tree preflight, resolution, and the post-merge verification that a conflict-free auto-merge still needs) and leaves the merge committed but unpushed. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict or a break the merge surfaces. Push the merge before creating the PR.
+7. **The branch does not conflict with its base** — resolve the base per **Base-branch resolution** above (the matched `branches.patterns` base, else the default base branch <!--boost:conv path="github.default_base_branch" mode="inline"-->main<!--boost:conv:end-->), fetch `origin/<base>`, and run the conflict probe from the `resolve-conflicts` skill. Merge the base in only when [Syncing the Base](#syncing-the-base) calls for it; then **use the `resolve-conflicts` skill** to run that merge, and push it before creating the PR.
 8. **A mandated PR label is resolved** — applies **only when the project configures a PR-label policy** (`pr.labels`; see [PR Labels](#pr-labels) below). Decide which option applies before creation, asking the author in the step-6 batch when the evidence does not settle it. If no policy is configured, skip this step — the project mandates no label.
 
 #### Verifying / creating against the tracker
@@ -69,9 +69,9 @@ Use the `gh` CLI to create pull requests. Always use `--json <fields>` filters t
 3. Analyze the commits with `git log origin/<base>..HEAD --oneline`.
 4. Get the diff summary with `git diff origin/<base>...HEAD --stat` (and the full diff where more context is needed).
 
-   Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>` and merged it into the branch, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
+   Compare against the remote-tracking `origin/<base>`, not the local `<base>` branch: preflight item 7 fetched `origin/<base>`, so a stale local `<base>` would make the log and diff sweep in unrelated upstream commits. (`git fetch origin <base>` updates `origin/<base>` but not a checked-out-elsewhere local `<base>`.)
 5. **Run the pre-PR gates** (see [Pre-PR Gates](#pre-pr-gates) below). If any gate fails with `on_missing: stop_and_request`, stop the PR flow and follow the gate's instruction.
-6. **Resolve risk + any mandated label + ask for description direction, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation), [PR Labels](#pr-labels) and [Ask the User for a Direction](#ask-the-user-for-a-direction) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. A label question is rendered only when a `pr.labels` policy is configured *and* its evidence ladder left the choice uncertain. Render whichever questions remain in a single batch: the generic risk question (only when no tiers are configured) + the label question (only when unresolved) + the direction question. Drop the direction question when the user already supplied direction this turn — if that leaves nothing to ask, skip the call entirely.
+6. **Resolve risk + any mandated label, batching whatever questions remain into one `AskUserQuestion` call** (see [Risk Assessment](#risk-assessment-before-pr-creation) and [PR Labels](#pr-labels) below). Risk handling depends on the project's model: when `pr.risk` tiers are configured the agent **scores the tier** (invoking the `assessment_skill` if set) — **no risk question is rendered**; otherwise the generic Low/Medium/High risk question is asked. A label question is rendered only when a `pr.labels` policy is configured *and* its evidence ladder left the choice uncertain. Render whichever questions remain in a single batch; if none remains, skip the call entirely. Do not ask what the description should emphasise: infer it (see [Infer the Description Angle](#infer-the-description-angle)).
 7. Create the PR. If the configured PR template file (see [PR template](#pr-template)) exists, read it fresh, fill in each section, and write the body to a temp file named for this branch: `/tmp/<pr-key>-pr-body.md`, where `<pr-key>` is the branch name with `/` replaced by `-`. Parallel sessions share `/tmp`, so a generic name such as `/tmp/pr-body.md` can open this PR with another session's body. Then run:
    ```bash
    gh pr create --draft --base <resolved-base> \
@@ -188,13 +188,28 @@ When making changes to an existing PR you authored:
    ```bash
    gh pr view <pr-number> --json headRefName,baseRefName
    ```
-   `headRefName` is the branch to check out; `baseRefName` is the target to sync from before pushing — it is this PR's resolved base, so use it directly rather than re-deriving one.
+   `headRefName` is the branch to check out; `baseRefName` is the target to sync from when a sync is needed — it is this PR's resolved base, so use it directly rather than re-deriving one.
 2. **Switch to the branch**: `git checkout <branch-name>`.
 3. **Pull latest changes**: `git pull origin <branch-name>`.
 4. **Make the changes**: edit code, write/update tests, run the project's quality checks.
 5. **Commit changes**: create meaningful commits following the project's commit conventions, once the changes pass the project's checks, not while the approach is still being tried (see also *A Commit Is a Claim Too* in the `verification-before-completion` guideline, where the project ships it).
-6. **Sync the base in before pushing**: **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. CI runs against the pushed tip, so a branch behind its base is tested against stale target code and a green run can hide a conflict.
+6. **Sync the base in only when needed** (see [Syncing the Base](#syncing-the-base)). When a trigger holds, **use the `resolve-conflicts` skill** to merge `origin/<base>` (the `baseRefName` from step 1); it handles the preflight, any conflicts, and the post-merge verification a clean merge still needs. Otherwise push as is.
 7. **Push to remote**: `git push origin <branch-name>`.
+
+### Syncing the Base
+
+Merge the base into a PR branch only when one of these holds:
+
+- **The branch conflicts with its base.** GitHub runs no `pull_request` workflow while the PR has a conflict.
+- **The change needs code that landed on the base.**
+- **The PR is about to merge**, and its last green run is older than base merges that touch the same area.
+- **The base's branch protection requires an up-to-date branch**, and the PR is about to merge. GitHub then blocks the merge of a branch that is only behind, and `gh pr view <pr-number> --json mergeStateStatus` reports `BEHIND`.
+- **The project's PR CI tests the branch tip, not the merge with the base.** That is the case when it runs on `push` only, or when its `pull_request` checkout sets `ref:` to the head (for example `github.event.pull_request.head.sha`). Then sync before each push when the branch is behind.
+- **The user asks for it.** An explicit request to update the branch overrides this list.
+
+Otherwise do not sync before a push. A `pull_request` workflow checks out the PR's merge ref (`refs/pull/<n>/merge`) by default, so it already tests the push merged into the current base. A sync-only push only runs CI again, and it can bring a broken base into the branch. Read the triggers and the checkout steps in `.github/workflows/` to know which case the project is in. Check for a conflict with the probe in the `resolve-conflicts` skill.
+
+A PR's checks do not run again when only the base moves. The pre-merge trigger above covers that gap, and so does the CI run on the base branch after the merge.
 
 ### Changing a PR's Base
 
@@ -257,31 +272,15 @@ Take the commits and the diff from the current branch against its base (see [Bas
 - **Target branch** — ask when the branch-pattern resolution yields none and no default base branch is configured.
 - **Security implications and testing steps** — write them from the diff. Ask only when the diff cannot settle one, for example an auth or data-exposure change with no stated intent.
 
-## Ask the User for a Direction
+## Infer the Description Angle
 
-The author knows the PR's intent in a way the diff cannot reveal — which user value matters most, which constraint forced the design, what to downplay. Before drafting any description body, ask them in their own words.
+Do not ask the user what the description should emphasise. Infer the angle from the analysis in steps 1–4: the commits, the diff and any linked issue.
 
-### When to ask
-
-- **By default**, on every PR creation, batched together with the other still-open questions in the single step-6 `AskUserQuestion` render (see [Batching with the risk-level question](#batching-with-the-risk-level-question)), before drafting the body.
-- **Skip** only when the user already supplied a direction in the current turn (e.g. their request was "create a PR — focus on the cross-tenant isolation, that's the headline").
-
-### How to ask
-
-Ask the direction as a single open-ended question with a small set of pre-filled starter options the user can pick or override with free text. Phrase it like a smart colleague asking before they start writing:
-
-> *"In one or two sentences, what's the most important thing this PR delivers, and what should the description emphasise? (Reply 'use the diff' to leave the angle to the assistant.)"*
-
-Offer 2–3 short starter options derived from the analysis you already did in steps 1–4 (commits, diff, any linked issue), each phrased as a candidate angle the description could take — e.g. "Frame around the new viewer-facing capability (X)", "Frame around the migration safety / rollout plan", "Frame around the performance win (~Nx faster)", "Use the diff — no specific angle". The user picks one, edits one, or types free text; the "Other" escape hatch is always present.
-
-### How to use the answer
-
-1. **Treat the user's input as the spine of the summary** — the opening sentence reflects their framing, not the first commit message.
-2. **Reconcile against the analysis** — if the user emphasises something the diff does not back up (e.g. "focus on the security hardening" but no security-touching files changed), surface the mismatch before drafting. Never silently invent support for the framing.
-3. **Stay within the [Why, Not What](#writing-the-description-why-not-what) rules** — the direction sets *what to emphasise*; it does not relax the bans on class names, file paths, commit recaps, or reviewer choreography.
-4. **One-shot only** — do not loop the user through revisions of the summary afterward. Draft, create the PR, let them edit if needed.
-
-Treat all of the following as "no direction" and fall through to diff-driven drafting (applying the Why, Not What rules): explicit "use the diff", empty/whitespace input, non-substantive replies ("idk", "whatever", "you decide"), and the `Use the diff — no specific angle` starter option.
+1. **Find the spine of the summary** — the user value or the constraint that explains most of the diff. Open the summary with it, not with the first commit message.
+2. **Back every claim with the diff** — do not frame the PR around something no changed file supports.
+3. **Stay within the [Why, Not What](#writing-the-description-why-not-what) rules** — the angle sets *what to emphasise*; it does not relax the bans on class names, file paths, commit recaps, or reviewer choreography.
+4. **Use a direction the user gives** — when the user names an angle in the conversation (for example, "focus on the cross-tenant isolation"), use it as the spine. Tell the user when the diff does not back it up.
+5. **One-shot only** — draft, create the PR, and let the user edit the body afterwards.
 
 ### Batching with the risk-level question
 
@@ -289,9 +288,8 @@ Step 6 renders the still-open questions in a single `AskUserQuestion` call. Poss
 
 - **Question 1 — Risk level** (`header: "Risk level"`, `multiSelect: false`): asked **only** when no `pr.risk` tiers are configured — the generic `Low` / `Medium` / `High`, with your recommendation. When `pr.risk` tiers are configured, the tier is scored by the agent (per [Risk Assessment](#risk-assessment-before-pr-creation)), not asked — omit this question.
 - **Question 2 — PR label** (`header: "PR label"`, `multiSelect: false`): asked **only** when a `pr.labels` policy is configured and its evidence ladder (see [PR Labels](#pr-labels)) left the choice uncertain. Use the policy's `rule` as the question text and its `options` as the choices, each `name` verbatim with its `when` as the description; mark the `on_doubt` option as the fallback for an uncertain author, and add a no-label choice when `require_exactly_one` is false. Never drop this question by picking `on_doubt` yourself.
-- **Question 3 — Description direction** (`header: "PR angle"`, `multiSelect: false`): 2–3 starter framings derived from the diff/issue plus `Use the diff — no specific angle`. The user picks, edits, or uses "Other" for free text.
 
-Order when more than one is present: risk first, label second, direction third. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when no label policy is configured or the evidence already settled it, drop Question 3 when the user already supplied direction this turn, and skip the call entirely when none remains.
+Order when both are present: risk first, label second. Render only the questions that remain open — drop Question 1 when `pr.risk` tiers are configured (tier-scored), drop Question 2 when no label policy is configured or the evidence already settled it, and skip the call entirely when none remains.
 
 ## Risk Assessment Before PR Creation
 

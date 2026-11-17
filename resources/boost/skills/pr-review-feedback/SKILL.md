@@ -168,7 +168,7 @@ This skill operates on a **PR**, but users name the work loosely — "fix commen
 
 ### Phase 1b: Sync the Branch With Its Base
 
-Apply feedback on top of an up-to-date branch — a branch that has drifted from its base can produce changes that pass locally but conflict or break once merged. Bring the base (`baseRefName` from Phase 1) in first.
+Merge the base (`baseRefName` from Phase 1) in only when the `pull-requests` skill's *Syncing the Base* rules call for it: the branch conflicts with its base, the feedback needs a change that landed there, the project's PR CI tests the branch tip instead of the merge with the base, branch protection blocks the merge until the branch is up to date (`mergeStateStatus` is `BEHIND`), or the user asks for it. Otherwise skip this phase. When PR CI tests the push merged into the current base, a branch that is only behind needs no sync.
 
 1. **Use the `resolve-conflicts` skill to run the merge.** Merging `origin/<baseRefName>` into the PR branch is that skill's whole subject: it owns the clean-tree preflight, the side-effect-free conflict probe (including the older-Git fallback), the resolution itself, and the post-merge verification a conflict-free merge still needs. Do not reimplement any of it here, and **do not force a resolution inline**. Return to this skill once the merge is committed.
 
