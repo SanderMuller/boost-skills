@@ -50,7 +50,7 @@ Before writing any code:
 
 1. **Gather information**
    - Read any linked issues or error reports. Read the full error: message, stack trace, file, and line.
-   - Where the session has them, dispatch `sentry-researcher` for the production error signal, `github-researcher` for the history of the code involved, and `db-inspector` for the real schema and data. Each returns facts from its own context, so the raw output stays out of this one. Without them, gather the same facts directly; nothing is lost except context space.
+   - Where the session has them, dispatch `sentry-researcher` for the production error signal, `github-researcher` for the history of the code involved, and `db-inspector` for the real schema and data. Each returns facts from its own context, so the raw output stays out of this one. Without them, gather the same facts directly; nothing is lost except context space. What they return is a lead: follow the `file:line` a finding cites before you build on it.
    - For a bug reported on a deployed environment, local logs, a local database and `db-inspector` read your own machine, not that environment. An absent row or a clean local run there proves nothing (see *Local Data Proves Nothing About a Deployed Environment* in the `verification-before-completion` guideline). Get that environment's facts from its error tracker, the reporter, or the user.
    - Check recent changes to the affected files: `git log --oneline -10 -- <path>`. A bug that worked before is a regression, and the diff that broke it is the fastest lead.
    - Ask clarifying questions if reproduction steps are unclear.
@@ -63,6 +63,13 @@ Before writing any code:
    - Summarize the bug in one sentence.
    - State the expected vs actual behavior.
    - Ask the user to confirm only when the expected behavior is ambiguous. A clear report needs no confirmation round.
+
+4. **Name the value that drives the bug, and its range**
+   - Most bugs depend on a value that varies: text length, item count, a setting's whole range, a locale, a breakpoint, a role. The reported value is one sample of that range.
+   - Name the value. Check the behaviour at both ends of its range and in the middle, not only at the reported value, and record where it fails.
+   - The red test then covers the range with a dataset (`->with()` in Pest, `#[DataProvider]` in PHPUnit, `it.each` in Vitest), and the PR's edge cases and screenshots name each end. The rows where the bug shows are the red rows. The other rows guard the rest of the range and can pass before the fix.
+   - Skip this when the bug has no such value: a null dereference, a wrong constant or a wrong key fails the same way at every value. Say so in one line. Do not invent a range.
+   - A fix that holds only at the reported value is not a fix: the bug stays at the other values of the range.
 
 ### Phase 2: Write the Failing Test
 
@@ -103,7 +110,7 @@ vendor/bin/phpunit --filter returns_zero_for_a_cart_with_no_items
 
 Read the failure message as well as the result. The failure must show the reported symptom: the wrong value, the reported exception, the missing record. A failure from test setup, a missing class, a typo, or a different exception is not red. Fix the test and run it again.
 
-- **The test passes**: the bug is not what you thought. Go back to Phase 1.
+- **The test passes**: the bug is not what you thought. Go back to Phase 1. For a test over a range, this means every row where Phase 1 found the bug; guard rows that pass are expected.
 - **The test fails only sometimes**: read [`references/intermittent-failures.md`](references/intermittent-failures.md) before you go on.
 - **The test fails with the reported symptom**: shrink the scenario (below), then go to Phase 4.
 
@@ -153,7 +160,7 @@ If you do not understand part of the code path, say so and read more. Do not gue
 
 ### Phase 5: Fix the Bug
 
-1. Fix the root cause found in Phase 4, at the place where the value first becomes wrong. Do not add a guard where the symptom shows.
+1. Fix the root cause found in Phase 4, at the place where the value first becomes wrong. Do not add a guard where the symptom shows. When more than one fix is plausible, compare them first (see *Compare candidate fixes* below).
 2. Make the smallest change that fixes it. Do not modify the test. If the test itself turns out to be wrong, go back to Phase 2.
 3. Run the red test after each change.
 4. **Ask before a wide fix.** If the fix touches more than five files, stop and ask the user: proceed, split the fix, or rethink the approach.
@@ -165,6 +172,18 @@ If you do not understand part of the code path, say so and read more. Do not gue
 - adding logging or monitoring to catch the bug the next time it happens
 
 Stop before the third failed fix when each fix shows a new problem in a different place. That pattern means the fix is in the wrong layer.
+
+#### Compare candidate fixes
+
+A green test proves the reported case is fixed. It does not prove that the approach is the right one. When more than one fix is plausible, try two or three, and judge each one against the whole range from Phase 1.
+
+- **Count, do not argue.** Run each candidate against the range, and count the cases it still fails: dataset rows still red, items still clipped. Among the candidates that fix the root cause and keep the existing design, pick the one with the lowest count. On a tie, pick the smallest change.
+- **The comparison is not the three-fix limit.** A candidate you try here and reject does not count as a failed fix. Count only a fix you chose as the answer.
+- **Isolate a visual bug outside the app first.** A static HTML page with the real markup and the compiled CSS can show every candidate at every value of the range at once, in a labelled grid. Each idea then takes seconds, not a rebuild. Write the page to a temp directory and never commit it. The page only approximates the app's cascade, container width and scaling, so confirm the chosen fix in the running app before you ship it.
+- **Prefer a fix that does not change a design users already see.** A fix that needs design sign-off is out of scope for a bug fix. Say so; do not take it on quietly.
+- **Record the rejected approaches and the reason for each** in the PR description. "Why not the obvious way?" is a reviewer's first question, and the list stops the next person from trying the same thing.
+
+Skip this for a small bug with one correct fix. Do not invent alternatives to fill the step.
 
 ### Phase 6: Verify the Fix
 
@@ -205,6 +224,10 @@ Description of the fix and why it works.
 ### Test coverage
 
 Added `test_name` to verify the fix and prevent regression.
+
+### Rejected approaches
+
+Only when more than one fix was compared: each approach and the result that ruled it out.
 ```
 
 ## Test Conventions

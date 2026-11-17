@@ -212,6 +212,18 @@ For each issue found:
 
 After fixing issues, re-run only the checks affected by your fixes (e.g., if you only fixed backend files, skip frontend checks). Repeat until a full pass finds no new issues. Only then move to Phase 6.
 
+#### Thrash Exit
+
+The loop assumes that each pass leaves fewer defects. When a pass introduces a second new defect in the same file or function, stop fixing. Each patch then sits on a state nobody verified again, and the next one can undo an earlier fix. A defect counts only when this loop created it, not when a later pass finds one that was already there.
+
+Report to the user:
+
+1. Which passes introduced which defects.
+2. That the accumulated diff may now be the problem, not the remaining findings.
+3. The options, with a recommendation: fix forward, or go back to the last state that was verified green and take a new approach from there. That state is a commit, or, when the work is still uncommitted, a snapshot you took before the loop started (for example a patch file).
+
+Never revert on your own. Discarding work is the user's decision, but offer the revert as a real option: it is often cheaper than the next patch. Do not go on to Phase 6 until the user chooses. When the run ends there, the Phase 8 report notes the thrash.
+
 ### Phase 6: Code Review
 
 Once the evaluate-fix loop is clean, run the `code-review` skill for a structured review from a different angle (functionality, UX/UI, security, testing). Fix any findings from the code review and re-verify.
@@ -264,8 +276,8 @@ Hard rules, regardless of harness:
 
 ## Guidelines
 
-- **Fix, don't report** — the point of this skill is to catch and fix issues, not to generate a list for the user
-- **Loop until clean** — do not stop after the first fix pass; re-evaluate until nothing remains
+- **Fix, don't report** — the point of this skill is to catch and fix issues, not to generate a list for the user, except at the [Thrash Exit](#thrash-exit)
+- **Loop until clean** — do not stop after the first fix pass; re-evaluate until nothing remains, unless the [Thrash Exit](#thrash-exit) applies
 - **Proportion the effort** — check every dimension; spend little time on code whose correctness is obvious
 - **Run the tests a fix touches after every fix**, and the full suite once at the end — don't batch fixes and hope they all work
 - **Trust existing patterns** — if the codebase does something a certain way consistently, follow it

@@ -108,6 +108,8 @@ Present findings and options to the developer:
 
 For a straightforward fix with one obvious solution, a single recommendation is enough — don't force multiple options.
 
+When the defect varies with a value, such as text length, item count or a setting's range, measure the options instead of only arguing them. Try each one against the range, and put in its `Trade-offs:` line how many cases still fail. The `bug-fixing` skill's Phase 1 names the range, and its *Compare candidate fixes* step runs the comparison.
+
 ### After the Developer Chooses
 
 1. **Create a fix branch** from the correct base:

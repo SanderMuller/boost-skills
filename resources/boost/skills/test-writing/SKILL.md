@@ -77,6 +77,21 @@ it('grants access to a paid account', function () {
 
 Test **one behavior per test**. The example above asserts twice (`assertOk` and `assertSee`) — that is fine, because both assertions verify the *same* behaviour (a paid account can reach the report). What to avoid is **assertion roulette**: piling assertions about *unrelated* behaviours into one test, so a failure doesn't reveal which behaviour broke. Split those into separate tests. ("One behaviour per test" is the rule — not the common misreading "one *assertion* per test".)
 
+## Prove That a Green Test Reaches the Change
+
+A green test proves that the test passed, not that it ran the line you changed. A test that never reaches the changed branch stays green through every later edit, even an edit that deletes the change. These mechanisms skip a branch without a sign:
+
+- **Memoisation or caching** — `once()`, a singleton, a cached config or query result. The first call fills the cache, and every later assertion reads the cached value.
+- **An early return or a short-circuit above the change** — a guard or a `return` on the path the fixture happens to take.
+- **A fixture that misses the precondition** — the factory state, the flag, or the role the branch needs is not set, so the code takes the other branch.
+
+When the test was written after the code, or the change sits behind one of these mechanisms, run the inversion. Undo the change in the source files only, keep the test, and run it. It must fail with the behaviour its name describes. A failure because a file is empty or missing does not count. Then bring the change back and run the test again.
+
+- **All of the change is uncommitted:** run `git stash push --include-untracked -- <changed source paths>`, run the test, then `git stash pop`. Name the source paths: a bare `git stash` also takes the new test.
+- **Any part of the change is committed:** first copy every changed source file aside. Find the revision before the change with `rev=$(git merge-base HEAD origin/<base>)`, and list the changed files with `git diff --name-status "$rev" -- <source paths>`. Restore each modified or deleted file, and the old path of each renamed file, with `git restore --source="$rev" -- <path>`. Remove each added file and the new path of each renamed file. Run the test, then put every copy back and remove the restored old paths.
+
+A test written red-first, as the `bug-fixing` skill requires, already has this proof: the red run is the proof.
+
 ## How Many Tests
 
 Test volume is maintenance cost. Cover each behaviour the task asks for and the failure modes that matter, then stop.
