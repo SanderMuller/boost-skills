@@ -104,6 +104,14 @@ Use your judgment:
 
 ## Remote Access
 
+Never print a secret through `tinker` or `command:run`. Code such as `printenv`, `cat .env`, `env('KEY')` or a credential `config()` value sends the raw value into the transcript. `command:get` returns a past command's output without masking, so the same holds there. Read one non-secret config value at a time. For a credential, print only whether it is set:
+
+```sh
+cloud tinker {environment} --code="echo filled(config('services.postmark.token')) ? 'set' : 'missing';" -n
+```
+
+The `secrets` guideline has the full rule.
+
 ### Tinker (>= v0.2.0)
 
 Run PHP code directly in a Cloud environment:
