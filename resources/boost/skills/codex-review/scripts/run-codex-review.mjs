@@ -21,7 +21,7 @@ import { finished } from 'node:stream/promises';
 // It tells a consumer reading the JSON report whether their emitted copy is current.
 // A literal, not a lookup: the emitted copy sits in a consumer's skills directory,
 // where this package's composer.json is not reachable.
-const WRAPPER_VERSION = '2.62.0';
+const WRAPPER_VERSION = '2.63.0';
 
 const DEFAULT_TIMEOUT_MS = 900_000;
 const FETCH_TIMEOUT_MS = 30_000;
@@ -29,7 +29,7 @@ const FETCH_TIMEOUT_MS = 30_000;
 // the Codex CLI defaults, which move between CLI releases and can cost far more
 // plan usage per review than a bounded run needs. Pin both here instead.
 const DEFAULT_EFFORT = 'medium';
-const DEFAULT_MODEL = 'gpt-6.1-sol';
+const DEFAULT_MODEL = 'gpt-6.2-sol';
 const EFFORT_LEVELS = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'default']);
 const KILL_GRACE_MS = 5_000;
 const PREFLIGHT_TIMEOUT_MS = 10_000;
