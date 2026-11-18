@@ -1,5 +1,11 @@
 # Upgrading
 
+## From 2.62.x to 2.63.0 (codex-review model — no floor change)
+
+**Not breaking. The `boost-core` floor stays `^1.6`.**
+
+- **codex-review defaults to `gpt-6.2-sol`.** Codex CLI 0.164.0 rejects that model on a ChatGPT account; 0.170.0 accepts it. Update the CLI, or pass `--model gpt-6.1-sol` / set `CODEX_REVIEW_MODEL`.
+
 ## From 2.52.x to 2.53.0 (PHP and boost-core floors raised)
 
 **Breaking: requires PHP `^8.4` and `boost-core ^1.6`.** 2.53.0 drops PHP 8.3 and `boost-core` 1.4–1.5 from the accepted range. This is a support-policy cutoff, not a hard requirement of the shipped skills, which contain no PHP code.
