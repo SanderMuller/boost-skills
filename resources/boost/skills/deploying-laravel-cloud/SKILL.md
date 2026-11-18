@@ -17,7 +17,7 @@ cloud auth -n
 
 Commands follow a CRUD pattern: `resource:list`, `resource:get`, `resource:create`, `resource:update`, `resource:delete`.
 
-Available resources: `application`, `environment`, `instance`, `database-cluster`, `database`, `cache`, `bucket`, `domain`, `websocket-cluster`, `background-process`, `command`, `deployment`.
+Available resources: `application`, `environment`, `instance`, `database-cluster`, `database`, `cache`, `bucket`, `domain`, `websocket-cluster`, `background-process`, `secret`, `command`, `deployment`.
 
 Some resources have additional commands (e.g., `domain:verify`, `database:open`, `instance:sizes`, `cache:types`). Discover these via `cloud -h`.
 
@@ -33,7 +33,7 @@ Flag combos per operation:
 - Create (`:create`) → `--json -n`
 - Update (`:update`) → `--json -n --force`
 - Delete (`:delete`) → `-n --force` (no `--json`)
-- Environment variables → `-n --force`
+- Environment variables → `-n --force` with `--action` and `--key` (see below)
 - Deploy/ship → `-n` with all options passed explicitly (no `--json`)
 
 ## Deployment Workflow
@@ -49,7 +49,13 @@ cloud deploy {app_name} {environment} -n --open
 cloud deploy:monitor -n
 ```
 
-Environment variables? → `cloud environment:variables -n --force`
+Environment variables? →
+- Not a secret: `cloud environment:variables {environment} --action=set --key={KEY} --value={value} -n --force`
+- A secret (a password, a token, an API key, a DSN): never put the value in a command. The command text goes into the transcript and the logs.
+  - Give the user `cloud environment:variables {environment}` to run in a separate terminal. The command asks for the value through a hidden prompt.
+  - Or use the Secrets Manager: the user runs `cloud secret:create --name={KEY} --json -n` in a separate terminal and pipes the value to STDIN. Then attach it with `cloud environment-secret:attach {environment} {secretId} -n`.
+- Delete: `cloud environment:variables {environment} --action=delete --key={KEY} -n --force`
+- Never pass `--show-sensitive`. It shows secret values in JSON output and in the value prompt.
 
 Provision infrastructure? → `cloud <resource>:create --json -n`
 
